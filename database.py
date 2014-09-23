@@ -160,8 +160,6 @@ class CouchDBWrapper(object):
 
     def __init__(self, db_url, db_name, reset=False, remote_url=None):
 
-        print "*****  CouchDBWrapper  ********"
-
         self.remote_url = remote_url
         self.db_name = db_name
         self.server = couchdb.Server(db_url)

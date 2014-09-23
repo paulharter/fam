@@ -3,7 +3,7 @@ import os
 from fam.database import CouchbaseLiteServerWrapper
 from config import *
 from fam import namespaces
-from blood_base_tests import CouchBaseTests
+from blud_base_tests import CouchBaseTests
 
 namespaces.add_models("fam.tests", os.path.join(os.path.dirname(__file__), "models"))
 

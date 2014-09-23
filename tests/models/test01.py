@@ -1,4 +1,4 @@
-from fam.blood import GenericObject, StringField, ReferenceFrom, ReferenceTo, BoolField, NumberField, DictField
+from fam.blud import GenericObject, StringField, ReferenceFrom, ReferenceTo, BoolField, NumberField, DictField
 
 NAMESPACE = "glowinthedark.co.uk/test/1"
 

@@ -5,7 +5,7 @@ from couchbase.exceptions import NotFoundError, HTTPError
 import os
 import requests
 import json
-from fam.blood import GenericObject, ReferenceFrom, ReferenceTo
+from fam.blud import GenericObject, ReferenceFrom, ReferenceTo
 
 
 #this does some juju on import to create module lookups for SPACES and CLASSES

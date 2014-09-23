@@ -2,6 +2,7 @@ import json
 import uuid
 import datetime
 import types
+from constants import *
 
 class DbConnectionException(Exception):pass
 class MalformedRequestException(Exception):pass
@@ -11,11 +12,9 @@ class UpdateException(Exception):pass
 
 
 
-RESERVED_PROPERTY_NAMES = ("key", "cas", "_properties", "_db")
-
 class Field(object):
     
-    typename = "base"
+    object = "base"
     
     def __init__(self, unique=False, optional=False):
         self.unique = unique
@@ -28,53 +27,53 @@ class Field(object):
     
     def __str__(self):
         attr = []
-        if self.optional:attr.append("optional")
-        if self.unique:attr.append("unique")
+        if self.optional:attr.append(FIELD_OPTIONAL)
+        if self.unique:attr.append(FIELD_UNIQUE)
         return " ".join(attr)
 
     as_string = property(__str__)
 
-        
+
 class BoolField(Field):
-    
-    typename = "Bool"
-    
+
+    # typename = "Bool"
+
     def is_correct_type(self, value):
-        return type(value) == types.BooleanType or type(value) == types.NoneType    
-        
+        return type(value) == types.BooleanType or type(value) == types.NoneType
+
 class NumberField(Field):
-    
-    typename = "Number"
-    
+
+    # typename = "Number"
+
     def is_correct_type(self, value):
         return type(value) == types.IntType or type(value) == types.LongType or type(value) == types.FloatType or type(value) == types.NoneType
-    
+
 class StringField(Field):
-    
-    typename = "String"
-    
+
+    # typename = "String"
+
     def is_correct_type(self, value):
         return type(value) == types.StringType or type(value) == types.UnicodeType or type(value) == types.NoneType
-    
+
 class ListField(Field):
-    
-    typename = "List"
-    
+
+    # typename = "List"
+
     def is_correct_type(self, value):
         return type(value) == types.ListType or type(value) == types.NoneType
-    
+
 class DictField(Field):
-    
-    typename = "Object"
-    
+
+    # typename = "Object"
+
     def is_correct_type(self, value):
         return type(value) == types.DictType or type(value) == types.NoneType
-    
-    
+
+
 class ReferenceTo(Field):
-    
-    typename = "Reference To"
-    
+
+    # typename = "Reference To"
+
     def __init__(self, refns, refcls, unique=False, optional=False, delete="nothing"):
         self.refns = refns
         self.refcls = refcls
@@ -84,24 +83,24 @@ class ReferenceTo(Field):
     def is_correct_type(self, value):
         return type(value) == types.StringType or type(value) == types.UnicodeType or type(value) == types.NoneType
 
-        
+
     def __str__(self):
         attr = []
-        
+
         attr.append("ns:%s"  % self.refns)
         attr.append("resource:%s"  % self.refcls)
 
-        if self.optional:attr.append("optional")
-        if self.unique:attr.append("unique")
+        if self.optional:attr.append(FIELD_OPTIONAL)
+        if self.unique:attr.append(FIELD_UNIQUE)
         if self.detail:attr.append("detail")
         return " ".join(attr)
 
     as_string = property(__str__)
 
 class ReferenceFrom(Field):
-    
-    typename = "Reference From"
-    
+
+    # typename = "Reference From"
+
     def __init__(self, refns, refcls, fkey, unique=False, delete="nothing"):
         self.refns = refns
         self.refcls = refcls
@@ -109,14 +108,14 @@ class ReferenceFrom(Field):
         self.delete = delete
         super(ReferenceFrom, self).__init__(unique, True)
 
-        
+
     def __str__(self):
         attr = []
         attr.append("ns:%s"  % self.refns)
         attr.append("resource:%s"  % self.refcls)
         attr.append("key:%s"  % self.fkey)
-        if self.optional:attr.append("optional")
-        if self.unique:attr.append("unique")
+        if self.optional:attr.append(FIELD_OPTIONAL)
+        if self.unique:attr.append(FIELD_UNIQUE)
         return " ".join(attr)
 
     as_string = property(__str__)
@@ -142,9 +141,9 @@ class GenericMetaclass(type):
         newcls = super(GenericMetaclass, cls).__new__(cls, name, bases, attrs)
         if "namespaces" in newcls.__module__ or "models" in newcls.__module__:
             exec("from %s import NAMESPACE" % newcls.__module__)
-            attrs["namespace"] = NAMESPACE
+            attrs[NAMESPACE_STR] = NAMESPACE
         else:
-            attrs["namespace"] = "genericbase"
+            attrs[NAMESPACE_STR] = "genericbase"
         newcls = super(GenericMetaclass, cls).__new__(cls, name, bases, attrs)
         return newcls
 
@@ -174,10 +173,10 @@ class GenericObject(object):
         #     if self._properties["type"] != type_name:
         #         raise Exception("dont match %s %s" % (self._properties["type"], type_name))
 
-        if kwargs.get("namespace") is None:
-            self._properties["namespace"] = namespace
+        if kwargs.get(NAMESPACE_STR) is None:
+            self._properties[NAMESPACE_STR] = namespace
         else:
-            if self._properties["namespace"] != namespace:
+            if self._properties[NAMESPACE_STR] != namespace:
                 raise
 
     @classmethod
@@ -188,7 +187,7 @@ class GenericObject(object):
 
 
     def _get_namespace(self):
-        return self._properties.get("namespace")
+        return self._properties.get(NAMESPACE_STR)
 
     def _get_type(self):
         return self._properties.get("type")
@@ -196,7 +195,7 @@ class GenericObject(object):
     def _get_properties(self):
         prop = self._properties.copy()
         del prop["type"]
-        del prop["namespace"]
+        del prop[NAMESPACE_STR]
         return prop
 
 
@@ -278,7 +277,7 @@ class GenericObject(object):
     def as_json(self):
         d = {}
         d["properties"] = self.properties
-        d["namespace"] = self.namespace
+        d[NAMESPACE_STR] = self.namespace
         d["type"] = self.type
         d["key"] = self.key
         if self.cas is not None:
@@ -320,7 +319,7 @@ class GenericObject(object):
         if "_rev" in doc.keys():
             del doc["_rev"]
 
-        correctCls = fam.namespaces.get_class(doc.get("namespace"), doc.get("type"))
+        correctCls = fam.namespaces.get_class(doc.get(NAMESPACE_STR), doc.get("type"))
         if correctCls is None:
             raise Exception("couldn't find class %s" % doc.get("type"))
 
@@ -335,7 +334,7 @@ class GenericObject(object):
         key = as_json["key"]
         cas = as_json.get("cas")
         doc = as_json["properties"].copy()
-        doc["namespace"] = as_json["namespace"]
+        doc[NAMESPACE_STR] = as_json[NAMESPACE_STR]
         doc["type"] = as_json["type"]
 
         return cls._from_doc(db, key, cas, doc)
