@@ -104,6 +104,9 @@ def delete_a_gateway(sync_admin_url, db_name):
 
 def add_person_to_gateway(sync_admin_url, db_name, user_id, username, password):
 
+    if sync_admin_url is None:
+        return
+
     attrs = {
          "password": password,
          "admin_roles": [user_id,],
