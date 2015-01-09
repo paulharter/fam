@@ -30,10 +30,10 @@ def add_namespace(module, name=None):
                         validate_class(obj)
                         classes[k.lower()] = obj
 
-
     if name is not None:
         gd = globals()
         gd[name] = module
+
 
 def validate_class(cls):
     for name, field in cls.fields.iteritems():
@@ -96,8 +96,7 @@ dirpath = os.path.dirname(__file__)
 
 for filename in os.listdir(dirpath):
     add_namespace_file(os.path.join(dirpath,filename))
-    
-    
+
     
 def _get_fk_map(resource, namespace, keyName):
         if type(resource) == type("hello"):

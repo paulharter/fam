@@ -181,10 +181,14 @@ class GenericObject(object):
 
     @classmethod
     def all(cls, db):
-
         return cls._query_view(db, "raw/all", cls.type)
 
-
+    @classmethod
+    def changes(cls, db, since=None, channels=None, limit=None):
+        results =  db.changes(since=since, channels=channels, limit=limit)
+        last_seq = results.get("last_seq")
+        objects = [GenericObject._from_doc(db, r["doc"]["_id"], r["doc"]["_rev"], r["doc"]) for r in results.get("results") if r["doc"].get("type") is not None]
+        return last_seq, objects
 
     def _get_namespace(self):
         return self._properties.get(NAMESPACE_STR)
@@ -226,9 +230,8 @@ class GenericObject(object):
             return "updated"
         else:
             self.pre_save_new_cb()
-
             result = db.set(self.key, self._properties)
-            self.post_save_new_cb(db)
+            self.post_save_new_cb()
             db.sync_up()
 
         if self.use_cas:
@@ -319,6 +322,7 @@ class GenericObject(object):
         if "_rev" in doc.keys():
             del doc["_rev"]
 
+
         correctCls = fam.namespaces.get_class(doc.get(NAMESPACE_STR), doc.get("type"))
         if correctCls is None:
             raise Exception("couldn't find class %s" % doc.get("type"))
@@ -343,7 +347,7 @@ class GenericObject(object):
     def pre_save_new_cb(self):
         pass
     
-    def post_save_new_cb(self, db):
+    def post_save_new_cb(self):
         pass
 
     def pre_save_update_cb(self, old_properties):

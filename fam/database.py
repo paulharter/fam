@@ -9,6 +9,8 @@ from fam import couchbase_utils
 
 import requests
 
+
+
 import time
 
 
@@ -20,6 +22,7 @@ class ResultWrapper(object):
         del d["_id"]
         del d["_rev"]
         self.value = d
+
 
 
 class CouchbaseLiteServerWrapper(object):
@@ -64,9 +67,13 @@ class CouchbaseLiteServerWrapper(object):
                 raise Exception("Unknown Error creating CBLite database: %s" % rsp.status_code)
 
 
+
+
+
     def get(self, key):
 
         rsp = requests.get("%s/%s/%s" % (self.db_url, self.db_name, key))
+        print "getting", rsp.json()
 
         if rsp.status_code == 200:
             return ResultWrapper(rsp.json())
@@ -86,6 +93,7 @@ class CouchbaseLiteServerWrapper(object):
         rsp = requests.post("%s/%s" % (self.db_url, self.db_name), data=json.dumps(value), headers={"Content-Type": "application/json"})
 
         if rsp.status_code == 200 or rsp.status_code == 201:
+
             value["_rev"] = rsp.json()["rev"]
             return ResultWrapper(value)
         else:
@@ -156,13 +164,19 @@ class CouchbaseLiteServerWrapper(object):
 
 
 
+
+
+
 class CouchDBWrapper(object):
 
     def __init__(self, db_url, db_name, reset=False, remote_url=None):
 
+        print db_url, db_name
+
         self.remote_url = remote_url
         self.db_name = db_name
         self.server = couchdb.Server(db_url)
+        self.db_url = db_url
 
         if reset:
             try:
@@ -189,7 +203,6 @@ class CouchDBWrapper(object):
             except couchdb.ResourceNotFound:
                 return None
 
-
     def set(self, key, value, cas=None):
         if cas:
             value["_rev"] = cas
@@ -210,6 +223,7 @@ class CouchDBWrapper(object):
     def sync_up(self):
         if self.remote_url is not None:
             try:
+                print "sync up"
                 self.server.replicate(self.db_name, self.remote_url)
             except couchdb.ServerError, e:
                 print "remote url: ", self.remote_url
@@ -223,14 +237,102 @@ class CouchDBWrapper(object):
         if self.remote_url is not None:
             self.server.replicate(self.remote_url, self.db_name)
 
-    def __getattr__(self, name):
-        return getattr(self.db, name)
 
+    def changes(self, since=None, channels=None, limit=None):
+
+        url = "%s/%s/_changes" % (self.db_url, self.db_name)
+
+        params = {"include_docs":"true"}
+
+        if since is not None:
+            params["since"] = since
+
+        if channels is not None:
+            params["filter"] = "sync_gateway/bychannel"
+            params["channels"] = ",".join(channels)
+
+        if limit is not None:
+            params["limit"] = limit
+
+        rsp = requests.get(url, params=params)
+
+        if rsp.status_code == 200:
+            as_dict = rsp.json()
+            return as_dict
+
+        if rsp.status_code == 404:
+            return None
+
+        raise Exception("Unknown Error getting CBLite doc: %s %s" % (rsp.status_code, rsp.text))
+
+
+    # def __getattr__(self, name):
+    #     return getattr(self.db, name)
+
+
+class SyncGatewayWrapper(CouchbaseLiteServerWrapper):
+
+
+    def __init__(self, db_url):
+
+
+        self.remote_url = None
+        self.db_name = "sync_gateway"
+        self.db_url = db_url
+
+
+
+    def set(self, key, value, cas=None):
+
+        value["_id"] = key
+        if cas:
+            value["_rev"] = cas
+
+        url = "%s/%s/%s" % (self.db_url, self.db_name, key)
+        print "set: ", url
+
+        rsp = requests.put(url, data=json.dumps(value), headers={"Content-Type": "application/json"})
+
+        if rsp.status_code == 200 or rsp.status_code == 201:
+            print rsp.json()
+            value["_rev"] = rsp.json()["rev"]
+            return ResultWrapper(value)
+        else:
+            raise Exception("Unknown Error setting CBLite doc: %s %s" % (rsp.status_code, rsp.text))
+
+
+
+    def changes(self, since=None, channels=None, limit=None):
+
+        url = "%s/%s/_changes" % (self.db_url, self.db_name)
+
+        params = {"include_docs":"true"}
+
+        if since is not None:
+            params["since"] = since
+
+        if channels is not None:
+            params["filter"] = "sync_gateway/bychannel"
+            params["channels"] = ",".join(channels)
+
+        if limit is not None:
+            params["limit"] = limit
+
+        rsp = requests.get(url, params=params)
+
+        if rsp.status_code == 200:
+            as_dict = rsp.json()
+            return as_dict
+
+        if rsp.status_code == 404:
+            return None
+
+        raise Exception("Unknown Error getting CBLite doc: %s %s" % (rsp.status_code, rsp.text))
 
 
 class CouchbaseWrapper(object):
 
-    def __init__(self, host, port, db_name, user_name, password, reset=False):
+    def __init__(self, host, port, db_name, user_name, password, reset=False, namespaces=True):
 
         print "*****  CouchbaseWrapper  ********"
 
@@ -243,7 +345,8 @@ class CouchbaseWrapper(object):
                 couchbase_utils.make_a_bucket(db_url, user_name, password, db_name, force=True, flush=True)
                 time.sleep(2)
 
-        namespaces.update_designs_couchbase(db_name, host)
+        if namespaces:
+            namespaces.update_designs_couchbase(db_name, host)
 
         self.db = Couchbase.connect(bucket=db_name, host=host)
 
