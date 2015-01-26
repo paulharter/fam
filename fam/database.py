@@ -67,13 +67,9 @@ class CouchbaseLiteServerWrapper(object):
                 raise Exception("Unknown Error creating CBLite database: %s" % rsp.status_code)
 
 
-
-
-
     def get(self, key):
 
         rsp = requests.get("%s/%s/%s" % (self.db_url, self.db_name, key))
-        print "getting", rsp.json()
 
         if rsp.status_code == 200:
             return ResultWrapper(rsp.json())
@@ -155,7 +151,6 @@ class CouchbaseLiteServerWrapper(object):
 
             if rsp.status_code == 200:
                 return
-
             raise Exception("Unknown Error syncing down CBLite: %s %s" % (rsp.status_code, rsp.text))
 
 
@@ -163,32 +158,29 @@ class CouchbaseLiteServerWrapper(object):
         return self.get(name)
 
 
-
-
-
-
 class CouchDBWrapper(object):
 
-    def __init__(self, db_url, db_name, reset=False, remote_url=None):
+    def __init__(self, db_url, db_name, reset=False, remote_url=None, admin_url=None):
 
-        print db_url, db_name
+        self.admin_url = db_url if admin_url is None else admin_url
 
         self.remote_url = remote_url
         self.db_name = db_name
         self.server = couchdb.Server(db_url)
+        self.admin_server = couchdb.Server(self.admin_url)
         self.db_url = db_url
 
         if reset:
             try:
-                self.server.delete(db_name)
+                self.admin_server.delete(db_name)
             except couchdb.http.ResourceNotFound:
                 pass
 
         try:
-            self.db = self.server[db_name]
+            self.db = self.admin_server[db_name]
         except couchdb.ResourceNotFound:
-            self.db = self.server.create(db_name)
-            namespaces.update_designs(db_url)
+            self.db = self.admin_server.create(db_name)
+            namespaces.update_designs(admin_url)
 
     def get(self, key):
         try:
@@ -223,7 +215,6 @@ class CouchDBWrapper(object):
     def sync_up(self):
         if self.remote_url is not None:
             try:
-                print "sync up"
                 self.server.replicate(self.db_name, self.remote_url)
             except couchdb.ServerError, e:
                 print "remote url: ", self.remote_url
@@ -231,7 +222,6 @@ class CouchDBWrapper(object):
             except Exception, e:
                 print "remote url: ", self.remote_url
                 print e
-
 
     def sync_down(self):
         if self.remote_url is not None:
@@ -388,5 +378,5 @@ class CouchbaseWrapper(object):
 
 
 
-def get_db_connection(db_url, db_name, reset=False, remote_url=None):
-    return CouchDBWrapper(db_url, db_name, reset, remote_url)
+def get_db_connection(db_url, db_name, reset=False, remote_url=None, admin_url=None):
+    return CouchDBWrapper(db_url, db_name, reset, remote_url, admin_url)

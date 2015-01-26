@@ -107,12 +107,11 @@ def add_person_to_gateway(sync_admin_url, db_name, user_id, username, password):
     if sync_admin_url is None:
         return
 
-    print "adding ", username
+    print "adding user", username
 
     attrs = {
          "password": password,
-         "admin_roles": [user_id,],
-         # "admin_channels": ["public", "iPad"]
+         "admin_roles": [user_id,]
         }
 
     rsp = requests.put("%s/%s/_user/%s" % (sync_admin_url, db_name, username), data=json.dumps(attrs))
