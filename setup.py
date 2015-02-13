@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(name='fam',
     version='0.1',
-    description=’Simple Python relational ORM for CouchDB and Couchbase’,
+    description="Simple Python relational ORM for CouchDB and Couchbase",
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Natural Language :: English',
