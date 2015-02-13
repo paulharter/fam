@@ -3,7 +3,7 @@ CBLITE_URL = "http://localhost:59840"
 CBLITE_NAME = "test"
 
 
-COUCHDB_URL = "http://localhost:5984/"
+COUCHDB_URL = "http://localhost:5984"
 COUCHDB_NAME = "test"
 COUCHDB_NAME2 = "test2"
 

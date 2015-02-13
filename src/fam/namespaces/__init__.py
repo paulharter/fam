@@ -7,10 +7,6 @@ import requests
 import json
 from fam.blud import GenericObject, ReferenceFrom, ReferenceTo
 
-
-#this does some juju on import to create module lookups for SPACES and CLASSES
-#you shouldn't need to edit this
-
 SPACES = {}
 CLASSES = {}
 ALL_CLASSES = {}
@@ -40,8 +36,6 @@ def validate_class(cls):
         if isinstance(field, ReferenceTo):
             if not name.endswith("_id"):
                 raise Exception("ReferenceTo fields must have names ending with _id")
-
-
         
 def add_models(modulename, modelsfolder):
 
@@ -151,9 +145,6 @@ def update_designs_couchbase(db_name, host):
 
 def update_cblite_designs(db_name, db_url):
 
-        print "****** update_cblite_designs *********"
-        print db_name, db_url
-
         allid = "_design/raw"
 
         views = {"all":
@@ -190,7 +181,6 @@ def update_cblite_designs(db_name, db_url):
         for ns in SPACES:
             viewnamespace = ns.replace("/", "_")
             id = "_design/%s" % viewnamespace
-
             rsp = requests.get("%s/%s/%s" % (db_url, db_name, id))
 
             if rsp.status_code == 200:
@@ -202,8 +192,6 @@ def update_cblite_designs(db_name, db_url):
             attrs = _get_design(ns, rev)
             attrs["_id"] = id
 
-            # print attrs
-
             rsp = requests.post("%s/%s" % (db_url, db_name), data=json.dumps(attrs), headers={"Content-Type": "application/json"})
 
             if not(rsp.status_code == 200 or rsp.status_code == 201):
@@ -211,74 +199,72 @@ def update_cblite_designs(db_name, db_url):
 
 
 
+#
+# def update_designs(dburl):
+#     """
+#     This writes into the given database a view for each of the ReferenceFrom fields in each namespace. Each namespace gets its own _design doc to hold these views
+#     this doc COULD potentially hold couchdb validation too
+#     these views are then used by model.add_collection
+#     """
+#
+#     server = couchdb.Server(dburl)
+#
+#     for dbname in server:
+#         if not dbname.startswith("_"):
+#             db = server[dbname]
+#             allid = "_design/raw"
+#
+#             views = {"all":
+#                     {"map" : '''function(doc) {
+#                     emit(doc.type, doc);
+#                 }'''}
+#                 }
+#
+#
+#             for ns in SPACES:
+#                 space = CLASSES.get(ns)
+#                 for _classname, cls in space.iteritems():
+#
+#                     views.update(cls.views)
+#
+#
+#             newalldesign = {"views": views}
+#
+#
+#             alldesign = db.get(allid)
+#             if alldesign:
+#                 newalldesign["_rev"] = alldesign["_rev"]
+#             db[allid] = newalldesign
+#
+#             for ns in SPACES:
+#                 viewnamespace = ns.replace("/", "_")
+#                 id = "_design/%s" % viewnamespace
+#                 design = db.get(id)
+#                 if design:
+#                     rev = design["_rev"]
+#                 else:
+#                     rev = None
+#                 db[id] = _get_design(ns, rev)
 
-def update_designs(dburl):
-    """
-    This writes into the given database a view for each of the ReferenceFrom fields in each namespace. Each namespace gets its own _design doc to hold these views
-    this doc COULD potentially hold couchdb validation too
-    these views are then used by model.add_collection
-    """
-
-    server = couchdb.Server(dburl)
-
-    for dbname in server:
-        if not dbname.startswith("_"):
-            db = server[dbname]
-            allid = "_design/raw"
-            
-            views = {"all":
-                    {"map" : '''function(doc) {
-                    emit(doc.type, doc);
-                }'''}
-                }
 
 
-            for ns in SPACES:
-                space = CLASSES.get(ns)
-                for _classname, cls in space.iteritems():
-
-                    views.update(cls.views)
-
-
-            newalldesign = {"views": views}
-
-            
-            alldesign = db.get(allid)
-            if alldesign:
-                newalldesign["_rev"] = alldesign["_rev"]
-            db[allid] = newalldesign
-
-            for ns in SPACES:
-                viewnamespace = ns.replace("/", "_")
-                id = "_design/%s" % viewnamespace
-                design = db.get(id)
-                if design:
-                    rev = design["_rev"]
-                else:
-                    rev = None
-                db[id] = _get_design(ns, rev)
-        
- 
-
-    
 def _get_design(namespace, rev):
-    
+
     space = CLASSES.get(namespace)
     views = {}
-    
+
     for classname, cls in space.iteritems():
         for fieldname, field in cls.fields.iteritems():
             if isinstance(field, ReferenceFrom):
                 views["%s_%s" % (classname, fieldname)] = {"map" : _get_fk_map(field.refcls, field.refns, field.fkey)}
-                
+
         views.update(cls.views)
-                
     design = {
        "views": views
     }
-    
+
     if rev is not None:
-        design["_rev"] = rev 
-    
+        design["_rev"] = rev
+
     return design
-    
+
