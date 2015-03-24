@@ -185,9 +185,8 @@ class GenericObject(object):
 
     @classmethod
     def changes(cls, db, since=None, channels=None, limit=None):
-        results =  db.changes(since=since, channels=channels, limit=limit)
-        last_seq = results.get("last_seq")
-        objects = [GenericObject._from_doc(db, r["doc"]["_id"], r["doc"]["_rev"], r["doc"]) for r in results.get("results") if r["doc"].get("type") is not None]
+        last_seq, rows  =  db.changes(since=since, channels=channels, limit=limit)
+        objects = [GenericObject._from_doc(db, row.key, row.cas, row.value) for row in rows]
         return last_seq, objects
 
     def _get_namespace(self):
@@ -322,7 +321,6 @@ class GenericObject(object):
         if "_rev" in doc.keys():
             del doc["_rev"]
 
-
         correctCls = fam.namespaces.get_class(doc.get(NAMESPACE_STR), doc.get("type"))
         if correctCls is None:
             raise Exception("couldn't find class %s" % doc.get("type"))
@@ -342,7 +340,6 @@ class GenericObject(object):
         doc["type"] = as_json["type"]
 
         return cls._from_doc(db, key, cas, doc)
-
 
     def pre_save_new_cb(self):
         pass
@@ -365,7 +362,7 @@ class GenericObject(object):
     @classmethod
     def _query_view(cls, db, view_name, key):
         rows =  db.view(view_name, key)
-        return [GenericObject._from_doc(db, *row) for row in rows]
+        return [GenericObject._from_doc(db, row.key, row.cas, row.value) for row in rows]
 
     def __getattr__(self, name):
         ref = self.__class__.fields.get(name)

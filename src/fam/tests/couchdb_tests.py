@@ -8,8 +8,6 @@ from fam import namespaces
 
 namespaces.add_models("fam.tests", os.path.join(os.path.dirname(__file__), "models"))
 
-namespaces.add_models("fam.tests", os.path.join(os.path.dirname(__file__), "models"))
-
 class CouchDBModelTests(unittest.TestCase):
 
 

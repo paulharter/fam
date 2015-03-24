@@ -1,28 +1,50 @@
-import couchdb
 import json
-from couchbase.exceptions import NotFoundError
-from couchbase import Couchbase
-from couchbase.views.params import Query
-from couchbase.views.iterator import View
-import namespaces
-from fam import couchbase_utils
-
+from copy import deepcopy
+import fam.namespaces as namespaces
 import requests
-
-import time
 
 
 class ResultWrapper(object):
 
-    def __init__(self, d):
-        self.key = d["_id"]
-        self.cas = d["_rev"]
-        del d["_id"]
-        del d["_rev"]
-        self.value = d
+    def __init__(self, key, cas, value):
+        self.key = key
+        self.cas = cas
+        self.value = value
+
+    @classmethod
+    def from_couchdb_json(cls, as_json):
+        key = as_json["_id"]
+        rev = as_json.get("_rev")
+        if rev is not None:
+            cas = rev
+            del as_json["_rev"]
+        else:
+            cas = None
+        del as_json["_id"]
+        value = as_json
+        return cls(key, cas, value)
+
+    @classmethod
+    def from_couchdb_view_json(cls, as_json):
+        key = as_json["id"]
+        cas = as_json["value"]["_rev"]
+        value = deepcopy(as_json["value"])
+        del value["_id"]
+        del value["_rev"]
+        return cls(key, cas, value)
+
+    @classmethod
+    def from_gateway_view_json(cls, as_json):
+        key = as_json["id"]
+        cas = as_json["value"]["_sync"]["rev"]
+        value = deepcopy(as_json["value"])
+        del value["_sync"]
+        return cls(key, cas, value)
 
 
 class CouchDBWrapper(object):
+
+    VIEW_URL = "%s/%s/_design/%s/_view/%s?key=\"%s\""
 
     def __init__(self, db_url, db_name, reset=False, remote_url=None):
         self.remote_url = remote_url
@@ -32,7 +54,6 @@ class CouchDBWrapper(object):
         url = "%s/%s" % (db_url, db_name)
 
         if reset:
-
             rsp = requests.get(url)
             if rsp.status_code == 200:
                 rsp = requests.delete("%s/%s" % (db_url, db_name))
@@ -52,7 +73,7 @@ class CouchDBWrapper(object):
             if rsp.status_code == 400:
                 raise Exception("Error creating CB database: 400 Bad Request")
             if rsp.status_code == 201:
-                namespaces.update_cblite_designs(db_name, db_url)
+                namespaces.update_designs_in_db(self)
             if not(rsp.status_code == 201 or rsp.status_code == 412):
                 raise Exception("Unknown Error creating cb database: %s" % rsp.status_code)
 
@@ -61,7 +82,7 @@ class CouchDBWrapper(object):
 
         rsp = requests.get("%s/%s/%s" % (self.db_url, self.db_name, key))
         if rsp.status_code == 200:
-            return ResultWrapper(rsp.json())
+            return ResultWrapper.from_couchdb_json(rsp.json())
         if rsp.status_code == 404:
             return None
         raise Exception("Unknown Error getting cb doc: %s %s" % (rsp.status_code, rsp.text))
@@ -74,23 +95,13 @@ class CouchDBWrapper(object):
             value["_rev"] = cas
 
         url = "%s/%s/%s" % (self.db_url, self.db_name, key)
-        rsp = requests.put(url, data=json.dumps(value), headers={"Content-Type": "application/json"})
+        rsp = requests.put(url, data=json.dumps(value), headers={"Content-Type": "application/json", "Accept": "application/json"})
         if rsp.status_code == 200 or rsp.status_code == 201:
-            value["_rev"] = rsp.json()["rev"]
-            return ResultWrapper(value)
+            if rsp.content:
+                value["_rev"] = rsp.json()["rev"]
+            return ResultWrapper.from_couchdb_json(value)
         else:
             raise Exception("Unknown Error setting CBLite doc: %s %s" % (rsp.status_code, rsp.text))
-
-        #  what happened to using post to create documents in the sync gateway??
-        # value["_id"] = key
-        # if cas:
-        #     value["_rev"] = cas
-        # rsp = requests.post("%s/%s" % (self.db_url, self.db_name), data=json.dumps(value), headers={"Content-Type": "application/json"})
-        # if rsp.status_code == 200 or rsp.status_code == 201:
-        #     value["_rev"] = rsp.json()["rev"]
-        #     return ResultWrapper(value)
-        # else:
-        #     raise Exception("Unknown Error setting cb doc: %s %s" % (rsp.status_code, rsp.text))
 
 
     def delete(self, key, cas):
@@ -100,17 +111,22 @@ class CouchDBWrapper(object):
         raise Exception("Unknown Error deleting cb doc: %s %s" % (rsp.status_code, rsp.text))
 
 
+    def _wrapper_from_view_json(self, as_json):
+        return ResultWrapper.from_couchdb_view_json(as_json)
+
+
     def view(self, name, key):
 
         design_doc_id, view_name = name.split("/")
-        url = "%s/%s/_design/%s/_view/%s?key=\"%s\"" % (self.db_url, self.db_name, design_doc_id, view_name, key)
+        url = self.VIEW_URL % (self.db_url, self.db_name, design_doc_id, view_name, key)
         rsp = requests.get(url)
+
         if rsp.status_code == 200:
             results = rsp.json()
             rows = results["rows"]
-            return [(row["id"], row["value"]["_rev"], row["value"]) for row in rows]
+            return [self._wrapper_from_view_json(row) for row in rows]
 
-        raise Exception("Unknown Error view cb doc: %s %s" % (rsp.status_code, rsp.text))
+        raise Exception("Unknown Error view cb doc: %s %s %s" % (rsp.status_code, rsp.text, url))
 
 
     def changes(self, since=None, channels=None, limit=None):
@@ -126,10 +142,12 @@ class CouchDBWrapper(object):
             params["limit"] = limit
         rsp = requests.get(url, params=params)
         if rsp.status_code == 200:
-            as_dict = rsp.json()
-            return as_dict
+            results = rsp.json()
+            last_seq = results.get("last_seq")
+            rows = results.get("results")
+            return last_seq, [ResultWrapper.from_couchdb_json(row["doc"]) for row in rows if row["doc"].get("type") is not None]
         if rsp.status_code == 404:
-            return None
+            return None, None
 
         raise Exception("Unknown Error getting CB doc: %s %s" % (rsp.status_code, rsp.text))
 
@@ -139,7 +157,11 @@ class CouchDBWrapper(object):
             attrs = {"create_target": False,
                      "source": self.db_name,
                      "target": self.remote_url}
-            rsp = requests.post("%s/_replicate" % self.db_url, data=json.dumps(attrs), headers={"Content-Type": "application/json"})
+
+            headers = {"Content-Type": "application/json",
+                       }
+
+            rsp = requests.post("%s/_replicate" % self.db_url, data=json.dumps(attrs), headers=headers)
             if rsp.status_code == 200:
                 return
             raise Exception("Unknown Error syncing up CBLite: %s %s" % (rsp.status_code, rsp.text))
@@ -152,7 +174,7 @@ class CouchDBWrapper(object):
                      "source": self.remote_url,
                      "target": self.db_name}
 
-            rsp = requests.post("%s/_replicate" % self.db_url, data=json.dumps(attrs), headers={"Content-Type": "application/json"})
+            rsp = requests.post("%s/_replicate" % self.db_name, data=json.dumps(attrs), headers={"Content-Type": "application/json"})
             if rsp.status_code == 200:
                 return
             raise Exception("Unknown Error syncing down CBLite: %s %s" % (rsp.status_code, rsp.text))
@@ -161,57 +183,3 @@ class CouchDBWrapper(object):
         return self.get(name)
 
 
-
-class CouchbaseWrapper(object):
-
-    def __init__(self, host, port, db_name, user_name, password, reset=False, namespaces=True):
-
-        print "*****  CouchbaseWrapper  ********"
-
-        db_url = "http://%s:%s" % (host, port)
-        if reset:
-            try:
-                couchbase_utils.flush_a_bucket(db_url, user_name, password, db_name)
-            except Exception:
-                couchbase_utils.make_a_bucket(db_url, user_name, password, db_name, force=True, flush=True)
-                time.sleep(2)
-        if namespaces:
-            namespaces.update_designs_couchbase(db_name, host)
-
-        self.db = Couchbase.connect(bucket=db_name, host=host)
-
-
-    def get(self, key):
-        try:
-            return self.db.get(key)
-        except NotFoundError:
-            return None
-
-
-    def set(self, key, value, cas=0):
-        return self.db.set(key, value, cas)
-
-    def delete(self, key, cas):
-        return self.db.delete(key, cas)
-
-    def view(self, name, key):
-        design, view = name.split("/")
-
-        q = Query(
-            stale=False,
-            inclusive_end=True,
-            mapkey_range=[key]
-        )
-
-        view = View(self.db, design, view, query=q)
-        return [(row.docid, None, row.value) for row in view]
-
-
-    def query(self, *attr, **kwargs):
-        return self.db.query(*attr, **kwargs)
-
-    def __getattr__(self, name):
-        return getattr(self.db, name)
-
-    def sync_up(self):
-        return

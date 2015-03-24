@@ -1,10 +1,6 @@
 import inspect
-import couchdb
-from couchbase import Couchbase
-from couchbase.exceptions import NotFoundError, HTTPError
 import os
-import requests
-import json
+
 from fam.blud import GenericObject, ReferenceFrom, ReferenceTo
 
 SPACES = {}
@@ -79,6 +75,7 @@ def get_class_from_route(route):
 def get_class(namespace, resource):
     
     space = CLASSES.get(namespace)
+
     if space is None: 
         print 'failed to find class', namespace, resource
         return None
@@ -130,7 +127,7 @@ def update_designs_couchbase(db_name, host):
     db.design_create("raw", newalldesign, use_devmode=False)
 
     for ns in SPACES:
-        new_design = _get_design(ns, None)
+        new_design = _get_design(ns)
         design_name = ns.replace("/", "_")
 
         try:
@@ -143,7 +140,7 @@ def update_designs_couchbase(db_name, host):
 
 
 
-def update_cblite_designs(db_name, db_url):
+def update_designs_in_db(db):
 
         allid = "_design/raw"
 
@@ -162,93 +159,72 @@ def update_cblite_designs(db_name, db_url):
         newalldesign = {"views": views}
         newalldesign["_id"] = allid
 
-        rsp = requests.get("%s/%s/%s" % (db_url, db_name, allid))
-
-        if rsp.status_code == 200:
-            alldesign = rsp.json()
-            newalldesign["_rev"] = alldesign["_rev"]
-
-        if not(rsp.status_code == 404 or rsp.status_code == 200):
-            raise Exception("Unknown Error update_cblite_designs: %s %s" % (rsp.status_code, rsp.text))
-
-
-        rsp = requests.post("%s/%s" % (db_url, db_name), data=json.dumps(newalldesign), headers={"Content-Type": "application/json"})
-
-        if not(rsp.status_code == 200 or rsp.status_code == 201):
-            raise Exception("Unknown Error update_cblite_designs: %s %s" % (rsp.status_code, rsp.text))
-
+        db.set(allid, newalldesign)
 
         for ns in SPACES:
             viewnamespace = ns.replace("/", "_")
             id = "_design/%s" % viewnamespace
-            rsp = requests.get("%s/%s/%s" % (db_url, db_name, id))
-
-            if rsp.status_code == 200:
-                design = rsp.json()
-                rev = design["_rev"]
-            else:
-                rev = None
-
-            attrs = _get_design(ns, rev)
+            attrs = _get_design(ns)
             attrs["_id"] = id
-
-            rsp = requests.post("%s/%s" % (db_url, db_name), data=json.dumps(attrs), headers={"Content-Type": "application/json"})
-
-            if not(rsp.status_code == 200 or rsp.status_code == 201):
-                raise Exception("Unknown Error update_cblite_designs: %s %s" % (rsp.status_code, rsp.text))
-
-
+            db.set(id, attrs)
 
 #
-# def update_designs(dburl):
-#     """
-#     This writes into the given database a view for each of the ReferenceFrom fields in each namespace. Each namespace gets its own _design doc to hold these views
-#     this doc COULD potentially hold couchdb validation too
-#     these views are then used by model.add_collection
-#     """
+# def update_designs(db_name, db_url):
 #
-#     server = couchdb.Server(dburl)
+#         allid = "_design/raw"
 #
-#     for dbname in server:
-#         if not dbname.startswith("_"):
-#             db = server[dbname]
-#             allid = "_design/raw"
+#         views = {"all":
+#                 {"map" : '''function(doc) {
+#                 emit(doc.type, doc);
+#             }'''}
+#             }
 #
-#             views = {"all":
-#                     {"map" : '''function(doc) {
-#                     emit(doc.type, doc);
-#                 }'''}
-#                 }
+#         for ns in SPACES:
+#             space = CLASSES.get(ns)
+#             for _classname, cls in space.iteritems():
 #
+#                 views.update(cls.views)
 #
-#             for ns in SPACES:
-#                 space = CLASSES.get(ns)
-#                 for _classname, cls in space.iteritems():
+#         newalldesign = {"views": views}
+#         newalldesign["_id"] = allid
 #
-#                     views.update(cls.views)
+#         rsp = requests.get("%s/%s/%s" % (db_url, db_name, allid))
+#
+#         if rsp.status_code == 200:
+#             alldesign = rsp.json()
+#             newalldesign["_rev"] = alldesign["_rev"]
 #
 #
-#             newalldesign = {"views": views}
+#         rsp = requests.put("%s/%s/%s" % (db_url, db_name, allid), data=json.dumps(newalldesign), headers={"Content-Type": "application/json"})
+#
+#         if not(rsp.status_code == 200 or rsp.status_code == 201):
+#             raise Exception("Unknown Error update_cblite_designs: %s %s" % (rsp.status_code, rsp.text))
 #
 #
-#             alldesign = db.get(allid)
-#             if alldesign:
-#                 newalldesign["_rev"] = alldesign["_rev"]
-#             db[allid] = newalldesign
+#         for ns in SPACES:
+#             viewnamespace = ns.replace("/", "_")
+#             id = "_design/%s" % viewnamespace
+#             rsp = requests.get("%s/%s/%s" % (db_url, db_name, id))
 #
-#             for ns in SPACES:
-#                 viewnamespace = ns.replace("/", "_")
-#                 id = "_design/%s" % viewnamespace
-#                 design = db.get(id)
-#                 if design:
-#                     rev = design["_rev"]
-#                 else:
-#                     rev = None
-#                 db[id] = _get_design(ns, rev)
+#             if rsp.status_code == 200:
+#                 design = rsp.json()
+#                 rev = design["_rev"]
+#             else:
+#                 rev = None
+#
+#             attrs = _get_design(ns, rev)
+#             attrs["_id"] = id
+#
+#             url = "%s/%s" % (db_url, db_name)
+#
+#             rsp = requests.post(url, data=json.dumps(attrs), headers={"Content-Type": "application/json"})
+#
+#             if not(rsp.status_code == 200 or rsp.status_code == 201):
+#                 raise Exception("Unknown Error update_cblite_designs: %s %s" % (rsp.status_code, rsp.text))
+#
 
 
-
-def _get_design(namespace, rev):
+def _get_design(namespace):
 
     space = CLASSES.get(namespace)
     views = {}
@@ -262,9 +238,6 @@ def _get_design(namespace, rev):
     design = {
        "views": views
     }
-
-    if rev is not None:
-        design["_rev"] = rev
 
     return design
 
