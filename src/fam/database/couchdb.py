@@ -1,7 +1,7 @@
 import json
 from copy import deepcopy
 import fam.namespaces as namespaces
-import requests
+from fam.utils import requests_shim as requests
 
 
 class ResultWrapper(object):

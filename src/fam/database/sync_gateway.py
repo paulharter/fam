@@ -1,5 +1,5 @@
 import fam.namespaces as namespaces
-import requests
+from fam.utils import requests_shim as requests
 
 from .couchdb import CouchDBWrapper, ResultWrapper
 
