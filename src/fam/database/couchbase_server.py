@@ -1,18 +1,19 @@
 
-from couchbase.exceptions import NotFoundError
+from couchbase.exceptions import NotFoundError, HTTPError
 from couchbase import Couchbase
 from couchbase.views.params import Query
 from couchbase.views.iterator import View
 import fam.namespaces as namespaces
-from fam import couchbase_utils
+from fam.utils import couchbase_utils
+from fam.database.base import BaseDatabase
 
 import time
 
-class CouchbaseWrapper(object):
+class CouchbaseWrapper(BaseDatabase):
 
-    def __init__(self, host, port, db_name, user_name, password, reset=False, ns=True):
+    def __init__(self, mapper, host, port, db_name, user_name, password, reset=False, ns=True):
 
-        print "*****  CouchbaseWrapper  ********"
+        self.mapper = mapper
 
         db_url = "http://%s:%s" % (host, port)
         if reset:
@@ -61,3 +62,33 @@ class CouchbaseWrapper(object):
 
     def sync_up(self):
         return
+
+    def update_designs(self):
+
+        design_doc = {
+            "views": {
+                "all": {
+                    "map": "function(doc) {emit(doc.type, doc);}"
+                }
+            }
+        }
+
+        try:
+            old_design = self.db.design_get("raw")
+            design_doc["cas"] = old_design["cas"]
+        except HTTPError:
+            pass
+
+        self.db.design_create("raw", design_doc, use_devmode=False)
+
+        for namespace_name, namespace in self.mapper.namespaces.iteritems():
+            new_design = self._get_design(namespace)
+            design_name = namespace_name.replace("/", "_")
+
+            try:
+                old_design = self.db.design_get(design_name)
+                new_design["cas"] = old_design["cas"]
+            except HTTPError:
+                pass
+
+            self.db.design_create(design_name, new_design, use_devmode=False)

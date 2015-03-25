@@ -44,9 +44,3 @@ class Person(GenericObject):
         "dogs": ReferenceFrom(NAMESPACE, "dog", "owner_id")
         }
 
-
-routes = {"cat":Cat,
-      "dog":Dog,
-      "person":Person,
-      }
-

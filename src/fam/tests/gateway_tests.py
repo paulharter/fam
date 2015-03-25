@@ -5,16 +5,17 @@ import time
 from fam.database import SyncGatewayWrapper
 from config import *
 from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell, NAMESPACE
-from fam import namespaces
-
-namespaces.add_models("fam.tests", os.path.join(os.path.dirname(__file__), "models"))
+from fam.mapper import ClassMapper
 
 class CouchDBModelTests(unittest.TestCase):
 
     def setUp(self):
 
+        mapper = ClassMapper([Dog, Cat, Person, JackRussell])
         url = "http://%s:%s" % (SYNC_GATEWAY_HOST, SYNC_GATEWAY_ADMIN_PORT)
-        self.db = SyncGatewayWrapper(url, SYNC_GATEWAY_NAME)
+        self.db = SyncGatewayWrapper(mapper, url, SYNC_GATEWAY_NAME)
+        self.db.update_designs()
+
 
     def tearDown(self):
         pass

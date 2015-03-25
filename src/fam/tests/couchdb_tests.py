@@ -1,18 +1,17 @@
 import os
 import unittest
-
 from fam.database import CouchDBWrapper
+from fam.mapper import ClassMapper
 from config import *
 from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell, NAMESPACE
-from fam import namespaces
-
-namespaces.add_models("fam.tests", os.path.join(os.path.dirname(__file__), "models"))
 
 class CouchDBModelTests(unittest.TestCase):
 
 
     def setUp(self):
-        self.db = CouchDBWrapper(COUCHDB_URL, COUCHDB_NAME, reset=True)
+        mapper = ClassMapper([Dog, Cat, Person, JackRussell])
+        self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True)
+        self.db.update_designs()
 
     def tearDown(self):
         pass
@@ -74,7 +73,6 @@ class CouchDBModelTests(unittest.TestCase):
         cat.save(self.db)
         self.assertEqual(cat.owner, paul)
         self.assertEqual(cat.owner.name, "paul")
-
 
 
     def test_ref_from(self):
@@ -190,6 +188,7 @@ class CouchDBModelTests(unittest.TestCase):
         last_seq, objects = GenericObject.changes(self.db, since=last_seq)
         self.assertEqual(len(objects), 1)
         self.assertEqual(objects[0], dog2)
+
 
     def test_changes_limit(self):
         dog = Dog(name="fly")

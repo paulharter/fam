@@ -11,7 +11,6 @@ class CreationException(Exception):pass
 class UpdateException(Exception):pass
 
 
-
 class Field(object):
     
     object = "base"
@@ -127,7 +126,7 @@ def current_xml_time():
 
 ## this provides a class based wrapper
 
-class GenericMetaclass(type): 
+class GenericMetaclass(type):
 
     def __new__(cls, name, bases, dct):
         attrs = dct.copy()
@@ -152,7 +151,7 @@ class GenericObject(object):
     use_cas = False
     __metaclass__ = GenericMetaclass
     fields = {}
-    views = {}
+    # views = {}
 
 
     def __init__(self, key=None, cas=None, **kwargs):
@@ -321,7 +320,8 @@ class GenericObject(object):
         if "_rev" in doc.keys():
             del doc["_rev"]
 
-        correctCls = fam.namespaces.get_class(doc.get(NAMESPACE_STR), doc.get("type"))
+        correctCls = db.class_for_type_name(doc.get("type"), doc.get("namespace"))
+
         if correctCls is None:
             raise Exception("couldn't find class %s" % doc.get("type"))
 
@@ -430,6 +430,3 @@ class GenericObject(object):
     namespace = property(_get_namespace)
     type = property(_get_type)
     properties = property(_get_properties)
-
-
-import fam.namespaces

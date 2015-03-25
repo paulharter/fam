@@ -1,7 +1,8 @@
 import json
 from copy import deepcopy
-import fam.namespaces as namespaces
 from fam.utils import requests_shim as requests
+
+from fam.database.base import BaseDatabase
 
 
 class ResultWrapper(object):
@@ -42,11 +43,14 @@ class ResultWrapper(object):
         return cls(key, cas, value)
 
 
-class CouchDBWrapper(object):
+class CouchDBWrapper(BaseDatabase):
 
     VIEW_URL = "%s/%s/_design/%s/_view/%s?key=\"%s\""
 
-    def __init__(self, db_url, db_name, reset=False, remote_url=None):
+    def __init__(self, mapper, db_url, db_name, reset=False, remote_url=None):
+
+        self.mapper = mapper
+
         self.remote_url = remote_url
         self.db_name = db_name
         self.db_url = db_url
@@ -72,8 +76,6 @@ class CouchDBWrapper(object):
                 raise Exception("Error creating CB database: 401 Unauthorized")
             if rsp.status_code == 400:
                 raise Exception("Error creating CB database: 400 Bad Request")
-            if rsp.status_code == 201:
-                namespaces.update_designs_in_db(self)
             if not(rsp.status_code == 201 or rsp.status_code == 412):
                 raise Exception("Unknown Error creating cb database: %s" % rsp.status_code)
 
@@ -183,3 +185,24 @@ class CouchDBWrapper(object):
         return self.get(name)
 
 
+    def update_designs(self):
+
+        doc_id = "_design/raw"
+
+        design_doc = {
+            "_id": doc_id,
+            "views": {
+                "all": {
+                    "map": "function(doc) {emit(doc.type, doc);}"
+                }
+            }
+        }
+
+        self.set(doc_id, design_doc)
+
+        for namespace_name, namespace in self.mapper.namespaces.iteritems():
+            view_namespace = namespace_name.replace("/", "_")
+            doc_id = "_design/%s" % view_namespace
+            attrs = self._get_design(namespace)
+            attrs["_id"] = doc_id
+            self.set(doc_id, attrs)

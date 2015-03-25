@@ -1,21 +1,17 @@
 import unittest
-import os
-import requests
-import time
-import json
-from fam.database import CouchDBWrapper, CouchbaseWrapper
+
+from fam.database import CouchbaseWrapper
 from config import *
-from fam.tests.models.test01 import GenericObject,  Dog, Cat, Person, JackRussell, NAMESPACE
-from fam import namespaces
-
-namespaces.add_models("fam.tests", os.path.join(os.path.dirname(__file__), "models"))
-
+from fam.tests.models.test01 import Dog, Cat, Person, JackRussell, NAMESPACE
+from fam.mapper import ClassMapper
 
 class CouchbaseModelTests(unittest.TestCase):
 
 
     def setUp(self):
+        mapper = ClassMapper([Dog, Cat, Person, JackRussell])
         self.db = CouchbaseWrapper(COUCHBASE_HOST, COUCHBASE_PORT, COUCHBASE_BUCKET, COUCHBASE_ADMIN, COUCHBASE_ADMIN_PASSWORD, reset=True)
+        self.db.update_designs()
 
     def tearDown(self):
         pass

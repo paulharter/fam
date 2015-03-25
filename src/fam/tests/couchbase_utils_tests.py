@@ -3,7 +3,7 @@ import requests
 from config import *
 import time
 
-from fam import couchbase_utils
+from fam.utils import couchbase_utils
 
 
 

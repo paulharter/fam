@@ -1,7 +1,15 @@
+"""
+This either imports all of requests or wraps google app engine's urlfetch with requests like syntax
+
+It is far from complete and just does the things I needed at the time
+"""
+
+
 try:
     from requests import *
 except ImportError, e:
     import urllib
+    import json
     from google.appengine.api import urlfetch
     
     class ResponseWrapper(object):
@@ -20,11 +28,16 @@ except ImportError, e:
         @property
         def content(self):
             return self.response.content
+
+        def json(self):
+            return json.loads(self.response.content)
         
         
     def get(url, **kwargs):
         return request("GET", url, **kwargs)
-    
+
+    def put(url, **kwargs):
+        return request("PUT", url, **kwargs)
     
     def post(url, **kwargs):
         return request("POST", url, **kwargs)
@@ -43,7 +56,7 @@ except ImportError, e:
             elif type(data) == type(""):
                 payload = data
             elif hasattr(data, "read"):
-                payload = dats.read()
+                payload = data.read()
             else:
                 payload = None
         else:
@@ -69,7 +82,6 @@ except ImportError, e:
         else:
             validate_certificate = False
         
-        
         resp = urlfetch.fetch(url, 
                               payload=payload, 
                               method=method, 
@@ -79,8 +91,4 @@ except ImportError, e:
                               deadline=deadline, 
                               validate_certificate=validate_certificate)
         
-        
         return ResponseWrapper(resp)
-        
-        
-        
