@@ -6,7 +6,7 @@ Fam is a work in progress growing as the needs of my current project dictate. Th
 
 Fam adds a type and namespace to each document:
 
-- **type** - An all lower case string derived from the class name
+- **type** - A lower case string derived from the class name
 - **namespace** - An opaque string to help avoid class name clashes and allow versioning of classes
 
 And uses them to provide:
@@ -19,7 +19,7 @@ And uses them to provide:
 
 You can define a fam class like this:
 
-"""python
+```python
 
 NAMESPACE = "mynamespace"
 
@@ -34,15 +34,15 @@ class Dog(GenericObject):
     def talk(self):
         return "woof"
 
-"""
+```
 
 and then use it to create a document like this:
 
-"""python
+```python
 dog = Dog(name="fly")
 dog.save(db)
 
-"""
+```
 
 ## databases
 
@@ -56,26 +56,26 @@ These wrapper classes are stateless and thread safe, at least the CouchDB and Sy
  
  To use fam you have to first create a class mapper passing in your classes eg:
  
- """python
+ ```python
  
 from fam.mapper import ClassMapper
  
 mapper = ClassMapper([Dog, Cat, Person])
 
- """
+ ```
  and then create a db wrapper using the mapper, the address of the database and the name of the database/bucket
  
- """python
+ ```python
  
 db = CouchDBWrapper(mapper, database_url, database_name)
  
- """
+ ```
  
  This means that documents accessed though the db will be associated with their relative classes.
  
  You can then write or update the relational design documents in the database from the classes in the mapper like this:
  
- """python
+ ```python
  
 db.update_designs()
  
@@ -88,7 +88,7 @@ db.update_designs()
  Fam classes are defined as inheriting from fam.blud.GenericObject like this:
 
 
- """python 
+ ```python 
  
 class Cat(GenericObject):
     use_cas = True
@@ -99,7 +99,7 @@ class Cat(GenericObject):
         "owner_id": ReferenceTo(NAMESPACE, "person")
         }
  
- """
+ ```
  
  With three class attributes
  
@@ -142,20 +142,20 @@ There are two additional field types that are used to define relationships.
 
 ReferenceTo is really just a string field that is the key of another document. ReferenceTo fields are defined with the namespace and name of the class of the referenced document. 
 
-"""python 
+```python 
 
 "owner_id": ReferenceTo(NAMESPACE, "person")
 
-"""
+```
 
 The name should always end with `_id` , this indicates that it is a reference but it also support fam's lookup of related objects. This allows you to directly access related documents for example dog.owner_id will return the key of the owner document but dog.owner will return an instance of the Owner class for that document.
 
 ReferenceFrom fields are quite different and they have no representation within the json document. Instead they use the automatically created design documents to find a collection of documents with the associated ReferenceTo field. So ReferenceFrom fields only work with as existing ReferenceTo Field. They are defined with the namespace and the class that the reference is from and the name of the ReferenceTo field in that class.
 
-"""python
+```python
 
 "dogs": ReferenceFrom(NAMESPACE, "dog", "owner_id")
 
-"""
+```
 
 This gives way to do one-to-one and one-to-many relationships. In practice I find I tend to model immutable one-to-many relationships internally as lists of keys within documents and mutable ones with fam view lookups. I also create mutable one-to-one and many-to-many relationships with small join documents with compound keys. I also have write extra views by hand for more complex indexing.
