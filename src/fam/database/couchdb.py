@@ -2,7 +2,7 @@ import json
 from copy import deepcopy
 from fam.utils import requests_shim as requests
 
-from fam.database.base import BaseDatabase
+from fam.database.base import BaseDatabase, FamDbAuthException
 
 
 class ResultWrapper(object):
@@ -43,6 +43,15 @@ class ResultWrapper(object):
         return cls(key, cas, value)
 
 
+def auth(func):
+    def func_wrapper(instance, *args, **kwargs):
+        try:
+            return func(instance, *args, **kwargs)
+        except FamDbAuthException:
+            instance.authenticate()
+            return func(instance, *args, **kwargs)
+    return func_wrapper
+
 class CouchDBWrapper(BaseDatabase):
 
     VIEW_URL = "%s/%s/_design/%s/_view/%s?key=\"%s\""
@@ -50,6 +59,7 @@ class CouchDBWrapper(BaseDatabase):
     def __init__(self, mapper, db_url, db_name, reset=False, remote_url=None):
 
         self.mapper = mapper
+        self.cookies = {}
 
         self.remote_url = remote_url
         self.db_name = db_name
@@ -79,14 +89,16 @@ class CouchDBWrapper(BaseDatabase):
             if not(rsp.status_code == 201 or rsp.status_code == 412):
                 raise Exception("Unknown Error creating cb database: %s" % rsp.status_code)
 
-
+    @auth
     def get(self, key):
-
-        rsp = requests.get("%s/%s/%s" % (self.db_url, self.db_name, key))
+        url = "%s/%s/%s" % (self.db_url, self.db_name, key)
+        rsp = requests.get(url)
         if rsp.status_code == 200:
             return ResultWrapper.from_couchdb_json(rsp.json())
         if rsp.status_code == 404:
             return None
+        if rsp.status_code == 401:
+            raise FamDbAuthException(" %s %s" % (rsp.status_code, rsp.text))
         raise Exception("Unknown Error getting cb doc: %s %s" % (rsp.status_code, rsp.text))
 
 
@@ -118,7 +130,6 @@ class CouchDBWrapper(BaseDatabase):
 
 
     def view(self, name, key):
-
         design_doc_id, view_name = name.split("/")
         url = self.VIEW_URL % (self.db_url, self.db_name, design_doc_id, view_name, key)
         rsp = requests.get(url)
@@ -130,9 +141,12 @@ class CouchDBWrapper(BaseDatabase):
 
         raise Exception("Unknown Error view cb doc: %s %s %s" % (rsp.status_code, rsp.text, url))
 
+    def authenticate(self):
+        pass
 
-    def changes(self, since=None, channels=None, limit=None):
 
+    @auth
+    def changes(self, since=None, channels=None, limit=None, feed=None):
         url = "%s/%s/_changes" % (self.db_url, self.db_name)
         params = {"include_docs":"true"}
         if since is not None:
@@ -142,15 +156,20 @@ class CouchDBWrapper(BaseDatabase):
             params["channels"] = ",".join(channels)
         if limit is not None:
             params["limit"] = limit
-        rsp = requests.get(url, params=params)
+        if feed is not None:
+            params["feed"] = feed
+            if feed in ("longpoll", "continuous"):
+                params["timeout"] = 60000
+        rsp = requests.get(url, params=params, cookies=self.cookies)
         if rsp.status_code == 200:
             results = rsp.json()
             last_seq = results.get("last_seq")
             rows = results.get("results")
-            return last_seq, [ResultWrapper.from_couchdb_json(row["doc"]) for row in rows if row["doc"].get("type") is not None]
+            return last_seq, [ResultWrapper.from_couchdb_json(row["doc"]) for row in rows if "doc" in row.keys() and row["doc"].get("type") is not None]
         if rsp.status_code == 404:
             return None, None
-
+        if rsp.status_code == 403:
+            raise FamDbAuthException()
         raise Exception("Unknown Error getting CB doc: %s %s" % (rsp.status_code, rsp.text))
 
 
@@ -166,7 +185,8 @@ class CouchDBWrapper(BaseDatabase):
             rsp = requests.post("%s/_replicate" % self.db_url, data=json.dumps(attrs), headers=headers)
             if rsp.status_code == 200:
                 return
-            raise Exception("Unknown Error syncing up CBLite: %s %s" % (rsp.status_code, rsp.text))
+            print "remote url", self.remote_url
+            raise Exception("Unknown Error syncing up to remote: %s %s" % (rsp.status_code, rsp.text))
 
 
 
@@ -176,10 +196,10 @@ class CouchDBWrapper(BaseDatabase):
                      "source": self.remote_url,
                      "target": self.db_name}
 
-            rsp = requests.post("%s/_replicate" % self.db_name, data=json.dumps(attrs), headers={"Content-Type": "application/json"})
+            rsp = requests.post("%s/_replicate" % self.db_url, data=json.dumps(attrs), headers={"Content-Type": "application/json"})
             if rsp.status_code == 200:
                 return
-            raise Exception("Unknown Error syncing down CBLite: %s %s" % (rsp.status_code, rsp.text))
+            raise Exception("Unknown Error syncing down to remote: %s %s" % (rsp.status_code, rsp.text))
 
     def __getattr__(self, name):
         return self.get(name)
@@ -198,11 +218,13 @@ class CouchDBWrapper(BaseDatabase):
             }
         }
 
-        self.set(doc_id, design_doc)
+        existing = self.get(doc_id)
+        self.set(doc_id, design_doc, cas=existing.cas if existing else None)
 
         for namespace_name, namespace in self.mapper.namespaces.iteritems():
             view_namespace = namespace_name.replace("/", "_")
             doc_id = "_design/%s" % view_namespace
             attrs = self._get_design(namespace)
             attrs["_id"] = doc_id
-            self.set(doc_id, attrs)
+            existing = self.get(doc_id)
+            self.set(doc_id, attrs, cas=existing.cas if existing else None)

@@ -1,5 +1,8 @@
 from fam.blud import ReferenceFrom
 
+class FamDbAuthException(Exception):
+    pass
+
 class BaseDatabase(object):
 
     def class_for_type_name(self, type_name, namespace_name):

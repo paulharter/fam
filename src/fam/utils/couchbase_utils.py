@@ -105,12 +105,6 @@ def delete_a_gateway(sync_admin_url, db_name):
 
 def add_person_to_gateway(sync_admin_url, db_name, user_id, username, password):
 
-    print "sync_admin_url", sync_admin_url
-    print "db_name", db_name
-    print "user_id", user_id
-    print "username", username
-    print "password", password
-
     if sync_admin_url is None:
         return
     attrs = {

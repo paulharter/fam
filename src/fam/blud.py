@@ -2,6 +2,7 @@ import json
 import uuid
 import datetime
 import types
+import sys
 from constants import *
 
 class DbConnectionException(Exception):pass
@@ -9,6 +10,17 @@ class MalformedRequestException(Exception):pass
 class ValidationException(Exception):pass
 class CreationException(Exception):pass
 class UpdateException(Exception):pass
+
+__all__ = [
+    "BoolField",
+    "NumberField",
+    "StringField",
+    "ListField",
+    "DictField",
+    "ReferenceTo",
+    "ReferenceFrom",
+    "GenericObject"
+]
 
 
 class Field(object):
@@ -135,12 +147,11 @@ class GenericMetaclass(type):
         for b in bases:
             if hasattr(b, "fields"):
                 attrs["fields"].update(b.fields)
-        NAMESPACE = 2
         attrs["type"] = name.lower()
         newcls = super(GenericMetaclass, cls).__new__(cls, name, bases, attrs)
-        if "namespaces" in newcls.__module__ or "models" in newcls.__module__:
-            exec("from %s import NAMESPACE" % newcls.__module__)
-            attrs[NAMESPACE_STR] = NAMESPACE
+        module = sys.modules[newcls.__module__]
+        if hasattr(module, "NAMESPACE"):
+            attrs[NAMESPACE_STR] = module.NAMESPACE
         else:
             attrs[NAMESPACE_STR] = "genericbase"
         newcls = super(GenericMetaclass, cls).__new__(cls, name, bases, attrs)
@@ -183,8 +194,8 @@ class GenericObject(object):
         return cls._query_view(db, "raw/all", cls.type)
 
     @classmethod
-    def changes(cls, db, since=None, channels=None, limit=None):
-        last_seq, rows  =  db.changes(since=since, channels=channels, limit=limit)
+    def changes(cls, db, since=None, channels=None, limit=None, feed="normal"):
+        last_seq, rows  =  db.changes(since=since, channels=channels, limit=limit, feed=feed)
         objects = [GenericObject._from_doc(db, row.key, row.cas, row.value) for row in rows]
         return last_seq, objects
 
@@ -209,12 +220,12 @@ class GenericObject(object):
             cas = result.cas
             if self.cas:# if it has a revision
                 if cas != self.cas:
-                    return "bad rev"
+                    raise UpdateException("bad rev id: %s, cas: %s db_cas: %s" % (self.key, self.cas, cas))
             else:
                 if not self.use_cas:
                     self.cas = cas
                 else:
-                    return "bad rev"
+                    raise UpdateException("bad rev id: %s, cas: %s db_cas: %s" % (self.key, self.cas, cas))
             self.pre_save_update_cb(doc)
             if self.use_cas and self.cas:
                 result = db.set(self.key, self._properties, cas=self.cas)
@@ -257,7 +268,8 @@ class GenericObject(object):
                 if field.delete == "cascade":
                     if field_name.endswith("_id"):
                         obj = getattr(self, field_name[:-3])
-                        obj.delete(db)
+                        if obj is not None:
+                            obj.delete(db)
                     else:
                         raise Exception("should have _id")
             if isinstance(field, ReferenceFrom):
@@ -389,17 +401,20 @@ class GenericObject(object):
         if name in RESERVED_PROPERTY_NAMES:
             self.__dict__[name] = value
             return
-        if name in self.fields.keys() or self.allow_decoration:
+        alias = "%s_id" % name
+        if alias in self.fields.keys():
+            self._properties[alias] = value.key
+        elif name in self.fields.keys() or self.additional_fields:
             self._properties[name] = value
         else:
-            raise Exception("you cant use this property name")
+            raise Exception("you cant use this property name %s" % name)
 
 
 
 #     def validate(self, db):
 #
 #         #decoration
-#         if not self.allow_decoration:
+#         if not self.additional_fields:
 #             for propertyName in self.properties.keys():
 #                 if not propertyName in self.fields.keys():
 #                     raise ValidationException("You cannot add %s to a %s" % (propertyName, self.resource))

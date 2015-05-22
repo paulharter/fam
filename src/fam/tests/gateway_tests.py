@@ -3,6 +3,7 @@ import unittest
 import time
 
 from fam.database import SyncGatewayWrapper
+from fam.blud import UpdateException
 from config import *
 from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell, NAMESPACE
 from fam.mapper import ClassMapper
@@ -174,24 +175,49 @@ class CouchDBModelTests(unittest.TestCase):
         dog.food = "biscuits"
         dog.save(self.db)
 
-
-    def test_all(self):
-        dog = Dog(name="fly")
-        dog.save(self.db)
-        all = Dog.all(self.db)
-        self.assertEqual(len(all), 1)
-
-
-    # def test_changes(self):
+    # def test_all(self):
     #     dog = Dog(name="fly")
     #     dog.save(self.db)
     #     all = Dog.all(self.db)
-    #     last_seq, objects = GenericObject.changes(self.db)
-    #     dog2 = Dog(name="shep")
-    #     dog2.save(self.db)
-    #     last_seq, objects = GenericObject.changes(self.db, since=last_seq)
-    #     # self.assertEqual(len(objects), 1)
-    #     self.assertEqual(objects[0], dog2)
+    #     self.assertEqual(len(all), 1)
+
+
+    def test_update_fails(self):
+        dog = Dog(key="dog::fly", name="fly")
+        dog.save(self.db)
+        dog = Dog(key="dog::fly", name="jim")
+        self.assertRaises(UpdateException, dog.save, self.db)
+
+
+    def test_update_and_changes(self):
+        dog = Dog(key="dog::fly", name="fly")
+        print dog
+        dog.save(self.db)
+        dog.delete(self.db)
+        dog = Dog(key="dog::fly", name="fly")
+        dog.save(self.db)
+
+        dog2 = Dog(key="dog::jim", name="jim")
+        dog2.save(self.db)
+
+        all = Dog.all(self.db)
+
+        self.assertEqual(len(all), 2)
+
+
+
+        #
+        #
+        # all = Dog.all(self.db)
+        # self.assertEqual(len(all), 2)
+        #
+        # last_seq, objects = GenericObject.changes(self.db)
+        #
+        # self.assertEqual(len(objects), 2)
+
+
+
+
     #
     # def test_changes_limit(self):
     #     dog = Dog(name="fly")

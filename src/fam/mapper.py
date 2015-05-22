@@ -1,12 +1,28 @@
+import inspect
+
 from fam.blud import GenericObject
 
 
 class ClassMapper(object):
 
-    def __init__(self, classes):
+    def __init__(self, classes, modules=[]):
         self.namespaces = {}
         self.modules = {}
         self._add_classes(classes)
+        self._add_modules(modules)
+
+
+    def _add_modules(self, modules):
+        for module in modules:
+            classes = []
+            for k, obj in module.__dict__.iteritems():
+                if inspect.isclass(obj):
+                    if issubclass(obj, GenericObject):
+                        if obj != GenericObject:
+                            if not k.startswith("_"):
+                                classes.append(obj)
+            self._add_classes(classes)
+
 
     def _add_classes(self, classes):
 
