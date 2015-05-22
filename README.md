@@ -1,6 +1,6 @@
 # fam
 
-A simple relation Python ORM for Couchdb, Couchbase and Couchbase Sync Gateway. 
+A simple Python ORM for Couchdb, Couchbase and Couchbase Sync Gateway. 
 
 Fam is a work in progress growing as the needs of my current project dictate. This means that while very useful it is not a feature complete ORM. It is probably most useful if, like me, you want to use Couch family noSQL DBs for their handling of distributed data sets but have highly relational data.
 
