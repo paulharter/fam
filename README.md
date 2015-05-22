@@ -79,7 +79,7 @@ db = CouchDBWrapper(mapper, database_url, database_name)
  
 db.update_designs()
  
- ""
+```
  
  The db objects are passed around everywhere in fam object method calls. This is a conscious design choice rather than hiding it away in a singleton somewhere.
  
@@ -133,7 +133,7 @@ There are two optional arguments when creating a field that are used for validat
 - **optional** - A boolean, false by default that ensures that an attribute exists when the document is saved.
 - **unique** - A boolean, false by default that ensures that an attribute is unique across documents in this class.
 
-# NB WARNING - OPTIONAL AND UNIQUE ARE NOT CURRENTLY IMPLEMENTED IN VALIDATION
+## NB WARNING - OPTIONAL AND UNIQUE ARE NOT CURRENTLY IMPLEMENTED IN VALIDATION
 
 There are two additional field types that are used to define relationships.
 
