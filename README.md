@@ -137,8 +137,7 @@ There are two optional arguments when creating a field that are used for validat
 
 There are two additional field types that are used to define relationships.
 
-- **ReferenceTo**
-- **ReferenceFrom**
+###ReferenceTo
 
 ReferenceTo is really just a string field that is the key of another document. ReferenceTo fields are defined with the namespace and name of the class of the referenced document. 
 
@@ -149,6 +148,8 @@ ReferenceTo is really just a string field that is the key of another document. R
 ```
 
 The name should always end with `_id` , this indicates that it is a reference but it also support fam's lookup of related objects. This allows you to directly access related documents for example dog.owner_id will return the key of the owner document but dog.owner will return an instance of the Owner class for that document.
+
+###ReferenceFrom
 
 ReferenceFrom fields are quite different and they have no representation within the json document. Instead they use the automatically created design documents to find a collection of documents with the associated ReferenceTo field. So ReferenceFrom fields only work with as existing ReferenceTo Field. They are defined with the namespace and the class that the reference is from and the name of the ReferenceTo field in that class.
 
