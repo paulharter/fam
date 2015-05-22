@@ -11,9 +11,10 @@ Fam adds a type and namespace to each document:
 
 And uses them to provide:
 
-- A class to bind methods to documents of different document types
+- A class to bind methods to documents
 - Automatic generation of design documents for relationships between classes
-- Some validation of documents (this will be better soon)
+- Lookup of related documents
+- Some validation of documents (currently a bit broken)
 - Document life-cycle callbacks for creation, updates and deletion
 - Optional cascading deletion through relationships
 
