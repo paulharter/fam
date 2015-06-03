@@ -84,7 +84,7 @@ db.update_designs()
  
  The db objects are passed around everywhere in fam object method calls. This is a conscious design choice rather than hiding it away in a singleton somewhere.
  
- ## Classes
+## classes
  
  Fam classes are defined as inheriting from fam.blud.GenericObject like this:
 
@@ -107,6 +107,15 @@ class Cat(GenericObject):
  - **use_cas** - A boolean which if true uses the default rev/cas collision protection of Couch DBs but if false always forces a document update as if this mechanism didn't exist
  - **additional_fields** - A boolean which if true lets you add arbitrary additional top level attributes to an object and if flase will throw an exception when you try.
  - **fields** - A dict of named fields that map to the top level attributes of the underlying json documents. See below for use.
+
+These classes have these methods provided by GenericObject:
+
+- **get(cls, db, key)** - Instantiate an instance of this class using the document with this key from this database
+
+And their instances have:
+ 
+- **save(self, db)** - Save this object to this database
+- **delete(self, db)** - Remove this object from this database
  
 GenericObject also provides six callbacks that occur as documents are saved and deleted
 
