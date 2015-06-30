@@ -166,14 +166,17 @@ class GenericObject(object):
 
 
     def __init__(self, key=None, cas=None, **kwargs):
-        self.key = key if key is not None else unicode(uuid.uuid4())
+
+        type_name = self.__class__.__name__.lower()
+        namespace = self.__class__.namespace.lower()
+
+        self.key = key if key is not None else u"%s_%s" % (type_name, unicode(uuid.uuid4()))
         if cas is not None:
             self.cas = cas
         self._properties = kwargs
         self._db = None
 
-        type_name = self.__class__.__name__.lower()
-        namespace = self.__class__.namespace.lower()
+
 
         if kwargs.get("type") is None:
             self._properties["type"] = type_name
@@ -344,7 +347,6 @@ class GenericObject(object):
 
     @classmethod
     def from_json(cls, db, as_json):
-
         key = as_json["key"]
         cas = as_json.get("cas")
         doc = as_json["properties"].copy()

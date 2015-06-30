@@ -1,4 +1,4 @@
-# fam
+#fam
 
 A simple Python ORM for Couchdb, Couchbase and Couchbase Sync Gateway. 
 
@@ -45,7 +45,7 @@ dog.save(db)
 
 ```
 
-## databases
+##Databases
 
 fam has wrappers for connecting to different databases:
 
@@ -84,7 +84,7 @@ db.update_designs()
  
  The db objects are passed around everywhere in fam object method calls. This is a conscious design choice rather than hiding it away in a singleton somewhere.
  
- ## Classes
+##Classes
  
  Fam classes are defined as inheriting from fam.blud.GenericObject like this:
 
@@ -117,7 +117,7 @@ GenericObject also provides six callbacks that occur as documents are saved and 
 - **pre_delete_cb(self)**
 - **post_delete_cb(self)**
       
- ## Fields
+##Fields
  
 There are several types of field defined in fam.blud that map to json types
  

@@ -189,8 +189,18 @@ class CouchDBWrapper(BaseDatabase):
             raise Exception("Unknown Error syncing up to remote: %s %s" % (rsp.status_code, rsp.text))
 
 
+    def flush(self):
+
+        rsp = requests.post("%s/%s/_ensure_full_commit" % (self.db_url, self.db_name))
+        if rsp.status_code <= 201:
+                print "********* flushed ok ************"
+                print rsp.json()
+                return
+        raise Exception("Unknown Error _ensure_full_commit in remote: %s %s" % (rsp.status_code, rsp.text))
+
 
     def sync_down(self):
+
         if self.remote_url is not None:
             attrs = {"create_target": False,
                      "source": self.remote_url,
