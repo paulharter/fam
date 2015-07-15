@@ -35,8 +35,8 @@ class CouchbaseWrapper(BaseDatabase):
             return None
 
 
-    def set(self, key, value, cas=0):
-        return self.db.set(key, value, cas)
+    def set(self, key, value, cas=0, ttl=0):
+        return self.db.set(key, value, cas, ttl)
 
     def delete(self, key, cas):
         return self.db.delete(key, cas)
@@ -64,6 +64,9 @@ class CouchbaseWrapper(BaseDatabase):
         return
 
     def update_designs(self):
+
+        if self.mapper is None:
+            return
 
         design_doc = {
             "views": {

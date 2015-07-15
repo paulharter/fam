@@ -3,13 +3,11 @@ import uuid
 import datetime
 import types
 import sys
-from constants import *
 
-class DbConnectionException(Exception):pass
-class MalformedRequestException(Exception):pass
-class ValidationException(Exception):pass
-class CreationException(Exception):pass
-class UpdateException(Exception):pass
+from .constants import *
+from .exceptions import *
+
+
 
 __all__ = [
     "BoolField",
@@ -223,18 +221,18 @@ class GenericObject(object):
             cas = result.cas
             if self.cas:# if it has a revision
                 if cas != self.cas:
-                    raise UpdateException("bad rev id: %s, cas: %s db_cas: %s" % (self.key, self.cas, cas))
+                    raise FamResourceConflict("bad rev id: %s, cas: %s db_cas: %s" % (self.key, self.cas, cas))
             else:
                 if not self.use_cas:
                     self.cas = cas
                 else:
-                    raise UpdateException("bad rev id: %s, cas: %s db_cas: %s" % (self.key, self.cas, cas))
+                    raise FamResourceConflict("bad rev id: %s, cas: %s db_cas: %s" % (self.key, self.cas, cas))
             self.pre_save_update_cb(doc)
             if self.use_cas and self.cas:
                 result = db.set(self.key, self._properties, cas=self.cas)
                 self.cas = result.cas
             else:
-                #TODO: remove for couchbase
+                #TODO: remove for couchbase?
                 result = db.set(self.key, self._properties, cas=self.cas)
                 self.cas = result.cas
             self.post_save_update_cb()

@@ -1,7 +1,8 @@
 import json
 from copy import deepcopy
-from fam.utils import requests_shim as requests
 
+from fam.exceptions import *
+from fam.utils import requests_shim as requests
 from fam.database.base import BaseDatabase, FamDbAuthException
 
 
@@ -115,14 +116,14 @@ class CouchDBWrapper(BaseDatabase):
                 value["_rev"] = rsp.json()["rev"]
             return ResultWrapper.from_couchdb_json(value)
         else:
-            raise Exception("Unknown Error setting CBLite doc: %s %s" % (rsp.status_code, rsp.text))
+            raise FamResourceConflict("Unknown Error setting CBLite doc: %s %s" % (rsp.status_code, rsp.text))
 
 
     def delete(self, key, cas):
         rsp = requests.delete("%s/%s/%s?rev=%s" % (self.db_url, self.db_name, key, cas))
         if rsp.status_code == 200 or rsp.status_code == 202:
             return
-        raise Exception("Unknown Error deleting cb doc: %s %s" % (rsp.status_code, rsp.text))
+        raise FamResourceConflict("Unknown Error deleting cb doc: %s %s" % (rsp.status_code, rsp.text))
 
 
     def _wrapper_from_view_json(self, as_json):
