@@ -9,7 +9,7 @@ setup(name='fam',
         'Natural Language :: English',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 2.7',
-        'License :: MIT'
+        'License :: OSI Approved :: MIT License'
     ],
     author='Paul Harter',
     author_email='username: paul, domain: glowinthedark.co.uk',
