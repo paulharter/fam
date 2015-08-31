@@ -1,17 +1,19 @@
 from setuptools import setup, find_packages
 
 setup(name='fam',
-    version='0.1',
-    description="Simple Python ORM for CouchDB, Couchbase and Sync Gateway",
+    version='1.0.1',
+    description="Simple Python ORM for CouchDB, and Sync Gateway",
+    url="https://github.com/paulharter/fam",
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Natural Language :: English',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2.7.6',
+        'Programming Language :: Python :: 2.7',
         'License :: MIT'
     ],
     author='Paul Harter',
     author_email='username: paul, domain: glowinthedark.co.uk',
+    licence="LICENSE",
     install_requires=['requests'],
     packages=find_packages('src'),
     package_dir={'': 'src'},

@@ -204,7 +204,6 @@ class CouchDBWrapper(BaseDatabase):
             rsp = requests.post("%s/_replicate" % self.db_url, data=json.dumps(attrs), headers=headers)
             if rsp.status_code == 200:
                 return
-            print "remote url", self.remote_url
             raise Exception("Unknown Error syncing up to remote: %s %s" % (rsp.status_code, rsp.text))
 
 
@@ -212,8 +211,6 @@ class CouchDBWrapper(BaseDatabase):
 
         rsp = requests.post("%s/%s/_ensure_full_commit" % (self.db_url, self.db_name))
         if rsp.status_code <= 201:
-                print "********* flushed ok ************"
-                print rsp.json()
                 return
         raise Exception("Unknown Error _ensure_full_commit in remote: %s %s" % (rsp.status_code, rsp.text))
 
