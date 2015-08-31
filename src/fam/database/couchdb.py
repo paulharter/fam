@@ -57,7 +57,7 @@ class CouchDBWrapper(BaseDatabase):
 
     VIEW_URL = "%s/%s/_design/%s/_view/%s?key=\"%s\""
 
-    def __init__(self, mapper, db_url, db_name, reset=False, remote_url=None):
+    def __init__(self, mapper, db_url, db_name, reset=False, remote_url=None, continuous=False):
 
         self.mapper = mapper
         self.cookies = {}
@@ -89,6 +89,12 @@ class CouchDBWrapper(BaseDatabase):
                 raise Exception("Error creating CB database: 400 Bad Request")
             if not(rsp.status_code == 201 or rsp.status_code == 412):
                 raise Exception("Unknown Error creating cb database: %s" % rsp.status_code)
+
+        self.continuous = continuous
+        if continuous:
+            self.sync_both_continuous()
+
+
 
     @auth
     def get(self, key):
@@ -174,11 +180,23 @@ class CouchDBWrapper(BaseDatabase):
         raise Exception("Unknown Error getting CB doc: %s %s" % (rsp.status_code, rsp.text))
 
 
-    def sync_up(self):
+
+    def sync_both_continuous(self):
+        self.sync_up(continuous=True)
+        self.sync_down(continuous=True)
+
+
+    def sync_up(self, continuous=False):
         if self.remote_url is not None:
             attrs = {"create_target": False,
                      "source": self.db_name,
                      "target": self.remote_url}
+
+            if continuous:
+                attrs["continuous"] = True
+            else:
+                if self.continuous:
+                    return
 
             headers = {"Content-Type": "application/json",
                        }
@@ -200,12 +218,18 @@ class CouchDBWrapper(BaseDatabase):
         raise Exception("Unknown Error _ensure_full_commit in remote: %s %s" % (rsp.status_code, rsp.text))
 
 
-    def sync_down(self):
+    def sync_down(self, continuous=False):
 
         if self.remote_url is not None:
             attrs = {"create_target": False,
                      "source": self.remote_url,
                      "target": self.db_name}
+
+            if continuous:
+                attrs["continuous"] = True
+            else:
+                if self.continuous:
+                    return
 
             rsp = requests.post("%s/_replicate" % self.db_url, data=json.dumps(attrs), headers={"Content-Type": "application/json"})
             if rsp.status_code == 200:
