@@ -39,10 +39,10 @@ class ResultWrapper(object):
     def from_gateway_view_json(cls, as_json):
         try:
             key = as_json["id"]
-            sync = as_json["value"].get("_sync")
+            value = deepcopy(as_json["value"])
+            sync = value.get("_sync")
             if sync is not None:
                 cas = sync["rev"]
-                value = deepcopy(as_json["value"])
                 del value["_sync"]
             else:
                 cas = None
