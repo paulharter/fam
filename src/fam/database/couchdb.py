@@ -37,10 +37,14 @@ class ResultWrapper(object):
 
     @classmethod
     def from_gateway_view_json(cls, as_json):
-        key = as_json["id"]
-        cas = as_json["value"]["_sync"]["rev"]
-        value = deepcopy(as_json["value"])
-        del value["_sync"]
+        try:
+            key = as_json["id"]
+            cas = as_json["value"]["_sync"]["rev"]
+            value = deepcopy(as_json["value"])
+            del value["_sync"]
+        except KeyError, e:
+            print "key error raised in from_gateway_view_json on object: %s" % json.dumps(as_json, indent=4)
+            raise e
         return cls(key, cas, value)
 
 
