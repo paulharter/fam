@@ -147,6 +147,7 @@ class CouchDBWrapper(BaseDatabase):
 
         if rsp.status_code == 200:
             results = rsp.json()
+            print results
             rows = results["rows"]
             return [self._wrapper_from_view_json(row) for row in rows]
 
