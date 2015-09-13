@@ -10,7 +10,9 @@ from .couchdb import CouchDBWrapper, ResultWrapper
 class SyncGatewayWrapper(CouchDBWrapper):
 
     ## the option stale=false forces the view to be indexed on read. Sync_gateway does not index on write!!
-    VIEW_URL = "%s/%s/_design/%s/_view/%s?stale=false&key=\"%s\""
+    # VIEW_URL = "%s/%s/_design/%s/_view/%s?stale=false&key=\"%s\""
+
+    VIEW_URL = "%s/%s/_design/%s/_view/%s?include_docs=true&key=\"%s\""
 
     def __init__(self, mapper, db_url, db_name, auth_url=None, username=None, password=None):
 
