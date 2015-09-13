@@ -32,6 +32,7 @@ class SyncGatewayWrapper(CouchDBWrapper):
             raise Exception("Unknown database and you can't create them in the sync gateway")
 
 
+
     def authenticate(self):
         if self.username is None:
             raise Exception("failed to authenticate no username")
