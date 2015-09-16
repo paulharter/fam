@@ -3,7 +3,7 @@ import unittest
 import time
 
 from fam.database import SyncGatewayWrapper
-from fam.blud import UpdateException
+from fam.exceptions import FamResourceConflict
 from config import *
 from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell, NAMESPACE
 from fam.mapper import ClassMapper
@@ -186,7 +186,7 @@ class CouchDBModelTests(unittest.TestCase):
         dog = Dog(key="dog::fly", name="fly")
         dog.save(self.db)
         dog = Dog(key="dog::fly", name="jim")
-        self.assertRaises(UpdateException, dog.save, self.db)
+        self.assertRaises(FamResourceConflict, dog.save, self.db)
 
 
     def test_update_and_changes(self):

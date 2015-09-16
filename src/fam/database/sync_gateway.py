@@ -73,7 +73,11 @@ class SyncGatewayWrapper(CouchDBWrapper):
             "_id": doc_id,
             "views": {
                 "all": {
-                    "map": "function(doc) {emit(doc.type, doc);}"
+                    "map": """function(doc, meta) {
+                        doc._rev = meta.rev;
+                        emit(doc.type, doc);
+                    }
+                    """
                 }
             }
         }

@@ -37,6 +37,7 @@ class ResultWrapper(object):
 
     @classmethod
     def from_gateway_view_json(cls, as_json):
+        # the format of this seems to be changing quite a bit
         try:
             key = as_json["id"]
             value = deepcopy(as_json["value"])
@@ -44,6 +45,9 @@ class ResultWrapper(object):
             if sync is not None:
                 cas = sync["rev"]
                 del value["_sync"]
+            elif value.get("_rev"):
+                cas = as_json["value"]["_rev"]
+                del value["_rev"]
             else:
                 cas = None
         except KeyError, e:

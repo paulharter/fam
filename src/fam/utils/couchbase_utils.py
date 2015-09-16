@@ -103,14 +103,32 @@ def delete_a_gateway(sync_admin_url, db_name):
         raise Exception("failed to make a new gateway %s : %s" % (rsp.status_code, rsp.text))
 
 
-def add_person_to_gateway(sync_admin_url, db_name, user_id, username, password):
+
+def does_person_exist(sync_admin_url, db_name, username):
+
+    rsp = requests.get("%s/%s/_user/%s" % (sync_admin_url, db_name, username))
+
+    if rsp.status_code == 200:
+        return True
+    elif rsp.status_code == 404:
+        return False
+    else:
+        raise Exception("failed to add person %s : %s" % (rsp.status_code, rsp.text))
+
+
+
+def add_person_to_gateway(sync_admin_url, db_name, user_id, username, password, domain_role=None):
 
     if sync_admin_url is None:
         return
+
     attrs = {
          "password": password,
-         "admin_roles": [user_id,]
+         "admin_roles": [user_id]
         }
+
+    if domain_role is not None:
+        attrs["admin_roles"].append(domain_role)
 
     rsp = requests.put("%s/%s/_user/%s" % (sync_admin_url, db_name, username), data=json.dumps(attrs))
 
