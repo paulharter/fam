@@ -14,6 +14,16 @@ class SyncGatewayWrapper(CouchDBWrapper):
 
     # VIEW_URL = "%s/%s/_design/%s/_view/%s?include_docs=true&key=\"%s\""
 
+    # this function is different from the base version in that it adds the rev from the meta into the doc
+    FOREIGN_KEY_MAP_STRING = '''function(doc, meta) {
+    var resources = %s;
+    if (resources.indexOf(doc.type) != -1 && doc.namespace == \"%s\"){
+        doc._rev = meta.rev;
+        emit(doc.%s, doc);
+    }
+}'''
+    
+
     def __init__(self, mapper, db_url, db_name, auth_url=None, username=None, password=None):
 
         self.mapper = mapper

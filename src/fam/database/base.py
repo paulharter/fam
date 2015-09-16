@@ -5,6 +5,14 @@ class FamDbAuthException(Exception):
 
 class BaseDatabase(object):
 
+    FOREIGN_KEY_MAP_STRING = '''function(doc) {
+                var resources = %s;
+                if (resources.indexOf(doc.type) != -1 && doc.namespace == \"%s\"){
+                emit(doc.%s, doc);
+                }
+            }'''
+
+
     def class_for_type_name(self, type_name, namespace_name):
         return self.mapper.get_class(type_name, namespace_name)
 
@@ -31,9 +39,4 @@ class BaseDatabase(object):
 
             arrayStr = "['%s']" % "', '".join(resources)
 
-            return '''function(doc) {
-                var resources = %s;
-                if (resources.indexOf(doc.type) != -1 && doc.namespace == \"%s\"){
-                emit(doc.%s, doc);
-                }
-            }''' % (arrayStr, namespace, keyName)
+            return self.FOREIGN_KEY_MAP_STRING % (arrayStr, namespace, keyName)
