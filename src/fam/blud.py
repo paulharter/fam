@@ -157,7 +157,7 @@ class GenericMetaclass(type):
 
 
 class GenericObject(object):
-    use_cas = False
+    use_rev = False
     __metaclass__ = GenericMetaclass
     fields = {}
     # views = {}
@@ -223,12 +223,12 @@ class GenericObject(object):
                 if cas != self.cas:
                     raise FamResourceConflict("bad rev id: %s, cas: %s db_cas: %s" % (self.key, self.cas, cas))
             else:
-                if not self.use_cas:
+                if not self.use_rev:
                     self.cas = cas
                 else:
                     raise FamResourceConflict("bad rev id: %s, cas: %s db_cas: %s" % (self.key, self.cas, cas))
             self.pre_save_update_cb(doc)
-            if self.use_cas and self.cas:
+            if self.use_rev and self.cas:
                 result = db.set(self.key, self._properties, cas=self.cas)
                 self.cas = result.cas
             else:
@@ -244,7 +244,7 @@ class GenericObject(object):
             self.post_save_new_cb()
             db.sync_up()
 
-        if self.use_cas:
+        if self.use_rev:
             self.cas = result.cas
         return "new"
 
@@ -404,7 +404,7 @@ class GenericObject(object):
         alias = "%s_id" % name
         if alias in self.fields.keys():
             self._properties[alias] = value.key
-        elif name in self.fields.keys() or self.additional_fields:
+        elif name in self.fields.keys() or self.additional_properties:
             self._properties[name] = value
         else:
             raise Exception("you cant use this property name %s" % name)
@@ -414,7 +414,7 @@ class GenericObject(object):
 #     def validate(self, db):
 #
 #         #decoration
-#         if not self.additional_fields:
+#         if not self.additional_properties:
 #             for propertyName in self.properties.keys():
 #                 if not propertyName in self.fields.keys():
 #                     raise ValidationException("You cannot add %s to a %s" % (propertyName, self.resource))

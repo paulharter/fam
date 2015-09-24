@@ -25,8 +25,8 @@ You can define a fam class like this:
 NAMESPACE = "mynamespace"
 
 class Dog(GenericObject):
-    use_cas = True
-    additional_fields = True
+    use_rev = True
+    additional_properties = True
     fields = {
         "name": StringField(),
         "owner_id": ReferenceTo(NAMESPACE, "person", delete="cascade")
@@ -92,8 +92,8 @@ db.update_designs()
  ```python 
  
 class Cat(GenericObject):
-    use_cas = True
-    additional_fields = False
+    use_rev = True
+    additional_properties = False
     fields = {
         "name": StringField(),
         "legs": NumberField(),
@@ -104,8 +104,8 @@ class Cat(GenericObject):
  
  With three class attributes
  
- - **use_cas** - A boolean which if true uses the default rev/cas collision protection of Couch DBs but if false always forces a document update as if this mechanism didn't exist
- - **additional_fields** - A boolean which if true lets you add arbitrary additional top level attributes to an object and if flase will throw an exception when you try.
+ - **use_rev** - A boolean which if true uses the default rev/cas collision protection of Couch DBs but if false always forces a document update as if this mechanism didn't exist
+ - **additional_properties** - A boolean which if true lets you add arbitrary additional top level attributes to an object and if flase will throw an exception when you try.
  - **fields** - A dict of named fields that map to the top level attributes of the underlying json documents. See below for use.
 
 These classes have these methods provided by GenericObject:
