@@ -62,7 +62,7 @@ class CouchDBModelTests(unittest.TestCase):
     def test_make_an_object_saved_cas(self):
         paul = Person(name="paul")
         paul.save(self.db)
-        cat = Cat(name="whiskers", owner_id=paul.key)
+        cat = Cat(name="whiskers", owner_id=paul.key, legs=2)
         cat.save(self.db)
         self.assertEqual(cat.namespace, NAMESPACE)
         self.assertEqual(cat.type, "cat")
@@ -72,7 +72,7 @@ class CouchDBModelTests(unittest.TestCase):
     def test_get_cat(self):
         paul = Person(name="paul")
         paul.save(self.db)
-        cat = Cat(name="whiskers", owner_id=paul.key)
+        cat = Cat(name="whiskers", owner_id=paul.key, legs=2)
         cat.save(self.db)
         another = Cat.get(self.db, cat.key)
         self.assertEqual(cat, another)
@@ -81,7 +81,7 @@ class CouchDBModelTests(unittest.TestCase):
     def test_ref_to(self):
         paul = Person(name="paul")
         paul.save(self.db)
-        cat = Cat(name="whiskers", owner_id=paul.key)
+        cat = Cat(name="whiskers", owner_id=paul.key, legs=2)
         cat.save(self.db)
         self.assertEqual(cat.owner, paul)
         self.assertEqual(cat.owner.name, "paul")
@@ -90,9 +90,9 @@ class CouchDBModelTests(unittest.TestCase):
     def test_ref_from(self):
         paul = Person(name="paul")
         paul.save(self.db)
-        cat = Cat(name="whiskers", owner_id=paul.key)
+        cat = Cat(name="whiskers", owner_id=paul.key, legs=2)
         cat.save(self.db)
-        cat2 = Cat(name="puss", owner_id=paul.key)
+        cat2 = Cat(name="puss", owner_id=paul.key, legs=2)
         cat2.save(self.db)
         self.assertEqual(len(paul.cats), 2)
         self.assertTrue(paul.cats[0] == cat or paul.cats[1] == cat)
@@ -101,7 +101,7 @@ class CouchDBModelTests(unittest.TestCase):
     def test_delete_cat_dd(self):
         paul = Person(name="paul")
         self.db.put(paul)
-        cat = Cat(name="whiskers", owner_id=paul.key)
+        cat = Cat(name="whiskers", owner_id=paul.key, legs=2)
         self.db.put(cat)
         key = cat.key
         another = self.db.get(cat.key)
@@ -131,10 +131,10 @@ class CouchDBModelTests(unittest.TestCase):
     def test_delete_cat_refs(self):
         paul = Person(name="paul")
         paul.save(self.db)
-        cat = Cat(name="whiskers", owner_id=paul.key)
+        cat = Cat(name="whiskers", owner_id=paul.key, legs=2)
         cat.save(self.db)
         key = cat.key
-        cat2 = Cat(name="puss", owner_id=paul.key)
+        cat2 = Cat(name="puss", owner_id=paul.key, legs=2)
         cat2.save(self.db)
         revivedcat1 = self.db.get(key)
         self.assertNotEqual(revivedcat1, None)
@@ -161,7 +161,7 @@ class CouchDBModelTests(unittest.TestCase):
     def test_update_cat(self):
         paul = Person(name="paul")
         paul.save(self.db)
-        cat = Cat(name="whiskers", owner_id=paul.key)
+        cat = Cat(name="whiskers", owner_id=paul.key, legs=2)
         cat.save(self.db)
         cat.name = "blackie"
         cat.save(self.db)
@@ -177,7 +177,7 @@ class CouchDBModelTests(unittest.TestCase):
     def test_update_catfood(self):
         paul = Person(name="paul")
         paul.save(self.db)
-        cat = Cat(name="whiskers", owner_id=paul.key)
+        cat = Cat(name="whiskers", owner_id=paul.key, legs=2)
         cat.save(self.db)
         self.assertRaises(Exception, self.setcatfood)
 

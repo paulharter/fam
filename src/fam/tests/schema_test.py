@@ -1,4 +1,5 @@
 import json
+import os
 import jsonschema
 import unittest
 from fam.database import CouchDBWrapper
@@ -10,6 +11,9 @@ from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell
 
 from fam.schema.writer import createJsonSchema
 from fam.schema.validator import ModelValidator
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_PATH = os.path.join(THIS_DIR, "data")
 
 class SchemalTests(unittest.TestCase):
 
@@ -162,9 +166,27 @@ class MapperValidationTests(unittest.TestCase):
         self.assertEqual(cat.owner, paul)
         self.assertEqual(cat.owner.name, "paul")
 
+        #missing legs
         cat = Cat(name="puss", owner_id=paul.key)
 
         self.assertRaises(FamValidationError, cat.save, self.db)
+
+        #additional properties
+        cat = Cat(name="puss", owner_id=paul.key, legs=2, tail="long")
+
+        self.assertRaises(FamValidationError, cat.save, self.db)
+
+        dog = Dog(name="fly")
+
+        self.db.put(dog)
+
+        dog.tail = "long"
+
+        self.db.put(dog)
+
+        print dog.as_json()
+
+
 
     def test_string_format(self):
 
@@ -183,3 +205,12 @@ class MapperValidationTests(unittest.TestCase):
         cat.save(self.db)
         cat.email = "paulglowinthedark.co.uk"
         self.assertRaises(FamValidationError, self.db.save, cat)
+
+
+class WritingSchemaTests(unittest.TestCase):
+
+
+    def test_make_a_validator_from_modules(self):
+
+        mapper = ClassMapper([], modules=[test01])
+        mapper.validator.write_out_schemata(DATA_PATH)

@@ -62,4 +62,18 @@ class ModelValidator(object):
             validator = jsonschema.Draft4Validator(schema, resolver=resolver)
             validator.validate(doc)
 
+    def write_out_schemata(self, dir):
+
+        for schema_id, schema in self.reference_store.iteritems():
+            namespace, name = schema_id.split("::")
+            dirname = os.path.join(dir, namespace)
+            filename = os.path.join(dirname, "%s.%s.json" % (namespace.replace("/", "_"), name))
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+            if os.path.exists(filename):
+                os.remove(filename)
+            with open(filename, "w") as f:
+                f.write(json.dumps(schema, indent=4, sort_keys=True))
+
+
 

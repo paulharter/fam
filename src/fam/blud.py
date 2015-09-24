@@ -124,6 +124,12 @@ class GenericMetaclass(type):
         for b in bases:
             if hasattr(b, "fields"):
                 attrs["fields"].update(b.fields)
+
+        #check that the names of all ref to fields end with _id
+        for fieldname, field in attrs["fields"].iteritems():
+            if isinstance(field, ReferenceTo) and not fieldname.endswith("_id"):
+                raise Exception("All ReferenceTo field names must end with _id, %s doesn't" % fieldname)
+
         attrs["type"] = name.lower()
         newcls = super(GenericMetaclass, cls).__new__(cls, name, bases, attrs)
         module = sys.modules[newcls.__module__]
@@ -263,12 +269,12 @@ class GenericObject(object):
 
     def as_json(self):
         d = {}
-        d["properties"] = self.properties
+        d.update(self.properties)
         d[NAMESPACE_STR] = self.namespace
         d["type"] = self.type
-        d["key"] = self.key
+        d["_id"] = self.key
         if self.rev is not None:
-            d["rev"] = self.rev
+            d["_rev"] = self.rev
         return json.dumps(d, sort_keys=True, indent=4, separators=(',', ': '))
 
 
