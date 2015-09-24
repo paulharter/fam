@@ -7,8 +7,6 @@ import sys
 from .constants import *
 from .exceptions import *
 
-
-
 __all__ = [
     "BoolField",
     "NumberField",
@@ -20,14 +18,12 @@ __all__ = [
     "GenericObject"
 ]
 
-
 class Field(object):
     
     object = "base"
     
-    def __init__(self, unique=False, optional=False):
-        self.unique = unique
-        self.optional = optional
+    def __init__(self, required=False):
+        self.required = required
 
 
     def is_correct_type(self, value):
@@ -36,8 +32,8 @@ class Field(object):
     
     def __str__(self):
         attr = []
-        if self.optional:attr.append(FIELD_OPTIONAL)
-        if self.unique:attr.append(FIELD_UNIQUE)
+        if self.required:
+            attr.append(FIELD_REQUIRED)
         return " ".join(attr)
 
     as_string = property(__str__)
@@ -45,35 +41,25 @@ class Field(object):
 
 class BoolField(Field):
 
-    # typename = "Bool"
-
     def is_correct_type(self, value):
         return type(value) == types.BooleanType or type(value) == types.NoneType
 
 class NumberField(Field):
-
-    # typename = "Number"
 
     def is_correct_type(self, value):
         return type(value) == types.IntType or type(value) == types.LongType or type(value) == types.FloatType or type(value) == types.NoneType
 
 class StringField(Field):
 
-    # typename = "String"
-
     def is_correct_type(self, value):
         return type(value) == types.StringType or type(value) == types.UnicodeType or type(value) == types.NoneType
 
 class ListField(Field):
 
-    # typename = "List"
-
     def is_correct_type(self, value):
         return type(value) == types.ListType or type(value) == types.NoneType
 
 class DictField(Field):
-
-    # typename = "Object"
 
     def is_correct_type(self, value):
         return type(value) == types.DictType or type(value) == types.NoneType
@@ -81,17 +67,14 @@ class DictField(Field):
 
 class ReferenceTo(Field):
 
-    # typename = "Reference To"
-
-    def __init__(self, refns, refcls, unique=False, optional=False, delete="nothing"):
+    def __init__(self, refns, refcls, required=False, delete="nothing"):
         self.refns = refns
         self.refcls = refcls
         self.delete = delete
-        super(ReferenceTo, self).__init__(unique, optional)
+        super(ReferenceTo, self).__init__(required)
 
     def is_correct_type(self, value):
         return type(value) == types.StringType or type(value) == types.UnicodeType or type(value) == types.NoneType
-
 
     def __str__(self):
         attr = []
@@ -99,32 +82,28 @@ class ReferenceTo(Field):
         attr.append("ns:%s"  % self.refns)
         attr.append("resource:%s"  % self.refcls)
 
-        if self.optional:attr.append(FIELD_OPTIONAL)
-        if self.unique:attr.append(FIELD_UNIQUE)
-        if self.detail:attr.append("detail")
+        if self.required:
+            attr.append(FIELD_REQUIRED)
         return " ".join(attr)
 
     as_string = property(__str__)
 
 class ReferenceFrom(Field):
 
-    # typename = "Reference From"
-
-    def __init__(self, refns, refcls, fkey, unique=False, delete="nothing"):
+    def __init__(self, refns, refcls, fkey, required=False, delete="nothing"):
         self.refns = refns
         self.refcls = refcls
         self.fkey = fkey
         self.delete = delete
-        super(ReferenceFrom, self).__init__(unique, True)
-
+        super(ReferenceFrom, self).__init__(required)
 
     def __str__(self):
         attr = []
         attr.append("ns:%s"  % self.refns)
         attr.append("resource:%s"  % self.refcls)
         attr.append("key:%s"  % self.fkey)
-        if self.optional:attr.append(FIELD_OPTIONAL)
-        if self.unique:attr.append(FIELD_UNIQUE)
+        if self.required:
+            attr.append(FIELD_REQUIRED)
         return " ".join(attr)
 
     as_string = property(__str__)
@@ -160,21 +139,17 @@ class GenericObject(object):
     use_rev = False
     __metaclass__ = GenericMetaclass
     fields = {}
-    # views = {}
 
-
-    def __init__(self, key=None, cas=None, **kwargs):
+    def __init__(self, key=None, rev=None, **kwargs):
 
         type_name = self.__class__.__name__.lower()
         namespace = self.__class__.namespace.lower()
 
         self.key = key if key is not None else u"%s_%s" % (type_name, unicode(uuid.uuid4()))
-        if cas is not None:
-            self.cas = cas
+        if rev is not None:
+            self.rev = rev
         self._properties = kwargs
         self._db = None
-
-
 
         if kwargs.get("type") is None:
             self._properties["type"] = type_name
@@ -197,7 +172,7 @@ class GenericObject(object):
     @classmethod
     def changes(cls, db, since=None, channels=None, limit=None, feed="normal"):
         last_seq, rows  =  db.changes(since=since, channels=channels, limit=limit, feed=feed)
-        objects = [GenericObject._from_doc(db, row.key, row.cas, row.value) for row in rows]
+        objects = [GenericObject._from_doc(db, row.key, row.rev, row.value) for row in rows]
         return last_seq, objects
 
     def _get_namespace(self):
@@ -212,46 +187,44 @@ class GenericObject(object):
         del prop[NAMESPACE_STR]
         return prop
 
-
     def save(self, db):
         self._db = db
         result = db.get(self.key)
         if result:
             doc = result.value
-            cas = result.cas
-            if self.cas:# if it has a revision
-                if cas != self.cas:
-                    raise FamResourceConflict("bad rev id: %s, cas: %s db_cas: %s" % (self.key, self.cas, cas))
+            rev = result.rev
+            if self.rev:# if it has a revision
+                if rev != self.rev:
+                    raise FamResourceConflict("bad rev id: %s, rev: %s db_rev: %s" % (self.key, self.rev, rev))
             else:
                 if not self.use_rev:
-                    self.cas = cas
+                    self.rev = rev
                 else:
-                    raise FamResourceConflict("bad rev id: %s, cas: %s db_cas: %s" % (self.key, self.cas, cas))
+                    raise FamResourceConflict("bad rev id: %s, rev: %s db_rev: %s" % (self.key, self.rev, rev))
             self.pre_save_update_cb(doc)
-            if self.use_rev and self.cas:
-                result = db.set(self.key, self._properties, cas=self.cas)
-                self.cas = result.cas
+            if self.use_rev and self.rev:
+                result = db._set(self.key, self._properties, rev=self.rev)
+                self.rev = result.rev
             else:
-                #TODO: remove for couchbase?
-                result = db.set(self.key, self._properties, cas=self.cas)
-                self.cas = result.cas
+                result = db._set(self.key, self._properties, rev=self.rev)
+                self.rev = result.rev
             self.post_save_update_cb()
             db.sync_up()
             return "updated"
         else:
             self.pre_save_new_cb()
-            result = db.set(self.key, self._properties)
+            result = db._set(self.key, self._properties)
             self.post_save_new_cb()
             db.sync_up()
 
         if self.use_rev:
-            self.cas = result.cas
+            self.rev = result.rev
         return "new"
 
 
     def delete(self, db):
         self.pre_delete_cb()
-        db.delete(self.key, self.cas)
+        db._delete(self.key, self.rev)
         self.post_delete_cb()
         self.delete_references(db)
         db.sync_up()
@@ -294,8 +267,8 @@ class GenericObject(object):
         d[NAMESPACE_STR] = self.namespace
         d["type"] = self.type
         d["key"] = self.key
-        if self.cas is not None:
-            d["cas"] = self.cas
+        if self.rev is not None:
+            d["rev"] = self.rev
         return json.dumps(d, sort_keys=True, indent=4, separators=(',', ': '))
 
 
@@ -316,16 +289,16 @@ class GenericObject(object):
 
     @classmethod
     def get(cls, db, key):
-        result = db.get(key)
+        result = db._get(key)
         if result is None:
             return None
         doc = result.value
-        cas = result.cas
-        return cls._from_doc(db, key, cas, doc)
+        rev = result.rev
+        return cls._from_doc(db, key, rev, doc)
 
 
     @classmethod
-    def _from_doc(cls, db, key, cas, doc):
+    def _from_doc(cls, db, key, rev, doc):
 
         if "_id" in doc.keys():
             del doc["_id"]
@@ -334,11 +307,10 @@ class GenericObject(object):
             del doc["_rev"]
 
         correctCls = db.class_for_type_name(doc.get("type"), doc.get("namespace"))
-
         if correctCls is None:
             raise Exception("couldn't find class %s" % doc.get("type"))
 
-        obj = correctCls(key=key, cas=cas, **doc)
+        obj = correctCls(key=key, rev=rev, **doc)
         obj._db = db
         return obj
 
@@ -346,12 +318,12 @@ class GenericObject(object):
     @classmethod
     def from_json(cls, db, as_json):
         key = as_json["key"]
-        cas = as_json.get("cas")
+        rev = as_json.get("rev")
         doc = as_json["properties"].copy()
         doc[NAMESPACE_STR] = as_json[NAMESPACE_STR]
         doc["type"] = as_json["type"]
 
-        return cls._from_doc(db, key, cas, doc)
+        return cls._from_doc(db, key, rev, doc)
 
     def pre_save_new_cb(self):
         pass
@@ -374,7 +346,7 @@ class GenericObject(object):
     @classmethod
     def _query_view(cls, db, view_name, key):
         rows =  db.view(view_name, key)
-        return [GenericObject._from_doc(db, row.key, row.cas, row.value) for row in rows]
+        return [GenericObject._from_doc(db, row.key, row.rev, row.value) for row in rows]
 
     def __getattr__(self, name):
         ref = self.__class__.fields.get(name)
@@ -408,38 +380,6 @@ class GenericObject(object):
             self._properties[name] = value
         else:
             raise Exception("you cant use this property name %s" % name)
-
-
-
-#     def validate(self, db):
-#
-#         #decoration
-#         if not self.additional_properties:
-#             for propertyName in self.properties.keys():
-#                 if not propertyName in self.fields.keys():
-#                     raise ValidationException("You cannot add %s to a %s" % (propertyName, self.resource))
-#
-#         for name, field in self.fields.iteritems():
-#             #optional
-#             if not field.optional and not name in self.properties.keys():
-#                 raise ValidationException("A %s must have a %s" % (self.resource, name))
-#             #type
-#             value = self.properties.get(name)
-#             if value is not None:
-#                 if not field.is_correct_type(value):
-#                     raise ValidationException("Wrong type for %s field %s" % (self.resource, name))
-#                 #unique TODO this should be moved into permanent views
-# #                if field.unique:
-# #                    map_fun = '''function(doc) {
-# #                        if (doc.resource == "%s" && doc.namespace == "%s" && doc.properties.%s == %s){
-# #                        emit(doc._id, doc);
-# #                        }
-# #                    }''' % (self.resource, self.namespace, name, repr(str(value)))
-# #
-# #                    results =  db.query(map_fun)
-# #                    if results.total_rows != 0 :
-# #                        raise ValidationException("Not Unique %s field %s" % (self.resource, name))
-#
 
 
     namespace = property(_get_namespace)

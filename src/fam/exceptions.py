@@ -4,3 +4,5 @@ class FamDbConnectionException(Exception):
 class FamResourceConflict(Exception):
     pass
 
+class FamValidationError(Exception):
+    pass

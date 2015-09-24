@@ -1,4 +1,5 @@
 from fam.blud import GenericObject, StringField, ReferenceFrom, ReferenceTo, BoolField, NumberField, DictField
+from fam.string_formats import EmailField
 
 NAMESPACE = "glowinthedark.co.uk/test/1"
 
@@ -30,8 +31,9 @@ class Cat(GenericObject):
     additional_properties = False
     fields = {
         "name": StringField(),
-        "legs": NumberField(),
-        "owner_id": ReferenceTo(NAMESPACE, "person")
+        "legs": NumberField(required=True),
+        "owner_id": ReferenceTo(NAMESPACE, "person", required=True),
+        "email": EmailField()
         }
 
 

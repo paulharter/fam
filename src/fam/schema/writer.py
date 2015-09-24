@@ -24,30 +24,48 @@ FIELD_TYPE_LOOKUP = {
     },
     "DateTimeField": {
         "type": "string"
-    },
+    }
+
 }
 
 
-def writeJsonSchema(fam_class):
+def createJsonSchema(fam_class):
+
+    class_name = fam_class.__name__.lower()
+    namespace = fam_class.namespace.lower()
 
     schema = {
-        "id": "https://roughcutpro.com/schemata/%s.json" % fam_class.__name__.lower(),
+        "id": "%s::%s" % (namespace, class_name),
         "$schema": "http://json-schema.org/draft-04/schema#",
-        "title": "A Fam object model for class %s" % fam_class.__name__,
+        "title": "A Fam object model for class %s:%s" % (fam_class.namespace, fam_class.__name__),
         "type": "object",
-        "properties": {},
+        "properties": {
+            "type":{
+                "type": "string",
+                "pattern": class_name
+            },
+            "namespace": {
+                "type": "string",
+                "pattern": namespace
+            }
+        },
         "additionalProperties": fam_class.additional_properties,
     }
 
-    properties = {}
     required_fields = []
 
     for name, field in fam_class.fields.iteritems():
-        field_dict = copy.deepcopy(FIELD_TYPE_LOOKUP[field.__class__.__name__])
-        schema["properties"][name] = field_dict
-        if hasattr(field, "pattern"):
-            field_dict["pattern"] = field.pattern
-        if field.required:
-            required_fields.append(name)
+        field_class_name = field.__class__.__name__
+        if field_class_name != "ReferenceFrom":
+            field_dict = copy.deepcopy(FIELD_TYPE_LOOKUP[field_class_name])
+            schema["properties"][name] = field_dict
+            if hasattr(field, "pattern"):
+                field_dict["pattern"] = field.pattern
+            if field.required:
+                required_fields.append(name)
+
+    if len(required_fields) > 0:
+        schema["required"] = required_fields
 
 
+    return schema

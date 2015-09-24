@@ -1,4 +1,5 @@
 import json
+import jsonschema
 from copy import deepcopy
 
 from fam.exceptions import *
@@ -8,9 +9,9 @@ from fam.database.base import BaseDatabase, FamDbAuthException
 
 class ResultWrapper(object):
 
-    def __init__(self, key, cas, value):
+    def __init__(self, key, rev, value):
         self.key = key
-        self.cas = cas
+        self.rev = rev
         self.value = value
 
     @classmethod
@@ -18,22 +19,22 @@ class ResultWrapper(object):
         key = as_json["_id"]
         rev = as_json.get("_rev")
         if rev is not None:
-            cas = rev
+            rev = rev
             del as_json["_rev"]
         else:
-            cas = None
+            rev = None
         del as_json["_id"]
         value = as_json
-        return cls(key, cas, value)
+        return cls(key, rev, value)
 
     @classmethod
     def from_couchdb_view_json(cls, as_json):
         key = as_json["id"]
-        cas = as_json["value"]["_rev"]
+        rev = as_json["value"]["_rev"]
         value = deepcopy(as_json["value"])
         del value["_id"]
         del value["_rev"]
-        return cls(key, cas, value)
+        return cls(key, rev, value)
 
     @classmethod
     def from_gateway_view_json(cls, as_json):
@@ -43,17 +44,17 @@ class ResultWrapper(object):
             value = deepcopy(as_json["value"])
             sync = value.get("_sync")
             if sync is not None:
-                cas = sync["rev"]
+                rev = sync["rev"]
                 del value["_sync"]
             elif value.get("_rev"):
-                cas = as_json["value"]["_rev"]
+                rev = as_json["value"]["_rev"]
                 del value["_rev"]
             else:
-                cas = None
+                rev = None
         except KeyError, e:
             print "key error raised in from_gateway_view_json on object: %s" % json.dumps(as_json, indent=4)
             raise e
-        return cls(key, cas, value)
+        return cls(key, rev, value)
 
 
 def auth(func):
@@ -72,11 +73,13 @@ class CouchDBWrapper(BaseDatabase):
     def __init__(self, mapper, db_url, db_name, reset=False, remote_url=None, continuous=False):
 
         self.mapper = mapper
+        self.validator = mapper.validator
         self.cookies = {}
 
         self.remote_url = remote_url
         self.db_name = db_name
         self.db_url = db_url
+
 
         url = "%s/%s" % (db_url, db_name)
 
@@ -106,10 +109,8 @@ class CouchDBWrapper(BaseDatabase):
         if continuous:
             self.sync_both_continuous()
 
-
-
     @auth
-    def get(self, key):
+    def _get(self, key):
         url = "%s/%s/%s" % (self.db_url, self.db_name, key)
         rsp = requests.get(url)
         if rsp.status_code == 200:
@@ -121,11 +122,17 @@ class CouchDBWrapper(BaseDatabase):
         raise Exception("Unknown Error getting cb doc: %s %s" % (rsp.status_code, rsp.text))
 
 
-    def set(self, key, value, cas=None):
+    def _set(self, key, value, rev=None):
+
+        if self.validator is not None:
+            try:
+                self.validator.validate(value)
+            except jsonschema.ValidationError, e:
+                raise FamValidationError(e)
 
         value["_id"] = key
-        if cas:
-            value["_rev"] = cas
+        if rev:
+            value["_rev"] = rev
 
         url = "%s/%s/%s" % (self.db_url, self.db_name, key)
         rsp = requests.put(url, data=json.dumps(value), headers={"Content-Type": "application/json", "Accept": "application/json"})
@@ -137,8 +144,8 @@ class CouchDBWrapper(BaseDatabase):
             raise FamResourceConflict("Unknown Error setting CBLite doc: %s %s" % (rsp.status_code, rsp.text))
 
 
-    def delete(self, key, cas):
-        rsp = requests.delete("%s/%s/%s?rev=%s" % (self.db_url, self.db_name, key, cas))
+    def _delete(self, key, rev):
+        rsp = requests.delete("%s/%s/%s?rev=%s" % (self.db_url, self.db_name, key, rev))
         if rsp.status_code == 200 or rsp.status_code == 202:
             return
         raise FamResourceConflict("Unknown Error deleting cb doc: %s %s" % (rsp.status_code, rsp.text))
@@ -246,7 +253,7 @@ class CouchDBWrapper(BaseDatabase):
             raise Exception("Unknown Error syncing down to remote: %s %s" % (rsp.status_code, rsp.text))
 
     def __getattr__(self, name):
-        return self.get(name)
+        return self._get(name)
 
 
     def update_designs(self):
@@ -262,13 +269,13 @@ class CouchDBWrapper(BaseDatabase):
             }
         }
 
-        existing = self.get(doc_id)
-        self.set(doc_id, design_doc, cas=existing.cas if existing else None)
+        existing = self._get(doc_id)
+        self._set(doc_id, design_doc, rev=existing.rev if existing else None)
 
         for namespace_name, namespace in self.mapper.namespaces.iteritems():
             view_namespace = namespace_name.replace("/", "_")
             doc_id = "_design/%s" % view_namespace
             attrs = self._get_design(namespace)
             attrs["_id"] = doc_id
-            existing = self.get(doc_id)
-            self.set(doc_id, attrs, cas=existing.cas if existing else None)
+            existing = self._get(doc_id)
+            self._set(doc_id, attrs, rev=existing.rev if existing else None)

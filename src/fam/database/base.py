@@ -1,4 +1,4 @@
-from fam.blud import ReferenceFrom
+from fam.blud import ReferenceFrom, GenericObject
 
 class FamDbAuthException(Exception):
     pass
@@ -11,6 +11,25 @@ class BaseDatabase(object):
                 emit(doc.%s, doc);
                 }
             }'''
+
+
+###################################
+
+    #double dispatch accessors
+    def put(self, thing):
+        return thing.save(self)
+
+    def delete(self, thing):
+        return thing.delete(self)
+
+    def get(self, key):
+        return GenericObject.get(self, key)
+
+    def delete_key(self, key):
+        return GenericObject.delete_key(self, key)
+
+#################################
+
 
 
     def class_for_type_name(self, type_name, namespace_name):

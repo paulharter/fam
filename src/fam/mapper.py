@@ -1,16 +1,17 @@
 import inspect
 
 from fam.blud import GenericObject
+from fam.schema.validator import ModelValidator
 
 
 class ClassMapper(object):
 
     def __init__(self, classes, modules=[]):
+        self.validator = ModelValidator(classes=classes, modules=modules)
         self.namespaces = {}
         self.modules = {}
         self._add_classes(classes)
         self._add_modules(modules)
-
 
     def _add_modules(self, modules):
         for module in modules:
