@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#", 
+    "additionalProperties": true, 
+    "id": "glowinthedark.co.uk/test/1::jackrussell", 
+    "properties": {
+        "age": {
+            "type": "number"
+        }, 
+        "name": {
+            "type": "string"
+        }, 
+        "namespace": {
+            "pattern": "glowinthedark.co.uk/test/1", 
+            "type": "string"
+        }, 
+        "owner_id": {
+            "type": "string"
+        }, 
+        "type": {
+            "pattern": "jackrussell", 
+            "type": "string"
+        }
+    }, 
+    "title": "A Fam object model for class glowinthedark.co.uk/test/1:JackRussell", 
+    "type": "object"
+}

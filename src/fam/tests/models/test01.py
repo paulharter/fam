@@ -5,7 +5,6 @@ NAMESPACE = "glowinthedark.co.uk/test/1"
 
 
 class Dog(GenericObject):
-    use_rev = True
     additional_properties = True
     fields = {
         "name": StringField(),
@@ -17,7 +16,6 @@ class Dog(GenericObject):
 
 
 class JackRussell(Dog):
-
     fields = {
         "age": NumberField(),
         }
@@ -27,10 +25,9 @@ class JackRussell(Dog):
 
 
 class Cat(GenericObject):
-    use_rev = True
-    additional_properties = False
     fields = {
         "name": StringField(),
+        "colour": StringField(immutable=True),
         "legs": NumberField(required=True),
         "owner_id": ReferenceTo(NAMESPACE, "person", required=True),
         "email": EmailField()
@@ -38,11 +35,15 @@ class Cat(GenericObject):
 
 
 class Person(GenericObject):
-    use_rev = True
-    additional_properties = False
     fields = {
         "name": StringField(),
         "cats": ReferenceFrom(NAMESPACE, "cat", "owner_id", delete="cascade"),
         "dogs": ReferenceFrom(NAMESPACE, "dog", "owner_id")
         }
 
+
+class Monkey(GenericObject):
+    use_rev = False
+    fields = {
+        "name": StringField(),
+        }

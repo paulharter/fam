@@ -25,7 +25,6 @@ FIELD_TYPE_LOOKUP = {
     "DateTimeField": {
         "type": "string"
     }
-
 }
 
 

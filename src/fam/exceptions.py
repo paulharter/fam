@@ -6,3 +6,6 @@ class FamResourceConflict(Exception):
 
 class FamValidationError(Exception):
     pass
+
+class FamError(Exception):
+    pass

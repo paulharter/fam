@@ -172,16 +172,13 @@ class MapperValidationTests(unittest.TestCase):
         self.assertRaises(FamValidationError, cat.save, self.db)
 
         #additional properties
-        cat = Cat(name="puss", owner_id=paul.key, legs=2, tail="long")
+        def failing_cat():
+            cat = Cat(name="puss", owner_id=paul.key, legs=2, tail="long")
 
-        self.assertRaises(FamValidationError, cat.save, self.db)
-
+        self.assertRaises(FamValidationError, failing_cat)
         dog = Dog(name="fly")
-
         self.db.put(dog)
-
         dog.tail = "long"
-
         self.db.put(dog)
 
         print dog.as_json()

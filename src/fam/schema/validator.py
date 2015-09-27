@@ -3,6 +3,7 @@ import os
 import json
 import inspect
 from fam.blud import GenericObject
+from fam.constants import *
 
 from .writer import createJsonSchema
 
@@ -52,8 +53,8 @@ class ModelValidator(object):
 
     def validate(self, doc):
 
-        type_name = doc.get("type")
-        namespace = doc.get("namespace")
+        type_name = doc.get(TYPE_STR)
+        namespace = doc.get(NAMESPACE_STR)
 
         if type_name:
             schema_id = "%s::%s" % (namespace, type_name)

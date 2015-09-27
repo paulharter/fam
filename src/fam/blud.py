@@ -22,8 +22,9 @@ class Field(object):
     
     object = "base"
     
-    def __init__(self, required=False):
+    def __init__(self, required=False, immutable=False):
         self.required = required
+        self.immutable = immutable
 
 
     def is_correct_type(self, value):
@@ -67,11 +68,11 @@ class DictField(Field):
 
 class ReferenceTo(Field):
 
-    def __init__(self, refns, refcls, required=False, delete="nothing"):
+    def __init__(self, refns, refcls, required=False, immutable=False, delete="nothing"):
         self.refns = refns
         self.refcls = refcls
         self.delete = delete
-        super(ReferenceTo, self).__init__(required)
+        super(ReferenceTo, self).__init__(required, immutable)
 
     def is_correct_type(self, value):
         return type(value) == types.StringType or type(value) == types.UnicodeType or type(value) == types.NoneType
@@ -90,12 +91,12 @@ class ReferenceTo(Field):
 
 class ReferenceFrom(Field):
 
-    def __init__(self, refns, refcls, fkey, required=False, delete="nothing"):
+    def __init__(self, refns, refcls, fkey, required=False, immutable=False, delete="nothing"):
         self.refns = refns
         self.refcls = refcls
         self.fkey = fkey
         self.delete = delete
-        super(ReferenceFrom, self).__init__(required)
+        super(ReferenceFrom, self).__init__(required, immutable)
 
     def __str__(self):
         attr = []
@@ -128,9 +129,9 @@ class GenericMetaclass(type):
         #check that the names of all ref to fields end with _id
         for fieldname, field in attrs["fields"].iteritems():
             if isinstance(field, ReferenceTo) and not fieldname.endswith("_id"):
-                raise Exception("All ReferenceTo field names must end with _id, %s doesn't" % fieldname)
+                raise FamError("All ReferenceTo field names must end with _id, %s doesn't" % fieldname)
 
-        attrs["type"] = name.lower()
+        attrs[TYPE_STR] = name.lower()
         newcls = super(GenericMetaclass, cls).__new__(cls, name, bases, attrs)
         module = sys.modules[newcls.__module__]
         if hasattr(module, "NAMESPACE"):
@@ -142,7 +143,8 @@ class GenericMetaclass(type):
 
 
 class GenericObject(object):
-    use_rev = False
+    use_rev = True
+    additional_properties = False
     __metaclass__ = GenericMetaclass
     fields = {}
 
@@ -154,22 +156,27 @@ class GenericObject(object):
         self.key = key if key is not None else u"%s_%s" % (type_name, unicode(uuid.uuid4()))
         if rev is not None:
             self.rev = rev
-        self._properties = kwargs
+
+        self._properties = {}
+
+        for k, v in kwargs.iteritems():
+            setattr(self, k, v)
+
         self._db = None
 
-        if kwargs.get("type") is None:
-            self._properties["type"] = type_name
+        if kwargs.get(TYPE_STR) is None:
+            self._properties[TYPE_STR] = type_name
 
-        #TODO fix this for super classes
+        #TODO fix this for super classes ???
         # else:
-        #     if self._properties["type"] != type_name:
-        #         raise Exception("dont match %s %s" % (self._properties["type"], type_name))
+        #     if self._properties[TYPE_STR] != type_name:
+        #         raise Exception("dont match %s %s" % (self._properties[TYPE_STR], type_name))
 
         if kwargs.get(NAMESPACE_STR) is None:
             self._properties[NAMESPACE_STR] = namespace
         else:
             if self._properties[NAMESPACE_STR] != namespace:
-                raise
+                raise Exception("the given namespace doesn't match the class")
 
     @classmethod
     def all(cls, db):
@@ -185,11 +192,11 @@ class GenericObject(object):
         return self._properties.get(NAMESPACE_STR)
 
     def _get_type(self):
-        return self._properties.get("type")
+        return self._properties.get(TYPE_STR)
 
     def _get_properties(self):
         prop = self._properties.copy()
-        del prop["type"]
+        del prop[TYPE_STR]
         del prop[NAMESPACE_STR]
         return prop
 
@@ -271,7 +278,7 @@ class GenericObject(object):
         d = {}
         d.update(self.properties)
         d[NAMESPACE_STR] = self.namespace
-        d["type"] = self.type
+        d[TYPE_STR] = self.type
         d["_id"] = self.key
         if self.rev is not None:
             d["_rev"] = self.rev
@@ -282,6 +289,9 @@ class GenericObject(object):
         equal = True
 
         if self.key != other.key:
+            equal = False
+
+        if self.use_rev and self.rev != other.rev:
             equal = False
 
         if self.type != other.type:
@@ -312,9 +322,9 @@ class GenericObject(object):
         if "_rev" in doc.keys():
             del doc["_rev"]
 
-        correctCls = db.class_for_type_name(doc.get("type"), doc.get("namespace"))
+        correctCls = db.class_for_type_name(doc.get(TYPE_STR), doc.get(NAMESPACE_STR))
         if correctCls is None:
-            raise Exception("couldn't find class %s" % doc.get("type"))
+            raise Exception("couldn't find class %s" % doc.get(TYPE_STR))
 
         obj = correctCls(key=key, rev=rev, **doc)
         obj._db = db
@@ -327,7 +337,7 @@ class GenericObject(object):
         rev = as_json.get("rev")
         doc = as_json["properties"].copy()
         doc[NAMESPACE_STR] = as_json[NAMESPACE_STR]
-        doc["type"] = as_json["type"]
+        doc[TYPE_STR] = as_json[TYPE_STR]
 
         return cls._from_doc(db, key, rev, doc)
 
@@ -374,18 +384,35 @@ class GenericObject(object):
             return self._properties[name]
 
 
+    def _update_property(self, key, value):
+        if value is None:
+            if key in self._properties:
+                del self._properties[key]
+        else:
+            self._properties[key] = value
+
+
     def __setattr__(self, name, value):
 
         if name in RESERVED_PROPERTY_NAMES:
             self.__dict__[name] = value
             return
+
         alias = "%s_id" % name
         if alias in self.fields.keys():
-            self._properties[alias] = value.key
-        elif name in self.fields.keys() or self.additional_properties:
-            self._properties[name] = value
+            self._update_property(alias, value.key)
+
+        elif name in self.fields or name in ("type", "namespace") or self.additional_properties :
+            field = self.fields.get(name)
+            if field is not None:
+                if field.immutable and name in self._properties:
+                    raise FamValidationError("You cannot change the immutable property %s" % name)
+            self._update_property(name, value)
         else:
-            raise Exception("you cant use this property name %s" % name)
+            raise FamValidationError("""You cant use the property name %s on the class %s
+            If you would like to set additional properties on this class that are not specified
+            set the class attribute "additional_properties" to True.
+            """ % (name, self.__class__.__name__))
 
 
     namespace = property(_get_namespace)

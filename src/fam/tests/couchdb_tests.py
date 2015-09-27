@@ -3,13 +3,14 @@ import unittest
 from fam.database import CouchDBWrapper
 from fam.mapper import ClassMapper
 from config import *
-from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell, NAMESPACE
+from fam.exceptions import *
+
+from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell, Monkey, NAMESPACE
 
 class CouchDBModelTests(unittest.TestCase):
 
-
     def setUp(self):
-        mapper = ClassMapper([Dog, Cat, Person, JackRussell])
+        mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey])
         self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True)
         self.db.update_designs()
 
@@ -85,6 +86,18 @@ class CouchDBModelTests(unittest.TestCase):
         cat.save(self.db)
         self.assertEqual(cat.owner, paul)
         self.assertEqual(cat.owner.name, "paul")
+
+
+    def test_ref_to_with_object(self):
+        paul = Person(name="paul")
+        self.db.put(paul)
+        cat = Cat(name="whiskers", owner=paul, legs=2)
+        cat.save(self.db)
+        self.assertEqual(cat.owner, paul)
+        self.assertEqual(cat.owner.name, "paul")
+        catback = self.db.get(cat.key)
+        self.assertEqual(cat, catback)
+
 
 
     def test_ref_from(self):
@@ -170,6 +183,18 @@ class CouchDBModelTests(unittest.TestCase):
         self.assertFalse("name" in cat.__dict__.keys())
 
 
+    def test_update_cat_fails(self):
+        paul = Person(name="paul")
+        paul.save(self.db)
+        cat = Cat(name="whiskers", owner_id=paul.key, legs=2)
+        cat.save(self.db)
+        cat.colour = "black"
+        cat.save(self.db)
+        def change_colour():
+            cat.colour = "white"
+        self.assertRaises(FamValidationError, change_colour)
+
+
     def setcatfood(self):
         self.cat.food = "biscuits"
 
@@ -224,3 +249,31 @@ class CouchDBModelTests(unittest.TestCase):
         last_seq, objects = GenericObject.changes(self.db, since=last_seq, limit=1)
         self.assertEqual(len(objects), 1)
         self.assertEqual(objects[0], dog3)
+
+
+    def test_update_fails_without_rev(self):
+        dog = Dog(name="fly")
+        dog.save(self.db)
+        dog.rev = None
+        dog.name = "jess"
+        self.assertRaises(FamResourceConflict, self.db.put, dog)
+
+
+    def test_update_works_without_rev(self):
+        monkey = Monkey(name="fly")
+        monkey.save(self.db)
+        monkey.rev = None
+        monkey.name = "jess"
+        self.db.put(monkey)
+
+
+class CouchDBModelTests2(unittest.TestCase):
+
+    # this test that refs whos name doesnt end with _id fail
+    def test_misnamed_ref_to_fails(self):
+
+        def duff_import():
+            from fam.tests.models import test02
+            print test02
+
+        self.assertRaises(FamError, duff_import)

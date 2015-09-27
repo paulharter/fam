@@ -3,6 +3,7 @@ import jsonschema
 from copy import deepcopy
 
 from fam.exceptions import *
+from fam.constants import *
 from fam.utils import requests_shim as requests
 from fam.database.base import BaseDatabase, FamDbAuthException
 
@@ -191,7 +192,7 @@ class CouchDBWrapper(BaseDatabase):
             results = rsp.json()
             last_seq = results.get("last_seq")
             rows = results.get("results")
-            return last_seq, [ResultWrapper.from_couchdb_json(row["doc"]) for row in rows if "doc" in row.keys() and row["doc"].get("type") is not None]
+            return last_seq, [ResultWrapper.from_couchdb_json(row["doc"]) for row in rows if "doc" in row.keys() and row["doc"].get(TYPE_STR) is not None]
         if rsp.status_code == 404:
             return None, None
         if rsp.status_code == 403:
