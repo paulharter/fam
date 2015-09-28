@@ -160,7 +160,8 @@ class GenericObject(object):
         self._properties = {}
 
         for k, v in kwargs.iteritems():
-            setattr(self, k, v)
+            if not k.startswith("_"):
+                setattr(self, k, v)
 
         self._db = None
 
