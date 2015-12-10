@@ -1,8 +1,11 @@
-import json
+import simplejson as json
 import uuid
 import datetime
 import types
 import sys
+from copy import deepcopy
+
+from fam.fam_json import object_default
 
 from .constants import *
 from .exceptions import *
@@ -13,6 +16,7 @@ __all__ = [
     "StringField",
     "ListField",
     "DictField",
+    "ObjectField",
     "ReferenceTo",
     "ReferenceFrom",
     "GenericObject"
@@ -22,13 +26,20 @@ class Field(object):
     
     object = "base"
     
-    def __init__(self, required=False, immutable=False):
+    def __init__(self, required=False, immutable=False, default=None):
         self.required = required
         self.immutable = immutable
+        self.default = default
+
+        if self.default is not None and self.required is True:
+            raise FamError("It doesnt really make sense to use both required and default together. Just use default")
 
 
     def is_correct_type(self, value):
         return True
+
+    def get_default(self):
+        return self.default
 
     
     def __str__(self):
@@ -57,22 +68,43 @@ class StringField(Field):
 
 class ListField(Field):
 
+    def get_default(self):
+        return deepcopy(self.default)
+
     def is_correct_type(self, value):
         return type(value) == types.ListType or type(value) == types.NoneType
 
 class DictField(Field):
 
+    def get_default(self):
+        return deepcopy(self.default)
+
     def is_correct_type(self, value):
         return type(value) == types.DictType or type(value) == types.NoneType
+
+class ObjectField(Field):
+
+    def get_default(self):
+        return self.cls()
+
+    def __init__(self, cls, default=None, required=False):
+        self.cls = cls
+        if not hasattr(cls, "to_json") and hasattr(cls, "from_json"):
+            raise Exception("the class used for a n ObjectField must have to_json and from_json methods")
+
+        super(ObjectField, self).__init__(default=default, required=required)
+
+    def is_correct_type(self, value):
+        return value.__class__ == self.cls
 
 
 class ReferenceTo(Field):
 
-    def __init__(self, refns, refcls, required=False, immutable=False, delete="nothing"):
+    def __init__(self, refns, refcls, required=False, immutable=False, default=None, delete="nothing"):
         self.refns = refns
         self.refcls = refcls
         self.delete = delete
-        super(ReferenceTo, self).__init__(required, immutable)
+        super(ReferenceTo, self).__init__(required, immutable, default)
 
     def is_correct_type(self, value):
         return type(value) == types.StringType or type(value) == types.UnicodeType or type(value) == types.NoneType
@@ -91,12 +123,12 @@ class ReferenceTo(Field):
 
 class ReferenceFrom(Field):
 
-    def __init__(self, refns, refcls, fkey, required=False, immutable=False, delete="nothing"):
+    def __init__(self, refns, refcls, fkey, required=False, immutable=False, default=None, delete="nothing"):
         self.refns = refns
         self.refcls = refcls
         self.fkey = fkey
         self.delete = delete
-        super(ReferenceFrom, self).__init__(required, immutable)
+        super(ReferenceFrom, self).__init__(required, immutable, default)
 
     def __str__(self):
         attr = []
@@ -159,6 +191,7 @@ class GenericObject(object):
 
         self._properties = {}
 
+
         for k, v in kwargs.iteritems():
             if not k.startswith("_"):
                 setattr(self, k, v)
@@ -167,6 +200,8 @@ class GenericObject(object):
 
         if kwargs.get(TYPE_STR) is None:
             self._properties[TYPE_STR] = type_name
+
+        self._check_defaults()
 
         #TODO fix this for super classes ???
         # else:
@@ -201,39 +236,52 @@ class GenericObject(object):
         del prop[NAMESPACE_STR]
         return prop
 
+
+    def _check_defaults(self):
+        for field_name, field in self.__class__.fields.iteritems():
+            if field.default is not None and not field_name in self._properties:
+                self._properties[field_name] = field.get_default()
+
+    def _check_immutable(self, existing_doc):
+        for field_name, field in self.__class__.fields.iteritems():
+            if field.immutable:
+                if field_name in existing_doc and getattr(self, field_name) != existing_doc[field_name]:
+                    raise FamImmutableError("You can't change the value of {} on a {} it has been made immutable".format(field_name, self.__class__.__name__))
+
+
     def save(self, db):
         self._db = db
-        result = db.get(self.key)
+        result = db._get(self.key)
         if result:
             doc = result.value
             rev = result.rev
-            if self.rev:# if it has a revision
-                if rev != self.rev:
-                    raise FamResourceConflict("bad rev id: %s, rev: %s db_rev: %s" % (self.key, self.rev, rev))
-            else:
-                if not self.use_rev:
-                    self.rev = rev
-                else:
-                    raise FamResourceConflict("bad rev id: %s, rev: %s db_rev: %s" % (self.key, self.rev, rev))
+
+            self._check_immutable(doc)
+
+            # raise a conflict if revs different
+            if self.use_rev and rev != self.rev:
+                raise FamResourceConflict("bad rev id: %s, rev: %s db_rev: %s" % (self.key, self.rev, rev))
+
             self.pre_save_update_cb(doc)
-            if self.use_rev and self.rev:
-                result = db._set(self.key, self._properties, rev=self.rev)
+            # just force the rev if not using it
+            result = db._set(self.key, self._properties, rev=self.rev if self.use_rev else rev)
+
+            if self.use_rev:
                 self.rev = result.rev
-            else:
-                result = db._set(self.key, self._properties, rev=self.rev)
-                self.rev = result.rev
+
             self.post_save_update_cb()
-            db.sync_up()
-            return "updated"
+            updated = True
         else:
             self.pre_save_new_cb()
             result = db._set(self.key, self._properties)
             self.post_save_new_cb()
-            db.sync_up()
+            updated = False
 
+        db.sync_up()
         if self.use_rev:
             self.rev = result.rev
-        return "new"
+
+        return updated
 
 
     def delete(self, db):
@@ -283,7 +331,7 @@ class GenericObject(object):
         d["_id"] = self.key
         if self.rev is not None:
             d["_rev"] = self.rev
-        return json.dumps(d, sort_keys=True, indent=4, separators=(',', ': '))
+        return json.dumps(d, sort_keys=True, indent=4, default=object_default, separators=(',', ': '))
 
 
     def __eq__(self, other):
@@ -383,6 +431,14 @@ class GenericObject(object):
                 return GenericObject.get(self._db, self._properties[id_name])
         if name in self._properties.keys():
             return self._properties[name]
+        if name in self.__class__.fields:
+            return None
+        elif "%s_id" % name in self.__class__.fields:
+            return None
+        elif name == "rev":
+            return None
+        else:
+            raise AttributeError("Not found %s" % name)
 
 
     def _update_property(self, key, value):
@@ -407,7 +463,9 @@ class GenericObject(object):
             field = self.fields.get(name)
             if field is not None:
                 if field.immutable and name in self._properties:
-                    raise FamValidationError("You cannot change the immutable property %s" % name)
+                    raise FamImmutableError("You cannot change the immutable property %s" % name)
+                if isinstance(field, ObjectField) and not isinstance(value, field.cls):
+                    value = field.cls.from_json(value)
             self._update_property(name, value)
         else:
             raise FamValidationError("""You cant use the property name %s on the class %s

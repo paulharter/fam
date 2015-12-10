@@ -5,12 +5,12 @@ from fam.mapper import ClassMapper
 from config import *
 from fam.exceptions import *
 
-from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell, Monkey, NAMESPACE
+from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell, Monkey, Monarch, NAMESPACE
 
 class CouchDBModelTests(unittest.TestCase):
 
     def setUp(self):
-        mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey])
+        mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch])
         self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True)
         self.db.update_designs()
 
@@ -35,11 +35,12 @@ class CouchDBModelTests(unittest.TestCase):
         self.assertEqual(dog.talk(), "woof")
 
 
-    def test_make_an_sub_object(self):
+    def test_make_a_sub_object(self):
         jack = JackRussell()
         self.assertEqual(jack.talk(), "Yap")
         jack.name = "jack"
         jack.age = 12
+        self.db.put(jack)
 
 
     def test_make_an_object_saved(self):
@@ -51,6 +52,7 @@ class CouchDBModelTests(unittest.TestCase):
         self.assertEqual(dog.__class__, Dog)
         self.assertNotEqual(dog.key, None)
 
+
     def test_make_an_object_double_dispatch_saved(self):
         dog = Dog(name="woofer")
         self.db.put(dog)
@@ -59,6 +61,26 @@ class CouchDBModelTests(unittest.TestCase):
         self.assertEqual(dog.name, "woofer")
         self.assertEqual(dog.__class__, Dog)
         self.assertNotEqual(dog.key, None)
+
+
+    def test_make_an_object_with_additional_properties(self):
+        dog = Dog(name="woofer", collar="leather")
+        dog.home = "hackney"
+        self.db.put(dog)
+        self.assertEqual(dog.home, "hackney")
+
+    def test_fail_with_additional_properties(self):
+
+        def wrong_monkey():
+            return Monkey(name="bonzo", collar="leather")
+
+        def collar_monkey(monkey):
+            monkey.collar = "leather"
+
+        self.assertRaises(FamValidationError, wrong_monkey)
+        monkey = Monkey(name="bonzo")
+        self.assertRaises(FamValidationError, collar_monkey, monkey)
+
 
     def test_make_an_object_saved_cas(self):
         paul = Person(name="paul")
@@ -99,7 +121,6 @@ class CouchDBModelTests(unittest.TestCase):
         self.assertEqual(cat, catback)
 
 
-
     def test_ref_from(self):
         paul = Person(name="paul")
         paul.save(self.db)
@@ -109,6 +130,38 @@ class CouchDBModelTests(unittest.TestCase):
         cat2.save(self.db)
         self.assertEqual(len(paul.cats), 2)
         self.assertTrue(paul.cats[0] == cat or paul.cats[1] == cat)
+
+
+    def test_ref_from_multiple_index(self):
+        paul = Person(name="paul")
+        paul.save(self.db)
+        cat = Cat(name="whiskers", owner_id=paul.key, legs=2)
+        cat.save(self.db)
+        dog = Dog(name="fly", owner=paul)
+        self.db.put(dog)
+        self.assertEqual(len(paul.cats), 1)
+        self.assertEqual(len(paul.dogs), 1)
+        self.assertEqual(len(paul.animals), 2)
+
+
+    def test_refs_with_inheritance(self):
+        paul = Person(name="paul")
+        paul.save(self.db)
+        jack = JackRussell()
+        jack.owner = paul
+        jack.name = "jack"
+        self.db.put(jack)
+        self.assertEqual(paul.dogs[0], jack)
+
+
+    def test_refs_with_other_inheritance(self):
+        paul = Monarch(name="paul")
+        self.db.put(paul)
+        jack = JackRussell()
+        jack.owner = paul
+        jack.name = "jack"
+        self.db.put(jack)
+        self.assertEqual(paul.dogs[0], jack)
 
 
     def test_delete_cat_dd(self):
@@ -192,7 +245,7 @@ class CouchDBModelTests(unittest.TestCase):
         cat.save(self.db)
         def change_colour():
             cat.colour = "white"
-        self.assertRaises(FamValidationError, change_colour)
+        self.assertRaises(FamImmutableError, change_colour)
 
 
     def setcatfood(self):

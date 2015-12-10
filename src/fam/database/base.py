@@ -30,8 +30,6 @@ class BaseDatabase(object):
 
 #################################
 
-
-
     def class_for_type_name(self, type_name, namespace_name):
         return self.mapper.get_class(type_name, namespace_name)
 
@@ -50,12 +48,17 @@ class BaseDatabase(object):
         return design
 
 
-    def _get_fk_map(self, resource, namespace, keyName):
-            if type(resource) == type("hello"):
-                resources = [resource]
-            else:
-                resources = resource
+    def _get_fk_map(self, class_name, namespace, ref_to_field_name):
 
-            arrayStr = "['%s']" % "', '".join(resources)
+        if isinstance(class_name, list):
+            class_names = class_name
+        else:
+            class_names = [class_name]
 
-            return self.FOREIGN_KEY_MAP_STRING % (arrayStr, namespace, keyName)
+        all_sub_class_names = set()
+        for name in class_names:
+            sub_classes = set(self.mapper.get_sub_class_names(namespace, name))
+            all_sub_class_names = all_sub_class_names.union(sub_classes)
+
+        arrayStr = "['%s']" % "', '".join(all_sub_class_names)
+        return self.FOREIGN_KEY_MAP_STRING % (arrayStr, namespace, ref_to_field_name)

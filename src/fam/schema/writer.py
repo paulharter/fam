@@ -1,6 +1,7 @@
 import copy
 
 FIELD_TYPE_LOOKUP = {
+    "ObjectField": {},
     "BoolField": {
         "type": "boolean",
     },

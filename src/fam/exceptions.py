@@ -7,5 +7,8 @@ class FamResourceConflict(Exception):
 class FamValidationError(Exception):
     pass
 
+class FamImmutableError(Exception):
+    pass
+
 class FamError(Exception):
     pass

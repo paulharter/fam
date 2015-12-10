@@ -1,4 +1,5 @@
-import json
+import simplejson as json
+from fam.fam_json import object_default
 import jsonschema
 from copy import deepcopy
 
@@ -136,7 +137,7 @@ class CouchDBWrapper(BaseDatabase):
             value["_rev"] = rev
 
         url = "%s/%s/%s" % (self.db_url, self.db_name, key)
-        rsp = requests.put(url, data=json.dumps(value), headers={"Content-Type": "application/json", "Accept": "application/json"})
+        rsp = requests.put(url, data=json.dumps(value, indent=4, sort_keys=True, default=object_default), headers={"Content-Type": "application/json", "Accept": "application/json"})
         if rsp.status_code == 200 or rsp.status_code == 201:
             if rsp.content:
                 value["_rev"] = rsp.json()["rev"]
@@ -274,6 +275,9 @@ class CouchDBWrapper(BaseDatabase):
         self._set(doc_id, design_doc, rev=existing.rev if existing else None)
 
         for namespace_name, namespace in self.mapper.namespaces.iteritems():
+
+
+
             view_namespace = namespace_name.replace("/", "_")
             doc_id = "_design/%s" % view_namespace
             attrs = self._get_design(namespace)

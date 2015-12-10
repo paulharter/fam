@@ -12,6 +12,9 @@ class ClassMapper(object):
         self.modules = {}
         self._add_classes(classes)
         self._add_modules(modules)
+        self.sub_class_lookup = {}
+        self._work_out_sub_classes()
+
 
     def _add_modules(self, modules):
         for module in modules:
@@ -23,6 +26,24 @@ class ClassMapper(object):
                             if not k.startswith("_"):
                                 classes.append(obj)
             self._add_classes(classes)
+
+
+    def get_sub_class_names(self, namespace, class_name):
+        return self.sub_class_lookup[(namespace, class_name)]
+
+    def _work_out_sub_classes(self):
+
+        # for each class add their subclasses type names to a lookup table keyed by namespace and classname
+        # only works within a given namespace
+        for namespace_name, namespace in self.namespaces.iteritems():
+            for class_name_super, cls_super in namespace.iteritems():
+                subclasses = []
+                self.sub_class_lookup[(namespace_name, class_name_super)] = subclasses
+                for class_name_sub, cls_sub in namespace.iteritems():
+                    if issubclass(cls_sub, cls_super):
+                        subclasses.append(class_name_sub)
+
+
 
 
     def _add_classes(self, classes):
