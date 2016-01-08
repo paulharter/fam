@@ -30,7 +30,7 @@ def iterSyncGatewayTests():
 
         def tearDown(self):
             # stop the gateway
-            self.gateway.terminate()
+            self.gateway.kill()
 
         methods = {
             "setUp": setUp,
