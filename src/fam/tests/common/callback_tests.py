@@ -40,7 +40,7 @@ class CallbackBaseTests:
                 mock_post_update.assert_not_called()
                 dog.name = "fly"
                 self.db.put(dog)
-                mock_post_update.assert_called_once()
+                mock_post_update.assert_called_once_with()
 
 
         def test_delete_callbacks(self):
@@ -51,7 +51,7 @@ class CallbackBaseTests:
                 mock_pre_delete.assert_not_called()
                 dog.name = "fly"
                 self.db.delete(dog)
-                mock_pre_delete.assert_called_once()
+                mock_pre_delete.assert_called_once_with()
 
 
             with patch.object(Dog, 'post_delete_cb', return_value=None) as mock_post_delete:
@@ -60,4 +60,4 @@ class CallbackBaseTests:
                 mock_post_delete.assert_not_called()
                 dog.name = "fly"
                 self.db.delete(dog)
-                mock_post_delete.assert_called_once()
+                mock_post_delete.assert_called_once_with()
