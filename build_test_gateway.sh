@@ -9,16 +9,11 @@
 #
 #export PATH=$PATH:/usr/local/go/bin
 
-cd /opt
 
 sudo git clone git@github.com:couchbase/sync_gateway.git
-
-sudo cd /opt/sync_gateway
+sudo cd sync_gateway
 sudo git submodule init
 sudo git submodule update
 sudo ./build.sh
 sudo cp bin/sync_gateway /usr/local/bin
 
-sudo mkdir -p /opt/sync_gateway/data
-sudo rm go1.4.2.linux-amd64.tar.gz
-sudo rm -rf /opt/sync_gateway
