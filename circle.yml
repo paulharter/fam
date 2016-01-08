@@ -1,3 +1,4 @@
 dependencies:
   pre:
+    - git clone git@github.com:paulharter/sync_gateway.git
     - bash ./build_test_gateway.sh
