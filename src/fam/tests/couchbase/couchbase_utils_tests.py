@@ -5,11 +5,6 @@ import time
 
 from fam.utils import couchbase_utils
 
-
-
-
-
-
 class CouchbaseTests(unittest.TestCase):
 
 

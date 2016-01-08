@@ -3,6 +3,9 @@
     "additionalProperties": false, 
     "id": "glowinthedark.co.uk/test/1::cat", 
     "properties": {
+        "colour": {
+            "type": "string"
+        }, 
         "email": {
             "pattern": "^([-!#$%&'*+/=?^_`{}|~0-9a-zA-Z]+(\\.[-!#$%&'*+/=?^_`{}|~0-9a-zA-Z]+)*|^\"([\u0001-\b\u000b\f\u000e-\u001f!#-\\[\\]-\u007f]|\\[\u0001-011\u000b\f\u000e-\u007f])*\")@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,6}\\.?$", 
             "type": "string"
@@ -19,6 +22,9 @@
         }, 
         "owner_id": {
             "type": "string"
+        }, 
+        "tail": {
+            "type": "boolean"
         }, 
         "type": {
             "pattern": "cat", 

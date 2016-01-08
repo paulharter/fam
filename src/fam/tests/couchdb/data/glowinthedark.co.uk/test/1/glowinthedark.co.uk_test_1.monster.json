@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#", 
     "additionalProperties": false, 
-    "id": "glowinthedark.co.uk/test/1::monkey", 
+    "id": "glowinthedark.co.uk/test/1::monster", 
     "properties": {
         "name": {
             "type": "string"
@@ -11,10 +11,11 @@
             "type": "string"
         }, 
         "type": {
-            "pattern": "monkey", 
+            "pattern": "monster", 
             "type": "string"
-        }
+        }, 
+        "weapons": {}
     }, 
-    "title": "A Fam object model for class glowinthedark.co.uk/test/1:Monkey", 
+    "title": "A Fam object model for class glowinthedark.co.uk/test/1:Monster", 
     "type": "object"
 }

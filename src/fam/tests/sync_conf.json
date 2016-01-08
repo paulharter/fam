@@ -1,8 +1,0 @@
-{
-   "databases":{
-      "sync_gateway":{
-         "server":"walrus:test"
-      }
-   }
-}
-

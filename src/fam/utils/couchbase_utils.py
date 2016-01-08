@@ -4,8 +4,6 @@ import json
 import time
 import subprocess
 
-
-
 def make_a_bucket(couchbase_url, user_name, password, bucket_name, force=False, flush=False):
 
     params = {}

@@ -5,6 +5,7 @@ NAMESPACE = "glowinthedark.co.uk/test/1"
 
 
 class Dog(GenericObject):
+
     additional_properties = True
     fields = {
         "name": StringField(),
