@@ -64,8 +64,8 @@ def flush_a_bucket(couchbase_url, user_name, password, bucket_name):
 
     rsp = requests.post("%s/pools/default/buckets/%s/controller/doFlush" % (couchbase_url, bucket_name), auth=(user_name, password))
 
-    if rsp.status_code != 200:
-        raise Exception("failed to flush bucket %s : %s" % (rsp.status_code, rsp.text))
+    # if rsp.status_code != 200:
+    #     raise Exception("failed to flush bucket %s : %s" % (rsp.status_code, rsp.text))
 
 
 def make_a_gateway(sync_admin_url, db_name, couchbase_url, bucket, sync_function, force=False):
