@@ -13,8 +13,6 @@ from fam.utils import couchbase_utils
 
 current_module = sys.modules[__name__]
 
-SYNC_GATEWAY_PATH = "sync_gateway"
-
 def iterSyncGatewayTests():
 
     for test_class in common_test_classes:
