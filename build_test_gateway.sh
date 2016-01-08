@@ -10,7 +10,7 @@
 #export PATH=$PATH:/usr/local/go/bin
 
 
-sudo git clone git@github.com:couchbase/sync_gateway.git
+sudo git clone git@github.com:paulharter/sync_gateway.git
 sudo cd sync_gateway
 sudo git submodule init
 sudo git submodule update
