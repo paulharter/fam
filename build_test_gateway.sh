@@ -11,7 +11,7 @@
 
 cd /opt
 
-sudo git clone https://github.com/couchbase/sync_gateway.git
+sudo git clone git@github.com:couchbase/sync_gateway.git
 
 sudo cd /opt/sync_gateway
 sudo git submodule init
