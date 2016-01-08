@@ -11,14 +11,14 @@
 
 cd /opt
 
-git clone https://github.com/couchbase/sync_gateway.git
+sudo git clone https://github.com/couchbase/sync_gateway.git
 
-cd /opt/sync_gateway
-git submodule init
-git submodule update
-./build.sh
-cp bin/sync_gateway /usr/local/bin
+sudo cd /opt/sync_gateway
+sudo git submodule init
+sudo git submodule update
+sudo ./build.sh
+sudo cp bin/sync_gateway /usr/local/bin
 
-mkdir -p /opt/sync_gateway/data
-rm go1.4.2.linux-amd64.tar.gz
-rm -rf /opt/sync_gateway
+sudo mkdir -p /opt/sync_gateway/data
+sudo rm go1.4.2.linux-amd64.tar.gz
+sudo rm -rf /opt/sync_gateway
