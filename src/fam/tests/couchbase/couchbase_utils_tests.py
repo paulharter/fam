@@ -5,7 +5,7 @@ import time
 
 from fam.utils import couchbase_utils
 
-class CouchbaseTests(unittest.TestCase):
+class CouchbaseTests(object):
 
 
     def test_talk_to_server(self):

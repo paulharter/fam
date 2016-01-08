@@ -5,7 +5,7 @@ from config import *
 from fam.tests.models.test01 import Dog, Cat, Person, JackRussell, NAMESPACE
 from fam.mapper import ClassMapper
 
-class CouchbaseModelTests(unittest.TestCase):
+class CouchbaseModelTests(object):
 
 
     def setUp(self):
