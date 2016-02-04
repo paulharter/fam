@@ -142,20 +142,21 @@ class BasicBaseTestCases:
             self.assertEqual(len(paul.animals), 2)
 
 
+
         def test_refs_with_inheritance(self):
             paul = Person(name="paul")
             paul.save(self.db)
             jack = JackRussell()
-            jack.owner = paul
+            jack.owner_id = paul.key
             jack.name = "jack"
-            self.db.put(jack)
+            jack.save(self.db)
             self.assertEqual(paul.dogs[0], jack)
 
 
         def test_refs_with_other_inheritance(self):
             paul = Monarch(name="paul")
             self.db.put(paul)
-            jack = JackRussell()
+            jack = Dog()
             jack.owner = paul
             jack.name = "jack"
             self.db.put(jack)
@@ -263,15 +264,15 @@ class BasicBaseTestCases:
             dog.food = "biscuits"
             dog.save(self.db)
 
-
-        def test_all(self):
-            dog = Dog(name="fly")
-            dog.save(self.db)
-            all = Dog.all(self.db)
-            self.assertEqual(len(all), 1)
+        #
+        # def test_all(self):
+        #     dog = Dog(name="fly")
+        #     dog.save(self.db)
+        #     all = Dog.all(self.db)
+        #     self.assertEqual(len(all), 1)
 
         # broken in sync gateway
-
+        #
 
         # def test_changes(self):
         #     dog = Dog(name="fly")

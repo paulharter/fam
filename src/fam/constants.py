@@ -1,6 +1,4 @@
 
-
-
 RESERVED_PROPERTY_NAMES = ("key", "rev", "_properties", "_db")
 
 NAMESPACE_STR = "namespace"

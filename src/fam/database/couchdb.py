@@ -275,9 +275,6 @@ class CouchDBWrapper(BaseDatabase):
         self._set(doc_id, design_doc, rev=existing.rev if existing else None)
 
         for namespace_name, namespace in self.mapper.namespaces.iteritems():
-
-
-
             view_namespace = namespace_name.replace("/", "_")
             doc_id = "_design/%s" % view_namespace
             attrs = self._get_design(namespace)

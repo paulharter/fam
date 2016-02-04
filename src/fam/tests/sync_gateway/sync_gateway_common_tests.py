@@ -16,11 +16,11 @@ def iterSyncGatewayTests():
 
         def setUp(self):
 
-            cmd = "{} -url walrus:".format(SYNC_GATEWAY_PATH)
-
-            time.sleep(0.25)
-            self.gateway = subprocess.Popen(cmd, shell=True)
-            time.sleep(0.25)
+            # cmd = "{} -url walrus:".format(SYNC_GATEWAY_PATH)
+            #
+            # time.sleep(0.25)
+            # self.gateway = subprocess.Popen(cmd, shell=True)
+            # time.sleep(0.25)
 
             mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch, Monster])
             url = "http://%s:%s" % (SYNC_GATEWAY_HOST, SYNC_GATEWAY_ADMIN_PORT)
@@ -28,13 +28,13 @@ def iterSyncGatewayTests():
             self.db.update_designs()
             super(self.__class__, self).setUp()
 
-        def tearDown(self):
-            # stop the gateway
-            self.gateway.kill()
+        # def tearDown(self):
+        #     # stop the gateway
+        #     self.gateway.kill()
 
         methods = {
             "setUp": setUp,
-            "tearDown":tearDown
+            # "tearDown":tearDown
         }
 
         setattr(current_module, name, type(name, (test_class,), methods))

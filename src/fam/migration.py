@@ -1,6 +1,12 @@
+"""
+This is just work in progress
+
+Doesnt do anything right now
+"""
+
+
+
 import datetime
-
-
 
 
 class FamMigration(object):

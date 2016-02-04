@@ -1,4 +1,5 @@
 from fam.blud import ReferenceFrom, GenericObject
+import json
 
 class FamDbAuthException(Exception):
     pass
@@ -6,11 +7,11 @@ class FamDbAuthException(Exception):
 class BaseDatabase(object):
 
     FOREIGN_KEY_MAP_STRING = '''function(doc) {
-                var resources = %s;
-                if (resources.indexOf(doc.type) != -1 && doc.namespace == \"%s\"){
-                emit(doc.%s, doc);
-                }
-            }'''
+    var resources = %s;
+    if (resources.indexOf(doc.type) != -1 && doc.namespace == \"%s\"){
+        emit(doc.%s, doc);
+    }
+}'''
 
 
 ###################################
@@ -38,9 +39,11 @@ class BaseDatabase(object):
         views = {}
 
         for type_name, cls in namespace.iteritems():
-            for field_name, field in cls.fields.iteritems():
+            for field_name, field in cls.cls_fields.iteritems():
                 if isinstance(field, ReferenceFrom):
-                    views["%s_%s" % (type_name, field_name)] = {"map" : self._get_fk_map(field.refcls, field.refns, field.fkey)}
+                    view_key = "%s_%s" % (type_name, field_name)
+                    # if view_key in ["person_dogs", "person_animals"]:
+                    views[view_key] = {"map" : self._get_fk_map(field.refcls, field.refns, field.fkey)}
         design = {
            "views": views
         }
@@ -60,5 +63,6 @@ class BaseDatabase(object):
             sub_classes = set(self.mapper.get_sub_class_names(namespace, name))
             all_sub_class_names = all_sub_class_names.union(sub_classes)
 
-        arrayStr = "['%s']" % "', '".join(all_sub_class_names)
+        arrayStr = '["%s"]' % '", "'.join(all_sub_class_names)
         return self.FOREIGN_KEY_MAP_STRING % (arrayStr, namespace, ref_to_field_name)
+

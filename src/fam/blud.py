@@ -152,6 +152,9 @@ class GenericMetaclass(type):
 
     def __new__(cls, name, bases, dct):
         attrs = dct.copy()
+        # take a copy of this classes own fields
+        attrs["cls_fields"] = {} if attrs["fields"] is None else attrs["fields"].copy()
+
         if attrs.get("fields") is None:
             attrs["fields"] = {}
         for b in bases:
@@ -322,6 +325,8 @@ class GenericObject(object):
                         del obj._properties[field.fkey]
                         obj.save(db)
 
+    def __str__(self):
+        return self.as_json()
 
     def as_json(self):
         d = {}
@@ -413,13 +418,28 @@ class GenericObject(object):
         rows =  db.view(view_name, key)
         return [GenericObject._from_doc(db, row.key, row.rev, row.value) for row in rows]
 
+
+    @classmethod
+    def _type_with_ref(cls, name):
+
+        if name in cls.cls_fields.keys():
+            return cls.type
+
+        for base in cls.__bases__:
+            if name in base.cls_fields.keys():
+                return base.type
+
+        return None
+
     def __getattr__(self, name):
         ref = self.__class__.fields.get(name)
         if isinstance(ref, ReferenceFrom):
             if self._db is None:
                 raise Exception("no db")
             view_namespace = self.namespace.replace("/", "_")
-            view_name = "%s/%s_%s" % (view_namespace, self.type, name)
+            # look at super class gypes to find clas with ref
+            type_name = self.__class__._type_with_ref(name)
+            view_name = "%s/%s_%s" % (view_namespace, type_name, name)
             return self._query_view(self._db, view_name, self.key)
 
         if "%s_id" % name in self.properties.keys():
