@@ -2,7 +2,7 @@
 
 A simple Python ORM for CouchDB and Couchbase Sync Gateway. 
 
-Fam is a work in progress growing as the needs of my current project dictate.  This means that while very useful it is not a feature complete ORM. I use it to support a web app that sits side by side with a mobile application that using sync gateway. It is probably most useful if, like me, you want to use Couch family of noSQL DBs for their handling of distributed data sets but have highly relational data.
+Fam is a work in progress growing as the needs of my current project dictate.  This means that while very useful it is not a feature complete ORM. I use it to support a web app that sits side by side with a mobile application using sync gateway.
 
 Fam adds a type and namespace to each document:
 
