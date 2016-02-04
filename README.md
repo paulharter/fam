@@ -54,11 +54,10 @@ You can install fam from pypi with `pip install fam`
 fam has wrappers for connecting to different databases:
 
 - CouchDB
-- Couchbase
 - Couchbase Sync Gateway
 
-These wrapper classes are stateless and thread safe, at least the CouchDB and Sync Gateway ones certainly are as they use the requests library to manage connection pooling and keep alive. The Couchbase one probably is too but it uses Couchbase's own libraries to connect to the db.
- 
+These wrapper classes do very little except remember the location of the database and send requests, relying on the python requests library to provide connection pooling.
+
  To use fam you have to first create a class mapper passing in your classes eg:
  
  ```python
@@ -115,7 +114,7 @@ class Cat(GenericObject):
  With three class attributes
  
  - **use_rev** - A boolean, True by default, which if true uses the default rev/cas collision protection of Couch DBs but if false always forces a document update as if this mechanism didn't exist
- - **additional_properties** - A boolean, false by default, which if true lets you add arbitrary additional top level attributes to an object and if flase will throw an exception when you try.
+ - **additional_properties** - A boolean, false by default, which if true lets you add arbitrary additional top level attributes to an object and if false will throw an exception when you try.
  - **fields** - A dict of named fields that map to the top level attributes of the underlying json documents. See below for use.
  
 GenericObject also provides six callbacks that occur as documents are saved and deleted
