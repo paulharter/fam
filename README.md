@@ -4,7 +4,6 @@ A simple Python ORM for CouchDB and Couchbase Sync Gateway.
 
 Fam is a work in progress growing as the needs of my current project dictate.  This means that while very useful it is not a feature complete ORM. I use it to support a web app that sits side by side with a mobile application using sync gateway.
 
-Current build status: https://circleci.com/gh/paulharter/fam.png?circle-token=b11ad12686f98bb9f68956f680bb6e61184d5456
 
 Fam adds a type and namespace to each document:
 
