@@ -41,7 +41,7 @@ and then use it to create a document like this:
 
 ```python
 dog = Dog(name="fly")
-dog.save(db)
+db.put(dog)
 
 ```
 
