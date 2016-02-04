@@ -9,7 +9,7 @@ class Dog(GenericObject):
     additional_properties = True
     fields = {
         "name": StringField(),
-        "owner_id": ReferenceTo(NAMESPACE, "person", delete="cascade")
+        "owner_id": ReferenceTo(NAMESPACE, "person", cascade_delete=True)
         }
 
     def talk(self):
@@ -39,7 +39,7 @@ class Cat(GenericObject):
 class Person(GenericObject):
     fields = {
         "name": StringField(),
-        "cats": ReferenceFrom(NAMESPACE, "cat", "owner_id", delete="cascade"),
+        "cats": ReferenceFrom(NAMESPACE, "cat", "owner_id", cascade_delete=True),
         "dogs": ReferenceFrom(NAMESPACE, "dog", "owner_id"),
         "animals": ReferenceFrom(NAMESPACE, ["dog", "cat"], "owner_id")
         }

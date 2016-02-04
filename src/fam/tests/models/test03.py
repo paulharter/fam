@@ -8,7 +8,7 @@ class Dog(GenericObject):
     additional_properties = True
     fields = {
         "name": StringField(default="fly", required=True),
-        "owner_id": ReferenceTo(NAMESPACE, "person", delete="cascade")
+        "owner_id": ReferenceTo(NAMESPACE, "person", cascade_delete=True)
         }
 
     def talk(self):

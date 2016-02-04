@@ -100,10 +100,10 @@ class ObjectField(Field):
 
 class ReferenceTo(Field):
 
-    def __init__(self, refns, refcls, required=False, immutable=False, default=None, delete="nothing"):
+    def __init__(self, refns, refcls, required=False, immutable=False, default=None, cascade_delete=False):
         self.refns = refns
         self.refcls = refcls
-        self.delete = delete
+        self.cascade_delete = cascade_delete
         super(ReferenceTo, self).__init__(required, immutable, default)
 
     def is_correct_type(self, value):
@@ -123,11 +123,11 @@ class ReferenceTo(Field):
 
 class ReferenceFrom(Field):
 
-    def __init__(self, refns, refcls, fkey, required=False, immutable=False, default=None, delete="nothing"):
+    def __init__(self, refns, refcls, fkey, required=False, immutable=False, default=None, cascade_delete=False):
         self.refns = refns
         self.refcls = refcls
         self.fkey = fkey
-        self.delete = delete
+        self.cascade_delete = cascade_delete
         super(ReferenceFrom, self).__init__(required, immutable, default)
 
     def __str__(self):
@@ -304,7 +304,7 @@ class GenericObject(object):
     def delete_references(self, db):
         for field_name, field in self.__class__.fields.iteritems():
             if isinstance(field, ReferenceTo):
-                if field.delete == "cascade":
+                if field.cascade_delete:
                     if field_name.endswith("_id"):
                         obj = getattr(self, field_name[:-3])
                         if obj is not None:
@@ -317,7 +317,7 @@ class GenericObject(object):
                 view_name = "%s/%s_%s" % (view_namespace, self.type, field_name)
                 objs = self._query_view(self._db, view_name, self.key)
 
-                if field.delete == "cascade":
+                if field.cascade_delete:
                     for obj in objs:
                         obj.delete(db)
                 else:
