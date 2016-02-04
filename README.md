@@ -45,6 +45,10 @@ db.put(dog)
 
 ```
 
+##Installation
+
+You can install fam from pypi with `pip install fam`
+
 ##Databases
 
 fam has wrappers for connecting to different databases:
