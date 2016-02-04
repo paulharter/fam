@@ -194,7 +194,7 @@ ReferenceFrom fields are quite different and they have no representation within 
 ```
 This gives way to do one-to-one and one-to-many relationships. In practice I find I tend to model immutable one-to-many relationships internally as lists of keys within documents and mutable ones with fam view lookups. I also create mutable one-to-one and many-to-many relationships with small join documents with compound keys. I also have write extra views by hand for more complex indexing.
 
-##Optional Field Options
+##Field Options
 
 There are four optional arguments when creating a field:
 
