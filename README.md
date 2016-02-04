@@ -173,7 +173,7 @@ class TimeDuration(object):
 
 ###ReferenceTo Fields
 
-ReferenceTo is really just a string field that is the key of another document. ReferenceTo fields are defined with the namespace and name of the class of the referenced document. 
+ReferenceTo is really just a string field that is the key of another document. ReferenceTo fields are defined with the namespace and name of the type of the referenced document. 
 
 ```python 
 
@@ -185,7 +185,7 @@ The name should always end with `_id` , this indicates that it is a reference bu
 
 ###ReferenceFrom Fields
 
-ReferenceFrom fields are quite different and they have no representation within the json document. Instead they use the automatically created design documents to find a collection of documents with the associated ReferenceTo field. So ReferenceFrom fields only work with as existing ReferenceTo Field. They are defined with the namespace and the class that the reference is from and the name of the ReferenceTo field in that class.
+ReferenceFrom fields are quite different and they have no representation within the json document. Instead they use the automatically created design documents to find a collection of documents with the associated ReferenceTo field. So ReferenceFrom fields only work with as existing ReferenceTo Field. They are defined with the namespace and the type that the reference is from and the name of the ReferenceTo field in that type.
 
 ```python
 
