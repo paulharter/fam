@@ -2,7 +2,9 @@
 
 A simple Python ORM for CouchDB and Couchbase Sync Gateway. 
 
-Fam is a work in progress growing as the needs of my current project dictate. This means that while very useful it is not a feature complete ORM. It is probably most useful if, like me, you want to use Couch family of noSQL DBs for their handling of distributed data sets but have highly relational data.
+Current build status: ![Build Status](https://circleci.com/gh/paulharter/fam.png?circle-token=b11ad12686f98bb9f68956f680bb6e61184d5)
+
+Fam is a work in progress growing as the needs of my current project dictate.  It is not a feature complete ORM, however it is useful if you, like me, have highly relational data in a couch type db. I use it to support a web app that sits side by side with a mobile application using sync gateway.
 
 Fam adds a type and namespace to each document:
 
@@ -45,16 +47,19 @@ db.put(dog)
 
 ```
 
+##Installation
+
+You can install fam from pypi with `pip install fam`
+
 ##Databases
 
 fam has wrappers for connecting to different databases:
 
 - CouchDB
-- Couchbase
 - Couchbase Sync Gateway
 
-These wrapper classes are stateless and thread safe, at least the CouchDB and Sync Gateway ones certainly are as they use the requests library to manage connection pooling and keep alive. The Couchbase one probably is too but it uses Couchbase's own libraries to connect to the db.
- 
+These wrapper classes do very little except remember the location of the database and send requests, relying on the python requests library to provide connection pooling.
+
  To use fam you have to first create a class mapper passing in your classes eg:
  
  ```python
@@ -111,7 +116,7 @@ class Cat(GenericObject):
  With three class attributes
  
  - **use_rev** - A boolean, True by default, which if true uses the default rev/cas collision protection of Couch DBs but if false always forces a document update as if this mechanism didn't exist
- - **additional_properties** - A boolean, false by default, which if true lets you add arbitrary additional top level attributes to an object and if flase will throw an exception when you try.
+ - **additional_properties** - A boolean, false by default, which if true lets you add arbitrary additional top level attributes to an object and if false will throw an exception when you try.
  - **fields** - A dict of named fields that map to the top level attributes of the underlying json documents. See below for use.
  
 GenericObject also provides six callbacks that occur as documents are saved and deleted
@@ -173,7 +178,7 @@ class TimeDuration(object):
 
 ###ReferenceTo Fields
 
-ReferenceTo is really just a string field that is the key of another document. ReferenceTo fields are defined with the namespace and name of the class of the referenced document. 
+ReferenceTo is really just a string field that is the key of another document. ReferenceTo fields are defined with the namespace and name of the type of the referenced document. 
 
 ```python 
 
@@ -185,7 +190,7 @@ The name should always end with `_id` , this indicates that it is a reference bu
 
 ###ReferenceFrom Fields
 
-ReferenceFrom fields are quite different and they have no representation within the json document. Instead they use the automatically created design documents to find a collection of documents with the associated ReferenceTo field. So ReferenceFrom fields only work with as existing ReferenceTo Field. They are defined with the namespace and the class that the reference is from and the name of the ReferenceTo field in that class.
+ReferenceFrom fields are quite different and they have no representation within the json document. Instead they use the automatically created design documents to find a collection of documents with the associated ReferenceTo field. So ReferenceFrom fields only work with as existing ReferenceTo Field. They are defined with the namespace and the type that the reference is from and the name of the ReferenceTo field in that type.
 
 ```python
 
@@ -194,7 +199,7 @@ ReferenceFrom fields are quite different and they have no representation within 
 ```
 This gives way to do one-to-one and one-to-many relationships. In practice I find I tend to model immutable one-to-many relationships internally as lists of keys within documents and mutable ones with fam view lookups. I also create mutable one-to-one and many-to-many relationships with small join documents with compound keys. I also have write extra views by hand for more complex indexing.
 
-##Optional Field Options
+##Field Options
 
 There are four optional arguments when creating a field:
 
