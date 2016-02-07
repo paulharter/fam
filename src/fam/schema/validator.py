@@ -53,6 +53,7 @@ class ModelValidator(object):
 
     def validate(self, doc):
 
+
         type_name = doc.get(TYPE_STR)
         namespace = doc.get(NAMESPACE_STR)
 
@@ -62,6 +63,7 @@ class ModelValidator(object):
             resolver = jsonschema.RefResolver(schema_id, schema, store=self.reference_store)
             validator = jsonschema.Draft4Validator(schema, resolver=resolver)
             validator.validate(doc)
+
 
     def write_out_schemata(self, dir):
 

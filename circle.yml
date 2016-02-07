@@ -1,0 +1,8 @@
+machine:
+  timezone:
+    Europe/London
+
+test:
+  override:
+    - nosetests src/fam/tests/couchdb
+

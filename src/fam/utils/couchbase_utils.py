@@ -115,7 +115,7 @@ def does_person_exist(sync_admin_url, db_name, username):
 
 
 
-def add_person_to_gateway(sync_admin_url, db_name, user_id, username, password, domain_role=None):
+def add_person_to_gateway(sync_admin_url, db_name, user_id, username, password, domain_role=None, admin_channels=None):
 
     if sync_admin_url is None:
         return
@@ -127,6 +127,9 @@ def add_person_to_gateway(sync_admin_url, db_name, user_id, username, password, 
 
     if domain_role is not None:
         attrs["admin_roles"].append(domain_role)
+
+    if admin_channels is not None:
+        attrs["admin_channels"] = admin_channels
 
     rsp = requests.put("%s/%s/_user/%s" % (sync_admin_url, db_name, username), data=json.dumps(attrs))
 

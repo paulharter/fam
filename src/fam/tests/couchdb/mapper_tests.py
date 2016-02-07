@@ -61,7 +61,6 @@ class MapperValidationTests(unittest.TestCase):
         print dog.as_json()
 
 
-
     def test_string_format(self):
 
         mapper = ClassMapper([], modules=[test01])
@@ -78,7 +77,7 @@ class MapperValidationTests(unittest.TestCase):
         cat = Cat(name="puss", owner_id=paul.key, legs=3, email="paul@glowinthedark.co.uk")
         cat.save(self.db)
         cat.email = "paulglowinthedark.co.uk"
-        self.assertRaises(FamValidationError, self.db.save, cat)
+        self.assertRaises(FamValidationError, self.db.put, cat)
 
 
 class WritingSchemaTests(unittest.TestCase):

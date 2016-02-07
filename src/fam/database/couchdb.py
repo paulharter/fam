@@ -82,10 +82,10 @@ class CouchDBWrapper(BaseDatabase):
         self.db_name = db_name
         self.db_url = db_url
 
-
         url = "%s/%s" % (db_url, db_name)
 
         if reset:
+            self.replicator_db = self.clear_all_replications()
             rsp = requests.get(url)
             if rsp.status_code == 200:
                 rsp = requests.delete("%s/%s" % (db_url, db_name))
@@ -107,9 +107,10 @@ class CouchDBWrapper(BaseDatabase):
             if not(rsp.status_code == 201 or rsp.status_code == 412):
                 raise Exception("Unknown Error creating cb database: %s" % rsp.status_code)
 
-        self.continuous = continuous
-        if continuous:
-            self.sync_both_continuous()
+            #if this is a new database then set the replications running
+            self.continuous = continuous
+            if continuous:
+                self.sync_both_continuous()
 
     @auth
     def _get(self, key):
@@ -132,11 +133,13 @@ class CouchDBWrapper(BaseDatabase):
             except jsonschema.ValidationError, e:
                 raise FamValidationError(e)
 
+
         value["_id"] = key
         if rev:
             value["_rev"] = rev
 
         url = "%s/%s/%s" % (self.db_url, self.db_name, key)
+
         rsp = requests.put(url, data=json.dumps(value, indent=4, sort_keys=True, default=object_default), headers={"Content-Type": "application/json", "Accept": "application/json"})
         if rsp.status_code == 200 or rsp.status_code == 201:
             if rsp.content:
@@ -201,29 +204,101 @@ class CouchDBWrapper(BaseDatabase):
         raise Exception("Unknown Error getting CB doc: %s %s" % (rsp.status_code, rsp.text))
 
 
+    def clear_all_replications(self):
+
+        url = "{}/_config/replicator/db".format(self.db_url)
+        old_replicator_db = requests.get(url).json()
+        new_replicator_db = "replicator_a" if old_replicator_db != "replicator_a" else "replicator_b"
+        rsp = requests.put("{}/{}".format(self.db_url, new_replicator_db))
+
+        if rsp.status_code == 201 or rsp.status_code == 412:
+            #set the new db
+            requests.put(url, data=json.dumps(new_replicator_db))
+            #delete the old one
+            if old_replicator_db != "_replicator":
+                rsp = requests.delete("%s/%s" % (self.db_url, old_replicator_db))
+            return new_replicator_db
+        else:
+           raise Exception("failed to create new replication db")
+
 
     def sync_both_continuous(self):
-        self.sync_up(continuous=True)
-        self.sync_down(continuous=True)
+
+        self.create_sync_up_continuous(self.replicator_db)
+        self.create_sync_down_continuous(self.replicator_db)
 
 
-    def sync_up(self, continuous=False):
+    def create_sync_down_continuous(self, replicator_db):
+
+        if self.remote_url is None:
+            raise Exception("can't sync up nowhere")
+
+        attrs = {"create_target": False,
+                 "source": self.remote_url,
+                 "target": self.db_name,
+                 "continuous": True,
+                 "_id": "flotsam_sync_down"
+                 }
+
+        headers = {"Content-Type": "application/json"}
+
+        rsp = requests.post("%s/%s" % (self.db_url, replicator_db), data=json.dumps(attrs), headers=headers)
+        if rsp.status_code < 300:
+            print "sync down created"
+            return
+
+        raise Exception("Error creating sync down: %s %s" % (rsp.status_code, rsp.text))
+
+
+    def create_sync_up_continuous(self, replicator_db):
+
+        if self.remote_url is None:
+            raise Exception("can't sync up nowhere")
+
+        attrs = {"create_target": False,
+                 "source": self.db_name,
+                 "target": self.remote_url,
+                 "continuous": True,
+                 "_id": "flotsam_sync_up"
+                 }
+
+        headers = {"Content-Type": "application/json"}
+
+        rsp = requests.post("%s/%s" % (self.db_url, replicator_db), data=json.dumps(attrs), headers=headers)
+        if rsp.status_code < 300:
+            print "sync_up created"
+            return
+        raise Exception("Error creating sync up to remote: %s %s" % (rsp.status_code, rsp.text))
+
+
+
+    def sync_up(self):
+
         if self.remote_url is not None:
             attrs = {"create_target": False,
                      "source": self.db_name,
                      "target": self.remote_url}
 
-            if continuous:
-                attrs["continuous"] = True
-            else:
-                if self.continuous:
-                    return
-
-            headers = {"Content-Type": "application/json",
-                       }
+            headers = {"Content-Type": "application/json"}
 
             rsp = requests.post("%s/_replicate" % self.db_url, data=json.dumps(attrs), headers=headers)
-            if rsp.status_code == 200:
+            if rsp.status_code < 300:
+                return
+            raise Exception("Unknown Error syncing up to remote: %s %s" % (rsp.status_code, rsp.text))
+
+
+    def sync_down(self, continuous=False):
+
+        if self.remote_url is not None:
+
+            attrs = {"create_target": False,
+                     "source": self.remote_url,
+                     "target": self.db_name}
+
+            headers = {"Content-Type": "application/json"}
+
+            rsp = requests.post("%s/_replicate" % self.db_url, data=json.dumps(attrs), headers=headers)
+            if rsp.status_code < 300:
                 return
             raise Exception("Unknown Error syncing up to remote: %s %s" % (rsp.status_code, rsp.text))
 
@@ -234,28 +309,6 @@ class CouchDBWrapper(BaseDatabase):
         if rsp.status_code <= 201:
                 return
         raise Exception("Unknown Error _ensure_full_commit in remote: %s %s" % (rsp.status_code, rsp.text))
-
-
-    def sync_down(self, continuous=False):
-
-        if self.remote_url is not None:
-            attrs = {"create_target": False,
-                     "source": self.remote_url,
-                     "target": self.db_name}
-
-            if continuous:
-                attrs["continuous"] = True
-            else:
-                if self.continuous:
-                    return
-
-            rsp = requests.post("%s/_replicate" % self.db_url, data=json.dumps(attrs), headers={"Content-Type": "application/json"})
-            if rsp.status_code == 200:
-                return
-            raise Exception("Unknown Error syncing down to remote: %s %s" % (rsp.status_code, rsp.text))
-
-    def __getattr__(self, name):
-        return self._get(name)
 
 
     def update_designs(self):

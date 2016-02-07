@@ -25,6 +25,7 @@ class SyncGatewayWrapper(CouchDBWrapper):
     def __init__(self, mapper, db_url, db_name, auth_url=None, username=None, password=None):
 
         self.mapper = mapper
+        self.validator = mapper.validator
 
         self.db_name = db_name
         self.db_url = db_url
@@ -33,14 +34,12 @@ class SyncGatewayWrapper(CouchDBWrapper):
         self.auth_url = auth_url
 
         url = "%s/%s" % (db_url, db_name)
-
         rsp = requests.get(url)
 
         self.cookies = {}
 
         if rsp.status_code == 404:
             raise Exception("Unknown database and you can't create them in the sync gateway")
-
 
 
     def authenticate(self):

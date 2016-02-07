@@ -280,7 +280,7 @@ class GenericObject(object):
             self.post_save_new_cb()
             updated = False
 
-        db.sync_up()
+        # db.sync_up()
         if self.use_rev:
             self.rev = result.rev
 
@@ -292,7 +292,7 @@ class GenericObject(object):
         db._delete(self.key, self.rev)
         self.post_delete_cb()
         self.delete_references(db)
-        db.sync_up()
+        # db.sync_up()
 
 
     @classmethod
@@ -426,8 +426,9 @@ class GenericObject(object):
             return cls.type
 
         for base in cls.__bases__:
-            if name in base.cls_fields.keys():
-                return base.type
+            found = base._type_with_ref(name)
+            if found:
+                return found
 
         return None
 
@@ -438,7 +439,9 @@ class GenericObject(object):
                 raise Exception("no db")
             view_namespace = self.namespace.replace("/", "_")
             # look at super class gypes to find clas with ref
+
             type_name = self.__class__._type_with_ref(name)
+
             view_name = "%s/%s_%s" % (view_namespace, type_name, name)
             return self._query_view(self._db, view_name, self.key)
 
