@@ -208,11 +208,28 @@ There are four optional arguments when creating a field:
 - **default** - A default value for this field that will be returned on read if this field is absent from the underlying json. None by default.
 - **cascade_delete** - Only applies to ReferenceTo and ReferenceFrom fields. A boolean, false by default, which if true will delete the object the reference points to when this object is deleted.
 
-
 ##Validation
 
-Fam now uses JSON Schema http://json-schema.org to validate documents. Fam's mapper generates schemas dynamically from the class definitions and uses them to validate documents.
+Fam now uses JSON Schema http://json-schema.org to validate documents. Fam's mapper generates schemata dynamically from the class definitions and uses them to validate documents.
 
 You can get the mapper to write out its internal schemata by calling ```mapper.validator.write_out_schemata(directory)```
+
+##To Do?
+
+Some possible further features:
+
+- Optional class attribute **schema** to give better control over document validation.
+- Pass schemata to sync gateway's sync function to enforce typed validation on document creation and update.
+- Thread local, in memory, cache for db wrappers so same object always represents same db doc within scope of a context manager.
+- Somewhere to write extra views, maybe in decorated methods, maybe in separate JavaScript files to avoid yucky js strings in Python.
+- Role based ACLs for create and update defined in classes enforced in sync function.
+- Composed and compiled sync function maybe.
+- Migrations.
+- Unique field option using views
+- Additional structured string formats like datetime, email, latlng etc.
+
+
+
+
 
 
