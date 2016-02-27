@@ -433,8 +433,8 @@ class GenericObject(object):
         return None
 
     def __getattr__(self, name):
-        ref = self.__class__.fields.get(name)
-        if isinstance(ref, ReferenceFrom):
+        field = self.__class__.fields.get(name)
+        if isinstance(field, ReferenceFrom):
             if self._db is None:
                 raise Exception("no db")
             view_namespace = self.namespace.replace("/", "_")
@@ -453,6 +453,10 @@ class GenericObject(object):
                     raise Exception("no db")
                 return GenericObject.get(self._db, self._properties[id_name])
         if name in self._properties.keys():
+            # if it is a subclass of stringfield for string formats
+            if isinstance(field, StringField) and not field.__class__ == StringField:
+                if hasattr(field, "from_json"):
+                    return field.from_json(self._properties[name])
             return self._properties[name]
         if name in self.__class__.fields:
             return None
@@ -489,6 +493,8 @@ class GenericObject(object):
                     raise FamImmutableError("You cannot change the immutable property %s" % name)
                 if isinstance(field, ObjectField) and not isinstance(value, field.cls):
                     value = field.cls.from_json(value)
+                if issubclass(field.__class__, StringField) and not isinstance(value, basestring):
+                    value = field.to_json(value)
             self._update_property(name, value)
         else:
             raise FamValidationError("""You cant use the property name %s on the class %s

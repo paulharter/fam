@@ -1,4 +1,5 @@
 from fam.blud import GenericObject, StringField, ReferenceFrom, ReferenceTo, BoolField, NumberField, DictField, ObjectField
+from fam.string_formats import DateTimeField
 from fam.string_formats import EmailField
 
 NAMESPACE = "glowinthedark.co.uk/test/1"
@@ -85,5 +86,12 @@ class Monster(GenericObject):
 
     fields = {
         "name": StringField(),
-        "weapons": ObjectField(cls=Weapons)
+        "weapons": ObjectField(cls=Weapons),
+        }
+
+class Event(GenericObject):
+
+    fields = {
+        "name": StringField(),
+        "created": DateTimeField()
         }

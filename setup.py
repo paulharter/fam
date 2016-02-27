@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='fam',
-    version='1.0.4',
+    version='1.0.5',
     description="Simple Python ORM for CouchDB, and Sync Gateway",
     url="https://github.com/paulharter/fam",
     classifiers=[
@@ -14,7 +14,7 @@ setup(name='fam',
     author='Paul Harter',
     author_email='username: paul, domain: glowinthedark.co.uk',
     license="LICENSE",
-    install_requires=['requests', 'simplejson', 'jsonschema', 'mock'],
+    install_requires=['requests', 'simplejson', 'jsonschema', 'mock', 'pytz'],
     packages=find_packages('src'),
     package_dir={'': 'src'},
     include_package_data=True,

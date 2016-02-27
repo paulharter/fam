@@ -84,6 +84,9 @@ class CouchDBWrapper(BaseDatabase):
 
         url = "%s/%s" % (db_url, db_name)
 
+        replicator_url = "{}/_config/replicator/db".format(self.db_url)
+        self.replicator_db = requests.get(replicator_url).json()
+
         if reset:
             self.replicator_db = self.clear_all_replications()
             rsp = requests.get(url)

@@ -13,14 +13,7 @@ class AnythingBaseTests:
             weapons = Weapons("large", "hot", ["2", "2"])
             key = "a_monster"
             monster = Monster(key=key, weapons=weapons, name="bill")
-
-            print monster.as_json()
-
             self.db.put(monster)
-
             got_monster = self.db.get(key)
-
-            print got_monster.weapons
-
             self.assertTrue(isinstance(got_monster.weapons, Weapons))
 
