@@ -493,7 +493,7 @@ class GenericObject(object):
                     raise FamImmutableError("You cannot change the immutable property %s" % name)
                 if isinstance(field, ObjectField) and not isinstance(value, field.cls):
                     value = field.cls.from_json(value)
-                if issubclass(field.__class__, StringField) and not isinstance(value, basestring):
+                if issubclass(field.__class__, StringField) and not (isinstance(value, basestring) or value is None):
                     value = field.to_json(value)
             self._update_property(name, value)
         else:

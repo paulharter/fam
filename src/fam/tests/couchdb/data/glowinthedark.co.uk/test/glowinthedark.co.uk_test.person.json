@@ -1,23 +1,20 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#", 
     "additionalProperties": false, 
-    "id": "glowinthedark.co.uk/test/1::monarch", 
+    "id": "glowinthedark.co.uk/test::person", 
     "properties": {
-        "country": {
-            "type": "string"
-        }, 
         "name": {
             "type": "string"
         }, 
         "namespace": {
-            "pattern": "glowinthedark.co.uk/test/1", 
+            "pattern": "glowinthedark.co.uk/test", 
             "type": "string"
         }, 
         "type": {
-            "pattern": "monarch", 
+            "pattern": "person", 
             "type": "string"
         }
     }, 
-    "title": "A Fam object model for class glowinthedark.co.uk/test/1:Monarch", 
+    "title": "A Fam object model for class glowinthedark.co.uk/test:Person", 
     "type": "object"
 }

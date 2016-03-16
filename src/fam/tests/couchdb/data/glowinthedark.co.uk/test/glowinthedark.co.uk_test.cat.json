@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#", 
     "additionalProperties": false, 
-    "id": "glowinthedark.co.uk/test/1::cat", 
+    "id": "glowinthedark.co.uk/test::cat", 
     "properties": {
         "colour": {
             "type": "string"
@@ -17,7 +17,7 @@
             "type": "string"
         }, 
         "namespace": {
-            "pattern": "glowinthedark.co.uk/test/1", 
+            "pattern": "glowinthedark.co.uk/test", 
             "type": "string"
         }, 
         "owner_id": {
@@ -35,6 +35,6 @@
         "legs", 
         "owner_id"
     ], 
-    "title": "A Fam object model for class glowinthedark.co.uk/test/1:Cat", 
+    "title": "A Fam object model for class glowinthedark.co.uk/test:Cat", 
     "type": "object"
 }

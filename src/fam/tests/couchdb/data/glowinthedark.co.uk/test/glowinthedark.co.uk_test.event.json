@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#", 
     "additionalProperties": false, 
-    "id": "glowinthedark.co.uk/test/1::event", 
+    "id": "glowinthedark.co.uk/test::event", 
     "properties": {
         "created": {
             "pattern": "^([0-9]{4})-(0[1-9]|1[0-2])-([0-2][0-9]|3[0-1])T([0-1][0-9]|2[0-3]):([0-5][0-9]):[0-5][0-9](.[0-9]{1,8})?Z$", 
@@ -11,7 +11,7 @@
             "type": "string"
         }, 
         "namespace": {
-            "pattern": "glowinthedark.co.uk/test/1", 
+            "pattern": "glowinthedark.co.uk/test", 
             "type": "string"
         }, 
         "type": {
@@ -19,6 +19,6 @@
             "type": "string"
         }
     }, 
-    "title": "A Fam object model for class glowinthedark.co.uk/test/1:Event", 
+    "title": "A Fam object model for class glowinthedark.co.uk/test:Event", 
     "type": "object"
 }

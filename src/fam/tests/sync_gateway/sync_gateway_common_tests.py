@@ -23,7 +23,7 @@ def iterSyncGatewayTests():
             time.sleep(0.25)
 
             mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch, Monster])
-            url = "http://%s:%s" % (SYNC_GATEWAY_HOST, SYNC_GATEWAY_ADMIN_PORT)
+            url = "http://%s:%s" % (SYNC_GATEWAY_ADMIN_HOST, SYNC_GATEWAY_ADMIN_PORT)
             self.db = SyncGatewayWrapper(mapper, url, SYNC_GATEWAY_NAME)
             self.db.update_designs()
             super(self.__class__, self).setUp()

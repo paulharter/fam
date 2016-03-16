@@ -2,7 +2,7 @@ from fam.blud import GenericObject, StringField, ReferenceFrom, ReferenceTo, Boo
 from fam.string_formats import DateTimeField
 from fam.string_formats import EmailField
 
-NAMESPACE = "glowinthedark.co.uk/test/1"
+NAMESPACE = "glowinthedark.co.uk/test"
 
 
 class Dog(GenericObject):
