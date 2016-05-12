@@ -19,21 +19,30 @@ class SchemaBaseTests:
 
         def test_make_a_schema(self):
             expected = {
-                "title": "A Fam object model for class glowinthedark.co.uk/test/1:Cat",
+                "title": "A Fam object model for class glowinthedark.co.uk/test:Cat",
                 "required": [
                     "legs",
                     "owner_id"
                 ],
                 "properties": {
-                    "colour": {
-                        "type": "string"
-                    },
                     "name": {
                         "type": "string"
                     },
-                    "namespace": {
-                        "pattern": "glowinthedark.co.uk/test/1",
+                    "colour": {
                         "type": "string"
+                    },
+                    "namespace": {
+                        "pattern": "glowinthedark.co.uk/test",
+                        "type": "string"
+                    },
+                    "owner_id": {
+                        "type": "string"
+                    },
+                    "_deleted": {
+                        "type": "boolean"
+                    },
+                    "tail": {
+                        "type": "boolean"
                     },
                     "legs": {
                         "type": "number"
@@ -46,20 +55,15 @@ class SchemaBaseTests:
                         "pattern": """^([-!#$%&'*+/=?^_`{}|~0-9a-zA-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9a-zA-Z]+)*|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*")@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}\.?$""",
                         "type": "string"
                     },
-                    "owner_id": {
+                    "schema": {
                         "type": "string"
-                    },
-                    "tail": {
-                        "type": "boolean"
-                    },
+                    }
                 },
                 "additionalProperties": False,
                 "$schema": "http://json-schema.org/draft-04/schema#",
                 "type": "object",
-                "id": "glowinthedark.co.uk/test/1::cat"
+                "id": "glowinthedark.co.uk/test::cat"
             }
-
-
 
             cat_schema = createJsonSchema(Cat)
 
@@ -73,8 +77,9 @@ class SchemaBaseTests:
             cat_schema = createJsonSchema(Cat)
             person_schema = createJsonSchema(Person)
             validator = ModelValidator()
-            validator.add_schema(cat_schema)
-            validator.add_schema(person_schema)
+
+            validator.add_schema(test01.NAMESPACE, "cat", cat_schema)
+            validator.add_schema(test01.NAMESPACE, "person", person_schema)
 
             #add validator to db
             self.db.validator = validator

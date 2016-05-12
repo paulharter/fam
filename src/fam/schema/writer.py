@@ -47,6 +47,12 @@ def createJsonSchema(fam_class):
             "namespace": {
                 "type": "string",
                 "pattern": namespace
+            },
+            "schema": {
+                "type": "string"
+            },
+            "_deleted": {
+                "type": "boolean"
             }
         },
         "additionalProperties": fam_class.additional_properties,

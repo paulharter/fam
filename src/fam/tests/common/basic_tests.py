@@ -49,6 +49,7 @@ class BasicBaseTestCases:
             self.assertEqual(dog.name, "woofer")
             self.assertEqual(dog.__class__, Dog)
             self.assertNotEqual(dog.key, None)
+            # self.assertTrue(dog.schema.startswith("http://glowinthedark.co.uk/test/dog"))
 
 
         def test_make_an_object_double_dispatch_saved(self):
@@ -271,38 +272,7 @@ class BasicBaseTestCases:
         #     all = Dog.all(self.db)
         #     self.assertEqual(len(all), 1)
 
-        # broken in sync gateway
-        #
 
-        # def test_changes(self):
-        #     dog = Dog(name="fly")
-        #     dog.save(self.db)
-        #     all = Dog.all(self.db)
-        #     self.assertEqual(len(all), 1)
-        #     last_seq, objects = GenericObject.changes(self.db)
-        #     dog2 = Dog(name="shep")
-        #     dog2.save(self.db)
-        #     last_seq, objects = GenericObject.changes(self.db, since=last_seq)
-        #     self.assertEqual(len(objects), 1)
-        #     self.assertEqual(objects[0], dog2)
-        #
-        #
-        # def test_changes_limit(self):
-        #     dog = Dog(name="fly")
-        #     dog.save(self.db)
-        #     all = Dog.all(self.db)
-        #     self.assertEqual(len(all), 1)
-        #     last_seq, objects = GenericObject.changes(self.db)
-        #     dog2 = Dog(name="shep")
-        #     dog2.save(self.db)
-        #     dog3 = Dog(name="bob")
-        #     dog3.save(self.db)
-        #     last_seq, objects = GenericObject.changes(self.db, since=last_seq, limit=1)
-        #     self.assertEqual(len(objects), 1)
-        #     self.assertEqual(objects[0], dog2)
-        #     last_seq, objects = GenericObject.changes(self.db, since=last_seq, limit=1)
-        #     self.assertEqual(len(objects), 1)
-        #     self.assertEqual(objects[0], dog3)
 
 
         def test_update_fails_without_rev(self):

@@ -1,8 +1,11 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#", 
     "additionalProperties": false, 
-    "id": "glowinthedark.co.uk/test::monster", 
+    "id": "glowinthedark.co.uk/test/person/20160510-122921-505590.json#", 
     "properties": {
+        "_deleted": {
+            "type": "boolean"
+        }, 
         "name": {
             "type": "string"
         }, 
@@ -10,12 +13,14 @@
             "pattern": "glowinthedark.co.uk/test", 
             "type": "string"
         }, 
-        "type": {
-            "pattern": "monster", 
+        "schema": {
             "type": "string"
         }, 
-        "weapons": {}
+        "type": {
+            "pattern": "person", 
+            "type": "string"
+        }
     }, 
-    "title": "A Fam object model for class glowinthedark.co.uk/test:Monster", 
+    "title": "A Fam object model for class glowinthedark.co.uk/test:Person", 
     "type": "object"
 }

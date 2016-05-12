@@ -27,8 +27,8 @@ class CallbackBaseTests:
 
             with patch.object(Dog, 'pre_save_update_cb', return_value=None) as mock_pre_update:
                 dog = Dog(name="woofer")
-                old_properties = deepcopy(dog._properties)
                 self.db.put(dog)
+                old_properties = deepcopy(dog._properties)
                 mock_pre_update.assert_not_called()
                 dog.name = "fly"
                 self.db.put(dog)

@@ -8,6 +8,7 @@ NAMESPACE = "glowinthedark.co.uk/test"
 class Dog(GenericObject):
 
     additional_properties = True
+    sync_gateway_write = True
     fields = {
         "name": StringField(),
         "owner_id": ReferenceTo(NAMESPACE, "person", cascade_delete=True)
@@ -19,7 +20,7 @@ class Dog(GenericObject):
 
 class JackRussell(Dog):
     fields = {
-        "age": NumberField(),
+        "age": NumberField()
         }
 
     def talk(self):

@@ -68,6 +68,13 @@ class StringField(Field):
 
 class ListField(Field):
 
+    def __init__(self, item_cls=None, required=False, immutable=False, default=None):
+        self.item_cls = item_cls
+        if not hasattr(item_cls, "to_json") and hasattr(item_cls, "from_json"):
+            raise Exception("the class used for a lists items must have to_json and from_json methods")
+
+        super(ListField, self).__init__(required=required, immutable=immutable, default=default)
+
     def get_default(self):
         return deepcopy(self.default)
 
@@ -177,9 +184,11 @@ class GenericMetaclass(type):
         return newcls
 
 
-class GenericObject(object):
+class FamObject(object):
     use_rev = True
     additional_properties = False
+    # extra sync gateway keywords that are used by sync function
+    sg_allow_public_write = False
     __metaclass__ = GenericMetaclass
     fields = {}
 
@@ -194,7 +203,6 @@ class GenericObject(object):
 
         self._properties = {}
 
-
         for k, v in kwargs.iteritems():
             if not k.startswith("_"):
                 setattr(self, k, v)
@@ -205,11 +213,6 @@ class GenericObject(object):
             self._properties[TYPE_STR] = type_name
 
         self._check_defaults()
-
-        #TODO fix this for super classes ???
-        # else:
-        #     if self._properties[TYPE_STR] != type_name:
-        #         raise Exception("dont match %s %s" % (self._properties[TYPE_STR], type_name))
 
         if kwargs.get(NAMESPACE_STR) is None:
             self._properties[NAMESPACE_STR] = namespace
@@ -222,8 +225,8 @@ class GenericObject(object):
         return cls._query_view(db, "raw/all", cls.type)
 
     @classmethod
-    def changes(cls, db, since=None, channels=None, limit=None, feed="normal"):
-        last_seq, rows  =  db.changes(since=since, channels=channels, limit=limit, feed=feed)
+    def changes(cls, db, since=None, channels=None, limit=None, feed="normal", timeout=None):
+        last_seq, rows  =  db.changes(since=since, channels=channels, limit=limit, feed=feed, timeout=timeout)
         objects = [GenericObject._from_doc(db, row.key, row.rev, row.value) for row in rows]
         return last_seq, objects
 
@@ -352,13 +355,22 @@ class GenericObject(object):
             equal = False
 
         for k in other.properties.keys():
-            if other._properties[k] != self._properties[k]:
-                equal = False
+            if k != "schema":
+                if other._properties[k] != self._properties[k]:
+                    equal = False
         return equal
+
+
 
 
     @classmethod
     def get(cls, db, key):
+        # ugly thing to get around cache double dispatch
+
+        if not hasattr(db, "_get"):
+            #this will call back here but using the correct db
+            return db.get(key)
+
         result = db._get(key)
         if result is None:
             return None
@@ -378,7 +390,7 @@ class GenericObject(object):
 
         correctCls = db.class_for_type_name(doc.get(TYPE_STR), doc.get(NAMESPACE_STR))
         if correctCls is None:
-            raise Exception("couldn't find class %s" % doc.get(TYPE_STR))
+            raise Exception("couldn't find class {} for doc {}".format(doc.get(TYPE_STR), json.dumps(doc, indent=4)))
 
         obj = correctCls(key=key, rev=rev, **doc)
         obj._db = db
@@ -486,13 +498,19 @@ class GenericObject(object):
         if alias in self.fields.keys():
             self._update_property(alias, value.key)
 
-        elif name in self.fields or name in ("type", "namespace") or self.additional_properties :
+        elif name in self.fields or name in ("type", "namespace", "schema") or self.additional_properties :
             field = self.fields.get(name)
             if field is not None:
                 if field.immutable and name in self._properties:
                     raise FamImmutableError("You cannot change the immutable property %s" % name)
                 if isinstance(field, ObjectField) and not isinstance(value, field.cls):
                     value = field.cls.from_json(value)
+
+                if isinstance(field, ListField) and field.item_cls is not None:
+
+                    #cast the items in the list into a certain class
+                    value = [field.item_cls.from_json(i) for i in value]
+
                 if issubclass(field.__class__, StringField) and not (isinstance(value, basestring) or value is None):
                     value = field.to_json(value)
             self._update_property(name, value)
@@ -506,3 +524,6 @@ class GenericObject(object):
     namespace = property(_get_namespace)
     type = property(_get_type)
     properties = property(_get_properties)
+
+
+GenericObject = FamObject

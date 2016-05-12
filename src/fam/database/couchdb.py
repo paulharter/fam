@@ -131,6 +131,10 @@ class CouchDBWrapper(BaseDatabase):
     def _set(self, key, value, rev=None):
 
         if self.validator is not None:
+            if "namespace" in value and not "schema" in value:
+                schema_id = self.validator.schema_id_for(value["namespace"], value["type"])
+                if schema_id is not None:
+                    value["schema"] = schema_id
             try:
                 self.validator.validate(value)
             except jsonschema.ValidationError, e:
@@ -180,11 +184,11 @@ class CouchDBWrapper(BaseDatabase):
 
 
     @auth
-    def changes(self, since=None, channels=None, limit=None, feed=None):
+    def changes(self, since=None, channels=None, limit=None, feed=None, timeout=None):
         url = "%s/%s/_changes" % (self.db_url, self.db_name)
         params = {"include_docs":"true"}
         if since is not None:
-            params["since"] = since
+            params["since"] = json.dumps(since)
         if channels is not None:
             params["filter"] = "sync_gateway/bychannel"
             params["channels"] = ",".join(channels)
@@ -193,7 +197,10 @@ class CouchDBWrapper(BaseDatabase):
         if feed is not None:
             params["feed"] = feed
             if feed in ("longpoll", "continuous"):
-                params["timeout"] = 60000
+                if timeout is None:
+                    params["timeout"] = 60000
+                else:
+                    params["timeout"] = timeout
         rsp = requests.get(url, params=params, cookies=self.cookies)
         if rsp.status_code == 200:
             results = rsp.json()
