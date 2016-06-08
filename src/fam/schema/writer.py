@@ -35,7 +35,6 @@ def createJsonSchema(fam_class):
     namespace = fam_class.namespace.lower()
 
     schema = {
-        "id": "%s::%s" % (namespace, class_name),
         "$schema": "http://json-schema.org/draft-04/schema#",
         "title": "A Fam object model for class %s:%s" % (fam_class.namespace, fam_class.__name__),
         "type": "object",

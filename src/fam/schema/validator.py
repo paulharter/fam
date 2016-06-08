@@ -52,6 +52,7 @@ class ModelValidator(object):
 
     def add_schema(self, namespace, type_name, schema):
         self._get_timestamped_id(self.schema_dir, namespace, type_name, schema)
+
         jsonschema.Draft4Validator.check_schema(schema)
         self.reference_store[schema["id"]] = schema
         self.lookup_store[(namespace, type_name)] = schema
@@ -60,6 +61,7 @@ class ModelValidator(object):
     def schema_id_for(self, namespace, type_name):
         schema = self.lookup_store.get((namespace, type_name))
         if schema:
+            # print schema["id"]
             return schema["id"]
         return None
 

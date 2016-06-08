@@ -355,7 +355,7 @@ class FamObject(object):
             equal = False
 
         for k in other.properties.keys():
-            if k != "schema":
+            if k != "schema" and k != "channels":
                 if other._properties[k] != self._properties[k]:
                     equal = False
         return equal
