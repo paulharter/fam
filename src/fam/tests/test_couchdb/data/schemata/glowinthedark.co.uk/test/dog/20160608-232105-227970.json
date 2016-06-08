@@ -1,13 +1,10 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#", 
     "additionalProperties": true, 
-    "id": "glowinthedark.co.uk/test/jackrussell/20160510-122921-505590.json#", 
+    "id": "glowinthedark.co.uk/test/dog/20160608-232105-227970.json#", 
     "properties": {
         "_deleted": {
             "type": "boolean"
-        }, 
-        "age": {
-            "type": "number"
         }, 
         "name": {
             "type": "string"
@@ -23,10 +20,10 @@
             "type": "string"
         }, 
         "type": {
-            "pattern": "jackrussell", 
+            "pattern": "dog", 
             "type": "string"
         }
     }, 
-    "title": "A Fam object model for class glowinthedark.co.uk/test:JackRussell", 
+    "title": "A Fam object model for class glowinthedark.co.uk/test:Dog", 
     "type": "object"
 }

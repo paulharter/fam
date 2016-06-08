@@ -61,8 +61,7 @@ class SchemaBaseTests:
                 },
                 "additionalProperties": False,
                 "$schema": "http://json-schema.org/draft-04/schema#",
-                "type": "object",
-                "id": "glowinthedark.co.uk/test::cat"
+                "type": "object"
             }
 
             cat_schema = createJsonSchema(Cat)

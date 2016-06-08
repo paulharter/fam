@@ -6,7 +6,7 @@ from fam.tests.common import common_test_classes
 
 current_module = sys.modules[__name__]
 
-from fam.tests.couchdb.config import *
+from fam.tests.test_couchdb.config import *
 
 def iterCouchDBTests():
 

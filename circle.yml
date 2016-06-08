@@ -4,5 +4,5 @@ machine:
 
 test:
   override:
-    - nosetests src/fam/tests/couchdb
+    - nosetests src/fam/tests/test_couchdb
 

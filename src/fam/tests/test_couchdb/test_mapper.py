@@ -4,7 +4,7 @@ import unittest
 from fam.database import CouchDBWrapper
 from fam.mapper import ClassMapper
 from fam.exceptions import FamValidationError
-from fam.tests.couchdb.config import *
+from fam.tests.test_couchdb.config import *
 from fam.tests.models import test01
 from fam.tests.models.test01 import Dog, Cat, Person, JackRussell
 from fam.blud import StringField
@@ -80,10 +80,6 @@ class MapperValidationTests(unittest.TestCase):
         paul = Person.get(self.db, paul_id)
 
         paul.save(self.db)
-
-        self.fail()
-
-
 
 
 

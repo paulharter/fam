@@ -5,7 +5,7 @@ from fam.database import CouchDBWrapper
 from fam.mapper import ClassMapper
 from fam.blud import FamObject
 
-from fam.tests.couchdb.config import *
+from fam.tests.test_couchdb.config import *
 
 from fam.tests.models.test01 import Dog, Cat
 
