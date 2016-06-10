@@ -1,12 +1,12 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#", 
     "additionalProperties": false, 
-    "id": "glowinthedark.co.uk/test/monkey/20160608-232105-227970.json#", 
+    "id": "glowinthedark.co.uk/test/monarch/20160610-162350-738051.json#", 
     "properties": {
         "_deleted": {
             "type": "boolean"
         }, 
-        "colour": {
+        "country": {
             "type": "string"
         }, 
         "name": {
@@ -20,10 +20,10 @@
             "type": "string"
         }, 
         "type": {
-            "pattern": "monkey", 
+            "pattern": "monarch", 
             "type": "string"
         }
     }, 
-    "title": "A Fam object model for class glowinthedark.co.uk/test:Monkey", 
+    "title": "A Fam object model for class glowinthedark.co.uk/test:Monarch", 
     "type": "object"
 }

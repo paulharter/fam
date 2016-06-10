@@ -343,22 +343,24 @@ class FamObject(object):
 
 
     def __eq__(self, other):
-        equal = True
 
         if self.key != other.key:
-            equal = False
+            return False
 
         if self.use_rev and self.rev != other.rev:
-            equal = False
+            return False
 
         if self.type != other.type:
-            equal = False
+            return False
 
-        for k in other.properties.keys():
+        keys = set(other.properties.keys()).intersection(set(self.properties.keys()))
+
+        for k in keys:
             if k != "schema" and k != "channels":
                 if other._properties[k] != self._properties[k]:
-                    equal = False
-        return equal
+                    return False
+
+        return True
 
 
 

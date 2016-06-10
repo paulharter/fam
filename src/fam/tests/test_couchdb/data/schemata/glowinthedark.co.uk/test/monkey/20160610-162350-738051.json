@@ -1,13 +1,13 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#", 
-    "additionalProperties": true, 
-    "id": "glowinthedark.co.uk/test/jackrussell/20160608-232105-227970.json#", 
+    "additionalProperties": false, 
+    "id": "glowinthedark.co.uk/test/monkey/20160610-162350-738051.json#", 
     "properties": {
         "_deleted": {
             "type": "boolean"
         }, 
-        "age": {
-            "type": "number"
+        "colour": {
+            "type": "string"
         }, 
         "name": {
             "type": "string"
@@ -16,17 +16,14 @@
             "pattern": "glowinthedark.co.uk/test", 
             "type": "string"
         }, 
-        "owner_id": {
-            "type": "string"
-        }, 
         "schema": {
             "type": "string"
         }, 
         "type": {
-            "pattern": "jackrussell", 
+            "pattern": "monkey", 
             "type": "string"
         }
     }, 
-    "title": "A Fam object model for class glowinthedark.co.uk/test:JackRussell", 
+    "title": "A Fam object model for class glowinthedark.co.uk/test:Monkey", 
     "type": "object"
 }
