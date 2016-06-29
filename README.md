@@ -234,10 +234,10 @@ with cache(db) as cached_db:
 
     # now use cached_db instead of db
     dog = Dog(name="fly")
-    db.put(dog)
+    cached_db.put(dog)
     
     # dog2 will be the exact same python object as dog
-    dog2 = db.get(dog.key)
+    dog2 = cached_db.get(dog.key)
     
 #when the context closes the docs are saved back to db
     
