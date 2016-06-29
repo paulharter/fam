@@ -5,4 +5,5 @@
 
 /build
 /dist
+/src/fam/tests/test_couchdb/data/
 

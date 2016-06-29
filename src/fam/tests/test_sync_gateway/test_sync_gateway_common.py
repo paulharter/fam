@@ -3,7 +3,7 @@ import time
 import subprocess
 from fam.database import SyncGatewayWrapper
 from fam.mapper import ClassMapper
-from fam.tests.sync_gateway.config import *
+from fam.tests.test_sync_gateway.config import *
 from fam.tests.models.test01 import Dog, Cat, Person, JackRussell, Monkey, Monarch, Monster
 from fam.tests.common import common_test_classes
 

@@ -26,7 +26,7 @@ You can define a fam class like this:
 
 NAMESPACE = "mynamespace"
 
-class Dog(GenericObject):
+class Dog(FamObject):
     use_rev = True
     additional_properties = True
     fields = {
@@ -97,12 +97,12 @@ An instance of a database wrapper provides these methods for adding and removing
 
 ##Classes
  
- Fam classes are defined as inheriting from fam.blud.GenericObject like this:
+ Fam classes are defined as inheriting from fam.blud.FamObject like this:
 
 
  ```python 
  
-class Cat(GenericObject):
+class Cat(FamObject):
     use_rev = False
     additional_properties = False
     fields = {
@@ -119,7 +119,7 @@ class Cat(GenericObject):
  - **additional_properties** - A boolean, false by default, which if true lets you add arbitrary additional top level attributes to an object and if false will throw an exception when you try.
  - **fields** - A dict of named fields that map to the top level attributes of the underlying json documents. See below for use.
  
-GenericObject also provides six callbacks that occur as documents are saved and deleted
+FamObject also provides six callbacks that occur as documents are saved and deleted
 
 - **pre_save_new_cb(self)**
 - **post_save_new_cb(self)**
@@ -214,20 +214,49 @@ Fam now uses JSON Schema http://json-schema.org to validate documents. Fam's map
 
 You can get the mapper to write out its internal schemata by calling ```mapper.validator.write_out_schemata(directory)```
 
+
+## String Formats
+
+The StringField can easiliy be extended to define strings of data in certain formats. Currently there are two in fam.string_formats, EmailField and DateTimeField.
+
+## Cache
+
+As of v1.0.7 there is a cache in fam.database.caching. This is an in-memory document cache, so the same Python object always represents same db doc within scope of a context manager. Document changes are saved back to the database when the context manager closes.
+
+```python
+
+from fam.database.caching import cache
+
+# create a database db as usual
+
+# then create an in memory cache in front of it
+with cache(db) as cached_db:
+
+    # now use cached_db instead of db
+    dog = Dog(name="fly")
+    db.put(dog)
+    
+    # dog2 will be the exact same python object as dog
+    dog2 = db.get(dog.key)
+    
+#when the context closes the docs are saved back to db
+    
+```
+
+## Sync Function Helpers
+
+FamObject class with the additional class attribute `sg_allow_public_write = True` can be enumerated through a ClassMapper on `mapper.allow_public_write_types` which I find use to help generate code for my sync function.
+
 ##To Do?
 
 Some possible further features:
 
 - Optional class attribute **schema** to give better control over document validation.
 - Pass schemata to sync gateway's sync function to enforce typed validation on document creation and update.
-- Thread local, in memory, cache for db wrappers so same object always represents same db doc within scope of a context manager.
 - Somewhere to write extra views, maybe in decorated methods, maybe in separate JavaScript files to avoid yucky js strings in Python.
-- Role based ACLs for create and update defined in classes enforced in sync function.
 - Composed and compiled sync function maybe.
 - Migrations.
 - Unique field option using views
-- Additional structured string formats like datetime, email, latlng etc.
-
 
 
 
