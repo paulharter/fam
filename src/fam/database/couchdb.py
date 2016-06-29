@@ -81,28 +81,29 @@ class CouchDBWrapper(BaseDatabase):
         self.remote_url = remote_url
         self.db_name = db_name
         self.db_url = db_url
+        self.session = requests.Session()
 
         url = "%s/%s" % (db_url, db_name)
 
         replicator_url = "{}/_config/replicator/db".format(self.db_url)
-        self.replicator_db = requests.get(replicator_url).json()
+        self.replicator_db = self.session.get(replicator_url).json()
 
         if reset:
             self.replicator_db = self.clear_all_replications()
-            rsp = requests.get(url)
+            rsp = self.session.get(url)
             if rsp.status_code == 200:
-                rsp = requests.delete("%s/%s" % (db_url, db_name))
+                rsp = self.session.delete("%s/%s" % (db_url, db_name))
                 if rsp.status_code == 401:
                     raise Exception("Error deleting CB database: 401 Unauthorized")
                 if rsp.status_code == 400:
                     raise Exception("Error deleting CB database: 400 Bad Request")
 
-        rsp = requests.get(url)
+        rsp = self.session.get(url)
         if rsp.status_code == 200:
             print "exists", db_name, db_url
 
         if rsp.status_code == 404:
-            rsp = requests.put(url)
+            rsp = self.session.put(url)
             if rsp.status_code == 401:
                 raise Exception("Error creating CB database: 401 Unauthorized")
             if rsp.status_code == 400:
@@ -118,7 +119,7 @@ class CouchDBWrapper(BaseDatabase):
     @auth
     def _get(self, key):
         url = "%s/%s/%s" % (self.db_url, self.db_name, key)
-        rsp = requests.get(url)
+        rsp = self.session.get(url)
         if rsp.status_code == 200:
             return ResultWrapper.from_couchdb_json(rsp.json())
         if rsp.status_code == 404:
@@ -147,7 +148,7 @@ class CouchDBWrapper(BaseDatabase):
 
         url = "%s/%s/%s" % (self.db_url, self.db_name, key)
 
-        rsp = requests.put(url, data=json.dumps(value, indent=4, sort_keys=True, default=object_default), headers={"Content-Type": "application/json", "Accept": "application/json"})
+        rsp = self.session.put(url, data=json.dumps(value, indent=4, sort_keys=True, default=object_default), headers={"Content-Type": "application/json", "Accept": "application/json"})
         if rsp.status_code == 200 or rsp.status_code == 201:
             if rsp.content:
                 value["_rev"] = rsp.json()["rev"]
@@ -157,7 +158,7 @@ class CouchDBWrapper(BaseDatabase):
 
 
     def _delete(self, key, rev):
-        rsp = requests.delete("%s/%s/%s?rev=%s" % (self.db_url, self.db_name, key, rev))
+        rsp = self.session.delete("%s/%s/%s?rev=%s" % (self.db_url, self.db_name, key, rev))
         if rsp.status_code == 200 or rsp.status_code == 202:
             return
         raise FamResourceConflict("Unknown Error deleting cb doc: %s %s" % (rsp.status_code, rsp.text))
@@ -170,7 +171,7 @@ class CouchDBWrapper(BaseDatabase):
     def view(self, name, key):
         design_doc_id, view_name = name.split("/")
         url = self.VIEW_URL % (self.db_url, self.db_name, design_doc_id, view_name, key)
-        rsp = requests.get(url)
+        rsp = self.session.get(url)
 
         if rsp.status_code == 200:
             results = rsp.json()
@@ -201,7 +202,7 @@ class CouchDBWrapper(BaseDatabase):
                     params["timeout"] = 60000
                 else:
                     params["timeout"] = timeout
-        rsp = requests.get(url, params=params, cookies=self.cookies)
+        rsp = self.session.get(url, params=params, cookies=self.cookies)
         if rsp.status_code == 200:
             results = rsp.json()
             last_seq = results.get("last_seq")
@@ -217,16 +218,16 @@ class CouchDBWrapper(BaseDatabase):
     def clear_all_replications(self):
 
         url = "{}/_config/replicator/db".format(self.db_url)
-        old_replicator_db = requests.get(url).json()
+        old_replicator_db = self.session.get(url).json()
         new_replicator_db = "replicator_a" if old_replicator_db != "replicator_a" else "replicator_b"
-        rsp = requests.put("{}/{}".format(self.db_url, new_replicator_db))
+        rsp = self.session.put("{}/{}".format(self.db_url, new_replicator_db))
 
         if rsp.status_code == 201 or rsp.status_code == 412:
             #set the new db
-            requests.put(url, data=json.dumps(new_replicator_db))
+            self.session.put(url, data=json.dumps(new_replicator_db))
             #delete the old one
             if old_replicator_db != "_replicator":
-                rsp = requests.delete("%s/%s" % (self.db_url, old_replicator_db))
+                rsp = self.session.delete("%s/%s" % (self.db_url, old_replicator_db))
             return new_replicator_db
         else:
            raise Exception("failed to create new replication db")
@@ -252,7 +253,7 @@ class CouchDBWrapper(BaseDatabase):
 
         headers = {"Content-Type": "application/json"}
 
-        rsp = requests.post("%s/%s" % (self.db_url, replicator_db), data=json.dumps(attrs), headers=headers)
+        rsp = self.session.post("%s/%s" % (self.db_url, replicator_db), data=json.dumps(attrs), headers=headers)
         if rsp.status_code < 300:
             print "sync down created"
             return
@@ -274,7 +275,7 @@ class CouchDBWrapper(BaseDatabase):
 
         headers = {"Content-Type": "application/json"}
 
-        rsp = requests.post("%s/%s" % (self.db_url, replicator_db), data=json.dumps(attrs), headers=headers)
+        rsp = self.session.post("%s/%s" % (self.db_url, replicator_db), data=json.dumps(attrs), headers=headers)
         if rsp.status_code < 300:
             print "sync_up created"
             return
@@ -291,7 +292,7 @@ class CouchDBWrapper(BaseDatabase):
 
             headers = {"Content-Type": "application/json"}
 
-            rsp = requests.post("%s/_replicate" % self.db_url, data=json.dumps(attrs), headers=headers)
+            rsp = self.session.post("%s/_replicate" % self.db_url, data=json.dumps(attrs), headers=headers)
             if rsp.status_code < 300:
                 return
             raise Exception("Unknown Error syncing up to remote: %s %s" % (rsp.status_code, rsp.text))
@@ -307,7 +308,7 @@ class CouchDBWrapper(BaseDatabase):
 
             headers = {"Content-Type": "application/json"}
 
-            rsp = requests.post("%s/_replicate" % self.db_url, data=json.dumps(attrs), headers=headers)
+            rsp = self.session.post("%s/_replicate" % self.db_url, data=json.dumps(attrs), headers=headers)
             if rsp.status_code < 300:
                 return
             raise Exception("Unknown Error syncing up to remote: %s %s" % (rsp.status_code, rsp.text))
@@ -315,7 +316,7 @@ class CouchDBWrapper(BaseDatabase):
 
     def flush(self):
 
-        rsp = requests.post("%s/%s/_ensure_full_commit" % (self.db_url, self.db_name))
+        rsp = self.session.post("%s/%s/_ensure_full_commit" % (self.db_url, self.db_name))
         if rsp.status_code <= 201:
                 return
         raise Exception("Unknown Error _ensure_full_commit in remote: %s %s" % (rsp.status_code, rsp.text))

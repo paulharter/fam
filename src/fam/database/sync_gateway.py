@@ -32,9 +32,10 @@ class SyncGatewayWrapper(CouchDBWrapper):
         self.username = username
         self.password = password
         self.auth_url = auth_url
+        self.session = requests.Session()
 
         url = "%s/%s" % (db_url, db_name)
-        rsp = requests.get(url)
+        rsp = self.session.get(url)
 
         self.cookies = {}
 
@@ -49,7 +50,7 @@ class SyncGatewayWrapper(CouchDBWrapper):
         userAndPass = b64encode(b"paul:bumbum").decode("ascii")
         headers = { 'Authorization' : 'Basic %s' %  userAndPass }
 
-        rsp = requests.get(self.auth_url, headers=headers)
+        rsp = self.session.get(self.auth_url, headers=headers)
         if rsp.status_code == 200:
             self.cookies = rsp.cookies
         else:
