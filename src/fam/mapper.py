@@ -11,7 +11,7 @@ VIEW_FUNCTION_NAMES = ["map", "reduce"]
 
 class ClassMapper(object):
 
-    def __init__(self, classes, modules=None, schema_dir=None, design_js_paths=None):
+    def __init__(self, classes, modules=None, schema_dir=None, designs=None):
 
         input_modules = modules if modules else []
 
@@ -24,7 +24,7 @@ class ClassMapper(object):
         self._add_modules(input_modules)
         self.sub_class_lookup = {}
         self._work_out_sub_classes()
-        self.design_js_paths = design_js_paths if design_js_paths is not None else []
+        self.design_js_paths = designs if designs is not None else []
 
 
     def extra_design_docs(self):

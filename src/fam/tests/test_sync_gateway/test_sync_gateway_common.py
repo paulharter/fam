@@ -27,7 +27,7 @@ def iterSyncGatewayTests():
             self.gateway = subprocess.Popen(cmd, shell=True)
             time.sleep(0.25)
             filepath = os.path.join(DATA_PATH, "animal_views.js")
-            mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch, Monster], design_js_paths=[filepath])
+            mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch, Monster], designs=[filepath])
 
             url = "http://%s:%s" % (SYNC_GATEWAY_ADMIN_HOST, SYNC_GATEWAY_ADMIN_PORT)
             self.db = SyncGatewayWrapper(mapper, url, SYNC_GATEWAY_NAME)

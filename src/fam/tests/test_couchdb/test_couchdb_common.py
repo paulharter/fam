@@ -20,7 +20,7 @@ def iterCouchDBTests():
 
         def setUp(self):
             filepath = os.path.join(DATA_PATH, "animal_views.js")
-            mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch, Monster], design_js_paths=[filepath])
+            mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch, Monster], designs=[filepath])
             self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True)
             self.db.update_designs()
             super(self.__class__, self).setUp()

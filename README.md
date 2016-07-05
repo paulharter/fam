@@ -236,7 +236,7 @@ var cat_legs = {
 Saved in a file called `animal_views.js`. Then pass the paths to you JavaScript design documents to the constructor for the mapper:
 
 ```python
-mapper = ClassMapper([Dog, Cat, Person], design_js_paths=[".../animal_views.js"])
+mapper = ClassMapper([Dog, Cat, Person], designs=[".../animal_views.js"])
 
 ```
 
