@@ -1,4 +1,5 @@
 import sys
+import os
 import time
 import subprocess
 from fam.database import SyncGatewayWrapper
@@ -9,6 +10,9 @@ from fam.tests.common import common_test_classes
 
 current_module = sys.modules[__name__]
 
+TEST_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_PATH = os.path.join(TEST_DIR, "common", "data")
+
 def iterSyncGatewayTests():
 
     for test_class in common_test_classes:
@@ -17,12 +21,14 @@ def iterSyncGatewayTests():
         def setUp(self):
 
             cmd = "{} -url walrus:".format(SYNC_GATEWAY_PATH)
+            print cmd
 
             time.sleep(0.25)
             self.gateway = subprocess.Popen(cmd, shell=True)
             time.sleep(0.25)
+            filepath = os.path.join(DATA_PATH, "animal_views.js")
+            mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch, Monster], design_js_paths=[filepath])
 
-            mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch, Monster])
             url = "http://%s:%s" % (SYNC_GATEWAY_ADMIN_HOST, SYNC_GATEWAY_ADMIN_PORT)
             self.db = SyncGatewayWrapper(mapper, url, SYNC_GATEWAY_NAME)
             self.db.update_designs()

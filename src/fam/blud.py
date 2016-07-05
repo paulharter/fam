@@ -427,9 +427,10 @@ class FamObject(object):
     def post_delete_cb(self):
         pass
 
+
     @classmethod
     def _query_view(cls, db, view_name, key):
-        rows =  db.view(view_name, key)
+        rows =  db.view(view_name, key=key)
         return [GenericObject._from_doc(db, row.key, row.rev, row.value) for row in rows]
 
 

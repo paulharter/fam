@@ -1,12 +1,17 @@
 import inspect
+import os
+from slimit import ast
+from slimit.parser import Parser
 
 from fam.blud import GenericObject
 from fam.schema.validator import ModelValidator
 
+VIEW_FUNCTION_NAMES = ["map", "reduce"]
+
 
 class ClassMapper(object):
 
-    def __init__(self, classes, modules=None, schema_dir=None):
+    def __init__(self, classes, modules=None, schema_dir=None, design_js_paths=None):
 
         input_modules = modules if modules else []
 
@@ -19,6 +24,17 @@ class ClassMapper(object):
         self._add_modules(input_modules)
         self.sub_class_lookup = {}
         self._work_out_sub_classes()
+        self.design_js_paths = design_js_paths if design_js_paths is not None else []
+
+
+    def extra_design_docs(self):
+
+        docs = []
+        for filepath in self.design_js_paths:
+            design_doc = self._js_design_as_doc(filepath)
+            docs.append(design_doc)
+
+        return docs
 
 
     def _add_immutable_field(self, type_name, field_name):
@@ -86,6 +102,44 @@ class ClassMapper(object):
         if namespace is None:
             return None
         return namespace.get(type_name)
+
+
+    def _js_design_as_doc(self, filepath):
+
+        dir, filename = os.path.split(filepath)
+        name, ext = os.path.splitext(filename)
+
+        with open(filepath) as f:
+            js = f.read()
+
+        parser = Parser()
+        tree = parser.parse(js)
+
+        views = {}
+
+        for node in tree:
+            if isinstance(node, ast.VarStatement):
+                for child in node.children():
+                    for grandchild in child.children():
+                        if isinstance(grandchild, ast.Identifier):
+                            view = {}
+                            view_name = grandchild.value
+                            views[view_name] = view
+                        if isinstance(grandchild, ast.Object):
+                            for named in grandchild.children():
+                                function_name = None
+                                function_body = None
+                                for kv in named.children():
+                                    if isinstance(kv, ast.Identifier) and kv.value in VIEW_FUNCTION_NAMES:
+                                        function_name = kv.value
+                                    if isinstance(kv, ast.FuncExpr):
+                                        function_body = kv.to_ecma()
+                                if function_name and function_body:
+                                    view[function_name] = function_body
+
+
+        return {"_id": "_design/%s" % name,
+                "views": views}
 
 
 

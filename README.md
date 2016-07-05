@@ -215,6 +215,37 @@ Fam now uses JSON Schema http://json-schema.org to validate documents. Fam's map
 You can get the mapper to write out its internal schemata by calling ```mapper.validator.write_out_schemata(directory)```
 
 
+## Writing Views
+
+Couch views are fragments of JavaScript stored in design documents in the database. Fam automatically generates some design documents for you, those describing relationships between documents, but the chances are you will want to create some other views to help search for documents. Fam takes a minimalist approach to design documents. It provides two things: firstly, JavaScript parsing in the mapper so you can write design documents in JavaScript rather than json (which is nasty), you write in js and it turns them into json; secondly a simple method on the fam db object to query views.
+
+You can use it like this:
+
+Write JavaScript versions of you design documents with the views as vars in the global namespace in files with the desired name of the design document. eg
+
+```javascript
+var cat_legs = {
+    map: function(doc){
+        if(doc.type == "cat"){
+            emit(doc.legs, doc)
+        }
+    }
+}
+```
+
+Saved in a file called `animal_views.js`. Then pass the paths to you JavaScript design documents to the constructor for the mapper:
+
+```python
+mapper = ClassMapper([Dog, Cat, Person], design_js_paths=[".../animal_views.js"])
+
+```
+
+Then you can then query these views where viewpath is a composite of design name and view name `design_name/view_name` and kwargs are the normal view query attributes for either CouchDB or Sync Gateway (they differ slightly):
+
+```python
+db.view(viewpath, **kwargs)
+```
+
 ## String Formats
 
 The StringField can easiliy be extended to define strings of data in certain formats. Currently there are two in fam.string_formats, EmailField and DateTimeField.
@@ -253,7 +284,6 @@ Some possible further features:
 
 - Optional class attribute **schema** to give better control over document validation.
 - Pass schemata to sync gateway's sync function to enforce typed validation on document creation and update.
-- Somewhere to write extra views, maybe in decorated methods, maybe in separate JavaScript files to avoid yucky js strings in Python.
 - Composed and compiled sync function maybe.
 - Migrations.
 - Unique field option using views

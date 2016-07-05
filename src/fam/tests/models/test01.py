@@ -38,6 +38,11 @@ class Cat(GenericObject):
         }
 
 
+    @classmethod
+    def all_with_n_legs(cls, db, legs):
+        return db.view("animal_views/cat_legs", key=legs)
+
+
 class Person(GenericObject):
     fields = {
         "name": StringField(),

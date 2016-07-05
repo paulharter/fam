@@ -9,7 +9,7 @@ SYNC_GATEWAY_NAME = "sync_gateway"
 if sys.platform.startswith('linux'):
     SYNC_GATEWAY_PATH = "/opt/couchbase-sync-gateway/bin/sync_gateway"
 else:
-    SYNC_GATEWAY_PATH = "sync_gateway"
+    SYNC_GATEWAY_PATH = "/usr/local/bin/sync_gateway"
 
 
 

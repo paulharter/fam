@@ -10,7 +10,7 @@ from .couchdb import CouchDBWrapper, ResultWrapper
 class SyncGatewayWrapper(CouchDBWrapper):
 
     ## the option stale=false forces the view to be indexed on read. Sync_gateway does not index on write!!
-    VIEW_URL = "%s/%s/_design/%s/_view/%s?stale=false&key=\"%s\""
+    # VIEW_URL = "%s/%s/_design/%s/_view/%s?stale=false&key=\"%s\""
 
     # this function is different from the base version in that it adds the rev from the meta into the doc
     FOREIGN_KEY_MAP_STRING = '''function(doc, meta) {
@@ -72,6 +72,10 @@ class SyncGatewayWrapper(CouchDBWrapper):
     def sync_down(self):
         pass
 
+    def view(self, name, **kwargs):
+
+        return super(SyncGatewayWrapper, self).view(name, stale="false", **kwargs)
+
 
     def update_designs(self):
 
@@ -98,3 +102,9 @@ class SyncGatewayWrapper(CouchDBWrapper):
             attrs = self._get_design(namespace)
             attrs["_id"] = doc_id
             self._set(doc_id, attrs)
+
+
+        for doc in self.mapper.extra_design_docs():
+            doc_id = doc["_id"]
+            # existing = self._get(doc_id)
+            self._set(doc_id, doc)

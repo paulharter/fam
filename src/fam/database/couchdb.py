@@ -9,6 +9,9 @@ from fam.utils import requests_shim as requests
 from fam.database.base import BaseDatabase, FamDbAuthException
 
 
+JSON_KEY_STRINGS = ["endkey", "end_key", "key", "keys", "startkey", "start_key"]
+
+
 class ResultWrapper(object):
 
     def __init__(self, key, rev, value):
@@ -68,9 +71,11 @@ def auth(func):
             return func(instance, *args, **kwargs)
     return func_wrapper
 
+
 class CouchDBWrapper(BaseDatabase):
 
-    VIEW_URL = "%s/%s/_design/%s/_view/%s?key=\"%s\""
+    VIEW_URL = "%s/%s/_design/%s/_view/%s"
+    # "%s/%s/_design/%s/_view/%s?stale=false&key=\"%s\""
 
     def __init__(self, mapper, db_url, db_name, reset=False, remote_url=None, continuous=False):
 
@@ -168,10 +173,22 @@ class CouchDBWrapper(BaseDatabase):
         return ResultWrapper.from_couchdb_view_json(as_json)
 
 
-    def view(self, name, key):
+    def _encode_for_view_query(self, kwargs):
+
+        encoded = {}
+
+        for k, v in kwargs.iteritems():
+            encoded[k] = json.dumps(v) if k in JSON_KEY_STRINGS else v
+
+        return encoded
+
+
+
+    def view(self, name, **kwargs):
         design_doc_id, view_name = name.split("/")
-        url = self.VIEW_URL % (self.db_url, self.db_name, design_doc_id, view_name, key)
-        rsp = self.session.get(url)
+
+        url = self.VIEW_URL % (self.db_url, self.db_name, design_doc_id, view_name)
+        rsp = self.session.get(url, params=self._encode_for_view_query(kwargs))
 
         if rsp.status_code == 200:
             results = rsp.json()
@@ -345,3 +362,9 @@ class CouchDBWrapper(BaseDatabase):
             attrs["_id"] = doc_id
             existing = self._get(doc_id)
             self._set(doc_id, attrs, rev=existing.rev if existing else None)
+
+
+        for doc in self.mapper.extra_design_docs():
+            doc_id = doc["_id"]
+            existing = self._get(doc_id)
+            self._set(doc_id, doc, rev=existing.rev if existing else None)
