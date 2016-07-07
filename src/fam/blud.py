@@ -428,6 +428,12 @@ class FamObject(object):
         pass
 
 
+
+    @classmethod
+    def view(cls, db, view_name, **kwargs):
+        rows =  db.view(view_name, **kwargs)
+        return [GenericObject._from_doc(db, row.key, row.rev, row.value) for row in rows]
+
     @classmethod
     def _query_view(cls, db, view_name, key):
         rows =  db.view(view_name, key=key)
