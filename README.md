@@ -240,10 +240,10 @@ mapper = ClassMapper([Dog, Cat, Person], designs=[".../animal_views.js"])
 
 ```
 
-Then you can then query these views where viewpath is a composite of design name and view name `design_name/view_name` and kwargs are the normal view query attributes for either CouchDB or Sync Gateway (they differ slightly):
+Then you can then query these views like this `db.view(viewpath, **kwargs)` where viewpath is a composite of design name and view name `design_name/view_name` and kwargs are the normal view query attributes for either CouchDB or Sync Gateway (they differ slightly), eg:
 
 ```python
-db.view(viewpath, **kwargs)
+cats_with_three_legs = db.view("animal_views/cat_legs", key=3)
 ```
 
 ## String Formats
