@@ -276,7 +276,7 @@ with cache(db) as cached_db:
 
 ## Sync Function Helpers
 
-FamObject class with the additional class attribute `sg_allow_public_write = True` can be enumerated through a ClassMapper on `mapper.allow_public_write_types` which I find use to help generate code for my sync function.
+FamObject class with the additional class attribute `sg_allow_public_write = True` can be enumerated with a ClassMapper on `mapper.allow_public_write_types`.
 
 ##To Do?
 
