@@ -156,6 +156,7 @@ def current_xml_time():
 
 ## this provides a class based wrapper
 
+
 class GenericMetaclass(type):
 
     def __new__(cls, name, bases, dct):

@@ -32,6 +32,7 @@ class ResultWrapper(object):
         value = as_json
         return cls(key, rev, value)
 
+
     @classmethod
     def from_couchdb_view_json(cls, as_json):
         key = as_json["id"]
@@ -40,6 +41,7 @@ class ResultWrapper(object):
         del value["_id"]
         del value["_rev"]
         return cls(key, rev, value)
+
 
     @classmethod
     def from_gateway_view_json(cls, as_json):
@@ -69,6 +71,16 @@ def auth(func):
         except FamDbAuthException:
             instance.authenticate()
             return func(instance, *args, **kwargs)
+    return func_wrapper
+
+
+def ensure_views(func):
+    def func_wrapper(db, *args, **kwargs):
+        try:
+            return func(db, *args, **kwargs)
+        except FamViewError:
+            db.update_views()
+            return func(db, *args, **kwargs)
     return func_wrapper
 
 
@@ -179,7 +191,7 @@ class CouchDBWrapper(BaseDatabase):
             encoded[k] = json.dumps(v) if k in JSON_KEY_STRINGS else v
         return encoded
 
-
+    @ensure_views
     def view(self, name, **kwargs):
         design_doc_id, view_name = name.split("/")
 
@@ -191,7 +203,7 @@ class CouchDBWrapper(BaseDatabase):
             rows = results["rows"]
             return [self._wrapper_from_view_json(row) for row in rows]
 
-        raise Exception("Unknown Error view cb doc: %s %s %s" % (rsp.status_code, rsp.text, url))
+        raise FamViewError("Unknown Error view cb doc: %s %s %s" % (rsp.status_code, rsp.text, url))
 
     def authenticate(self):
         pass
