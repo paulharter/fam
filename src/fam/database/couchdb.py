@@ -79,7 +79,7 @@ def ensure_views(func):
         try:
             return func(db, *args, **kwargs)
         except FamViewError:
-            db.update_views()
+            db.update_designs()
             return func(db, *args, **kwargs)
     return func_wrapper
 
