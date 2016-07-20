@@ -1,5 +1,6 @@
 
 import unittest
+import time
 from fam.exceptions import *
 from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell, Monkey, Monarch, NAMESPACE
 
@@ -143,7 +144,6 @@ class BasicBaseTestCases:
             self.assertEqual(len(paul.animals), 2)
 
 
-
         def test_refs_with_inheritance(self):
             paul = Person(name="paul")
             paul.save(self.db)
@@ -265,15 +265,6 @@ class BasicBaseTestCases:
             dog.food = "biscuits"
             dog.save(self.db)
 
-        #
-        # def test_all(self):
-        #     dog = Dog(name="fly")
-        #     dog.save(self.db)
-        #     all = Dog.all(self.db)
-        #     self.assertEqual(len(all), 1)
-
-
-
 
         def test_update_fails_without_rev(self):
             dog = Dog(name="fly")
@@ -289,6 +280,23 @@ class BasicBaseTestCases:
             monkey.rev = None
             monkey.name = "jess"
             self.db.put(monkey)
+
+        def test_uniqueness(self):
+
+            paul = Person(name="paul")
+            self.db.put(paul)
+            dog1 = Dog(name="rufus", owner_id=paul.key, kennel_club_membership="123456")
+
+            dog1.save(self.db)
+            # time.sleep(1)
+
+
+            # print dog1.as_json()
+            # dog2 = Dog(name="fly", owner_id=paul.key, kennel_club_membership="123456")
+            # print dog2.as_json()
+            # # self.db.put(dog2)
+            # self.assertRaises(FamUniqueError, self.db.put, dog2)
+            # # print "*********** end ***************"
 
     class RefNameTests(unittest.TestCase):
 

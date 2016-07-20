@@ -174,14 +174,10 @@ class CouchDBWrapper(BaseDatabase):
 
 
     def _encode_for_view_query(self, kwargs):
-
         encoded = {}
-
         for k, v in kwargs.iteritems():
             encoded[k] = json.dumps(v) if k in JSON_KEY_STRINGS else v
-
         return encoded
-
 
 
     def view(self, name, **kwargs):
@@ -358,11 +354,10 @@ class CouchDBWrapper(BaseDatabase):
         for namespace_name, namespace in self.mapper.namespaces.iteritems():
             view_namespace = namespace_name.replace("/", "_")
             doc_id = "_design/%s" % view_namespace
-            attrs = self._get_design(namespace)
+            attrs = self._get_design(namespace, namespace_name)
             attrs["_id"] = doc_id
             existing = self._get(doc_id)
             self._set(doc_id, attrs, rev=existing.rev if existing else None)
-
 
         for doc in self.mapper.extra_design_docs():
             doc_id = doc["_id"]

@@ -1,14 +1,14 @@
+import time
+import subprocess
 import unittest
 import requests
 import json
-import time
 
 DB_HOST = "localhost"
-COUCHBASE_URL = "http://192.168.99.100:8091"
 
-# SYNC_GATEWAY_PATH = "/Users/paul/Dropbox/glowinthedark/spate/Flotsam/bin/sync_gateway_versions/1.3/sync_gateway"
+SYNC_GATEWAY_PATH = "/Users/paul/Dropbox/glowinthedark/spate/Flotsam/bin/sync_gateway_versions/1.3/sync_gateway"
 
-SYNC_GATEWAY_PATH = "/usr/local/bin/sync_gateway"
+# SYNC_GATEWAY_PATH = "/usr/local/bin/sync_gateway"
 SYNC_GATEWAY_VIEW_URL = "%s/_design/%s/_view/%s?stale=false&key=\"%s\""
 
 DESIGN_ID = "test"
@@ -50,16 +50,22 @@ DOG = {
 class ViewTests(unittest.TestCase):
 
     def setUp(self):
-        rsp = requests.post("%s/pools/default/buckets/%s/controller/doFlush" % (COUCHBASE_URL, DB_NAME), auth=("couchbase", "password"))
-        if rsp.status_code != 200:
-            raise Exception("failed to flush bucket %s : %s" % (rsp.status_code, rsp.text))
 
+        cmd = "{} -log=* -url walrus:".format(SYNC_GATEWAY_PATH)
+        print cmd
+
+        time.sleep(0.25)
+        self.gateway = subprocess.Popen(cmd, shell=True)
+        time.sleep(0.25)
+
+        super(self.__class__, self).setUp()
 
     def tearDown(self):
-        pass
+        # stop the gateway
+        self.gateway.kill()
+
 
     def put_in_db(self, key, value):
-
         url = "%s/%s" % (DB_URL, key)
         rsp = requests.put(url,
                            data=json.dumps(value, indent=4, sort_keys=True),
@@ -67,7 +73,6 @@ class ViewTests(unittest.TestCase):
 
         print rsp.text
         self.assertEqual(rsp.status_code, 201)
-
 
     def query_view(self, design_id, view_name, key):
         url = VIEW_URL % (DB_URL, design_id, view_name, key)
@@ -78,44 +83,37 @@ class ViewTests(unittest.TestCase):
         return results["rows"]
 
 
-    # def test_design_with_one_view(self):
-    #     time.sleep(4)
-    #
-    #     # put the design in the database
-    #     self.put_in_db("_design/%s" % DESIGN_ID, ONE_DESIGN)
-    #
-    #     time.sleep(1)
-    #
-    #     #put the dog doc in the database
-    #     self.put_in_db(DOG_ID, DOG)
-    #
-    #     # query the view
-    #     rows = self.query_view(DESIGN_ID, "person_dogs", OWNER_ID)
-    #
-    #     # should find 1 row
-    #     self.assertEqual(len(rows), 1)
 
-
-    def test_design_with_two_views(self):
-        time.sleep(4)
+    def test_design_without_previous_request(self):
 
         # put the design in the database
-        self.put_in_db("_design/%s" % DESIGN_ID, TWO_DESIGN)
-
-        time.sleep(1)
+        self.put_in_db("_design/%s" % DESIGN_ID, ONE_DESIGN)
 
         #put the dog doc in the database
         self.put_in_db(DOG_ID, DOG)
 
         # query the view
-        rows = self.query_view(DESIGN_ID, "person_animals", OWNER_ID)
+        rows = self.query_view(DESIGN_ID, "person_dogs", OWNER_ID)
 
         # should find 1 row
         self.assertEqual(len(rows), 1)
 
+
+    def test_design_with_previous_request(self):
+        # put the design in the database
+        self.put_in_db("_design/%s" % DESIGN_ID, ONE_DESIGN)
+
         # query the view
         rows = self.query_view(DESIGN_ID, "person_dogs", OWNER_ID)
 
-        # should find 1 row but fails to
-        self.assertEqual(len(rows), 1)
+        # should find 1 row
+        self.assertEqual(len(rows), 0)
 
+        # put the dog doc in the database
+        self.put_in_db(DOG_ID, DOG)
+
+        # query the view
+        rows = self.query_view(DESIGN_ID, "person_dogs", OWNER_ID)
+
+        # should find 1 row
+        self.assertEqual(len(rows), 1)

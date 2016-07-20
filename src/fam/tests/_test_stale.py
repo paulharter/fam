@@ -2,13 +2,14 @@ import unittest
 import requests
 import json
 import time
+import subprocess
 
-DB_HOST = "localhost"
+DB_HOST = "192.168.99.100"
 COUCHBASE_URL = "http://192.168.99.100:8091"
 
-# SYNC_GATEWAY_PATH = "/Users/paul/Dropbox/glowinthedark/spate/Flotsam/bin/sync_gateway_versions/1.3/sync_gateway"
+SYNC_GATEWAY_PATH = "/Users/paul/Dropbox/glowinthedark/spate/Flotsam/bin/sync_gateway_versions/1.3/sync_gateway"
 
-SYNC_GATEWAY_PATH = "/usr/local/bin/sync_gateway"
+# SYNC_GATEWAY_PATH = "/usr/local/bin/sync_gateway"
 SYNC_GATEWAY_VIEW_URL = "%s/_design/%s/_view/%s?stale=false&key=\"%s\""
 
 DESIGN_ID = "test"
@@ -21,18 +22,6 @@ ONE_DESIGN = {
     "views": {
         "person_dogs": {
             "map": "function(doc, meta) {\n    var resources = [\"dog\"];\n    if (resources.indexOf(doc.type) != -1){\n        doc._rev = meta.rev;\n        emit(doc.owner_id, doc);\n    }\n}"
-        }
-    }
-}
-
-TWO_DESIGN = {
-    "_id": DESIGN_ID,
-    "views": {
-        "person_dogs": {
-            "map": "function(doc, meta) {\n    var resources = [\"dog\"];\n    if (resources.indexOf(doc.type) != -1){\n        doc._rev = meta.rev;\n        emit(doc.owner_id, doc);\n    }\n}"
-        },
-        "person_animals": {
-            "map": "function(doc, meta) {\n    var resources = [\"dog\", \"cat\"];\n    if (resources.indexOf(doc.type) != -1){\n        doc._rev = meta.rev;\n        emit(doc.owner_id, doc);\n    }\n}"
         }
     }
 }
@@ -54,9 +43,22 @@ class ViewTests(unittest.TestCase):
         if rsp.status_code != 200:
             raise Exception("failed to flush bucket %s : %s" % (rsp.status_code, rsp.text))
 
+        # time.sleep(4)
+        #
+        # cmd = "{} -log=* -url {}".format(SYNC_GATEWAY_PATH, COUCHBASE_URL)
+        #
+        # print cmd
+        #
+        # time.sleep(0.25)
+        # self.gateway = subprocess.Popen(cmd, shell=True)
+        # time.sleep(0.25)
+
+
 
     def tearDown(self):
         pass
+        # stop the gateway
+        # self.gateway.kill()
 
     def put_in_db(self, key, value):
 
@@ -78,29 +80,15 @@ class ViewTests(unittest.TestCase):
         return results["rows"]
 
 
-    # def test_design_with_one_view(self):
-    #     time.sleep(4)
-    #
-    #     # put the design in the database
-    #     self.put_in_db("_design/%s" % DESIGN_ID, ONE_DESIGN)
-    #
-    #     time.sleep(1)
-    #
-    #     #put the dog doc in the database
-    #     self.put_in_db(DOG_ID, DOG)
-    #
-    #     # query the view
-    #     rows = self.query_view(DESIGN_ID, "person_dogs", OWNER_ID)
-    #
-    #     # should find 1 row
-    #     self.assertEqual(len(rows), 1)
-
-
-    def test_design_with_two_views(self):
+    def test_design_with_one_view(self):
         time.sleep(4)
 
+        rows = self.query_view(DESIGN_ID, "person_dogs", OWNER_ID)
+
+        self.assertEqual(len(rows), 0)
+
         # put the design in the database
-        self.put_in_db("_design/%s" % DESIGN_ID, TWO_DESIGN)
+        self.put_in_db("_design/%s" % DESIGN_ID, ONE_DESIGN)
 
         time.sleep(1)
 
@@ -108,14 +96,8 @@ class ViewTests(unittest.TestCase):
         self.put_in_db(DOG_ID, DOG)
 
         # query the view
-        rows = self.query_view(DESIGN_ID, "person_animals", OWNER_ID)
-
-        # should find 1 row
-        self.assertEqual(len(rows), 1)
-
-        # query the view
         rows = self.query_view(DESIGN_ID, "person_dogs", OWNER_ID)
 
-        # should find 1 row but fails to
+        # should find 1 row
         self.assertEqual(len(rows), 1)
 

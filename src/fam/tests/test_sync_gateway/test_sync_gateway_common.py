@@ -20,7 +20,7 @@ def iterSyncGatewayTests():
 
         def setUp(self):
 
-            cmd = "{} -url walrus:".format(SYNC_GATEWAY_PATH)
+            cmd = "{} -log=* -url walrus: ".format(SYNC_GATEWAY_PATH)
             print cmd
 
             time.sleep(0.25)

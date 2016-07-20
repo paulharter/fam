@@ -16,7 +16,8 @@ class BaseDatabase(object):
 
 ###################################
 
-    #double dispatch accessors
+    #double dispatch accessors that return objects
+
     def put(self, thing):
         return thing.save(self)
 
@@ -29,14 +30,18 @@ class BaseDatabase(object):
     def delete_key(self, key):
         return GenericObject.delete_key(self, key)
 
+    def query_view(self, view_name, **kwargs):
+        return GenericObject.view(self, view_name, **kwargs)
+
 #################################
 
     def class_for_type_name(self, type_name, namespace_name):
         return self.mapper.get_class(type_name, namespace_name)
 
-    def _get_design(self, namespace):
+    def _get_design(self, namespace, namespace_name):
 
         views = {}
+
 
         for type_name, cls in namespace.iteritems():
             for field_name, field in cls.cls_fields.iteritems():
@@ -44,6 +49,14 @@ class BaseDatabase(object):
                     view_key = "%s_%s" % (type_name, field_name)
                     # if view_key in ["person_dogs", "person_animals"]:
                     views[view_key] = {"map" : self._get_fk_map(field.refcls, field.refns, field.fkey)}
+
+                if field.unique:
+                    view_key = "%s_%s" % (type_name, field_name)
+                    # if view_key in ["person_dogs", "person_animals"]:
+                    views[view_key] = {"map": self._get_fk_map(type_name, namespace_name, field_name)}
+
+
+
         design = {
            "views": views
         }
@@ -65,4 +78,3 @@ class BaseDatabase(object):
 
         arrayStr = '["%s"]' % '", "'.join(all_sub_class_names)
         return self.FOREIGN_KEY_MAP_STRING % (arrayStr, namespace, ref_to_field_name)
-

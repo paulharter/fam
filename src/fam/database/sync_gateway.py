@@ -99,12 +99,11 @@ class SyncGatewayWrapper(CouchDBWrapper):
         for namespace_name, namespace in self.mapper.namespaces.iteritems():
             view_namespace = namespace_name.replace("/", "_")
             doc_id = "_design/%s" % view_namespace
-            attrs = self._get_design(namespace)
+            attrs = self._get_design(namespace, namespace_name)
             attrs["_id"] = doc_id
             self._set(doc_id, attrs)
 
 
         for doc in self.mapper.extra_design_docs():
             doc_id = doc["_id"]
-            # existing = self._get(doc_id)
             self._set(doc_id, doc)

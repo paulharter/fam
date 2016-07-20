@@ -11,7 +11,8 @@ class Dog(GenericObject):
     sync_gateway_write = True
     fields = {
         "name": StringField(),
-        "owner_id": ReferenceTo(NAMESPACE, "person", cascade_delete=True)
+        "owner_id": ReferenceTo(NAMESPACE, "person", cascade_delete=True),
+        "kennel_club_membership": StringField(unique=True)
         }
 
     def talk(self):
@@ -93,6 +94,7 @@ class Monster(GenericObject):
     fields = {
         "name": StringField(),
         "weapons": ObjectField(cls=Weapons),
+
         }
 
 class Event(GenericObject):

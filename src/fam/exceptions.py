@@ -10,5 +10,8 @@ class FamValidationError(Exception):
 class FamImmutableError(Exception):
     pass
 
+class FamUniqueError(Exception):
+    pass
+
 class FamError(Exception):
     pass

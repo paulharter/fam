@@ -27,6 +27,7 @@ class ClassMapper(object):
         self.design_js_paths = designs if designs is not None else []
 
 
+
     def extra_design_docs(self):
 
         docs = []

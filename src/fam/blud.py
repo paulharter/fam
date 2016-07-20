@@ -26,10 +26,11 @@ class Field(object):
     
     object = "base"
     
-    def __init__(self, required=False, immutable=False, default=None):
+    def __init__(self, required=False, immutable=False, default=None, unique=False):
         self.required = required
         self.immutable = immutable
         self.default = default
+        self.unique = unique
 
         if self.default is not None and self.required is True:
             raise FamError("It doesnt really make sense to use both required and default together. Just use default")
@@ -107,11 +108,11 @@ class ObjectField(Field):
 
 class ReferenceTo(Field):
 
-    def __init__(self, refns, refcls, required=False, immutable=False, default=None, cascade_delete=False):
+    def __init__(self, refns, refcls, required=False, immutable=False, default=None, unique=False, cascade_delete=False):
         self.refns = refns
         self.refcls = refcls
         self.cascade_delete = cascade_delete
-        super(ReferenceTo, self).__init__(required, immutable, default)
+        super(ReferenceTo, self).__init__(required, immutable, default, unique)
 
     def is_correct_type(self, value):
         return type(value) == types.StringType or type(value) == types.UnicodeType or type(value) == types.NoneType
@@ -255,18 +256,71 @@ class FamObject(object):
                     raise FamImmutableError("You can't change the value of {} on a {} it has been made immutable".format(field_name, self.__class__.__name__))
 
 
+    def _check_uniqueness(self):
+        for field_name, field in self.__class__.fields.iteritems():
+            if field.unique:
+                this_value = getattr(self, field_name)
+                if this_value is None:
+                    continue
+                view_namespace = self.namespace.replace("/", "_")
+                type_name = self.__class__._type_with_ref(field_name)
+                view_name = "%s/%s_%s" % (view_namespace, type_name, field_name)
+                all_existing = self._query_view(self._db, view_name, this_value)
+                all_non_null = [o for o in all_existing if getattr(o, field_name, None)]
+
+                how_many_existing = len(all_non_null)
+
+                if how_many_existing > 1:
+                    raise FamUniqueError("more than {} with a {} of value {}".format(type_name, field_name, this_value))
+                elif how_many_existing == 1:
+                    if all_non_null[0].key != self.key:
+                        raise FamUniqueError("You cannot add a {} with {} set to {} as one already exists".format(type_name, field_name,  this_value))
+                else:
+                    pass
+
+    @classmethod
+    def get_unique_instance(cls, db, field_name, value):
+
+        field = cls.fields.get(field_name)
+        if field is None:
+            return None
+
+        if not field.unique:
+            return None
+
+        view_namespace = cls.namespace.replace("/", "_")
+        type_name = cls._type_with_ref(field_name)
+        view_name = "%s/%s_%s" % (view_namespace, type_name, field_name)
+
+        all_existing = cls._query_view(db, view_name, value)
+        all_non_null = [o for o in all_existing if getattr(o, field_name, None)]
+        how_many_existing = len(all_non_null)
+
+        if how_many_existing > 1:
+            raise FamUniqueError("more than {} with a {} of value {}".format(type_name, field_name, value))
+        elif how_many_existing == 1:
+            return all_non_null[0]
+        else:
+            return None
+
+
+
     def save(self, db):
         self._db = db
         result = db._get(self.key)
+
         if result:
             doc = result.value
             rev = result.rev
 
+            self._check_uniqueness()
             self._check_immutable(doc)
+
 
             # raise a conflict if revs different
             if self.use_rev and rev != self.rev:
-                raise FamResourceConflict("bad rev id: %s, rev: %s db_rev: %s" % (self.key, self.rev, rev))
+                if not self.resolve_write_conflict(doc, rev):
+                    raise FamResourceConflict("bad rev id: %s, rev: %s db_rev: %s" % (self.key, self.rev, rev))
 
             self.pre_save_update_cb(doc)
             # just force the rev if not using it
@@ -278,6 +332,7 @@ class FamObject(object):
             self.post_save_update_cb()
             updated = True
         else:
+            self._check_uniqueness()
             self.pre_save_new_cb()
             result = db._set(self.key, self._properties)
             self.post_save_new_cb()
@@ -288,6 +343,10 @@ class FamObject(object):
             self.rev = result.rev
 
         return updated
+
+
+    def resolve_write_conflict(self, existing_doc, existing_rev):
+        return False
 
 
     def delete(self, db):
