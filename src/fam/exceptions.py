@@ -16,5 +16,8 @@ class FamImmutableError(Exception):
 class FamUniqueError(Exception):
     pass
 
+class FamWriteError(Exception):
+    pass
+
 class FamError(Exception):
     pass

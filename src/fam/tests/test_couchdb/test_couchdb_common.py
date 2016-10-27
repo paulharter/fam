@@ -1,6 +1,6 @@
 import sys
 import os
-from fam.database import CouchDBWrapper
+from fam.database import CouchDBWrapper, get_db
 from fam.mapper import ClassMapper
 from fam.tests.models.test01 import Dog, Cat, Person, JackRussell, Monkey, Monarch, Monster
 from fam.tests.common import common_test_classes
@@ -21,7 +21,9 @@ def iterCouchDBTests():
         def setUp(self):
             filepath = os.path.join(DATA_PATH, "animal_views.js")
             mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch, Monster], designs=[filepath])
-            self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True)
+
+            # self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True)
+            self.db = get_db("couchdb", mapper, "localhost", db_name="test", reset=True)
             self.db.update_designs()
             super(self.__class__, self).setUp()
 

@@ -226,11 +226,6 @@ class FamObject(object):
     def all(cls, db):
         return cls._query_view(db, "raw/all", cls.type)
 
-    @classmethod
-    def changes(cls, db, since=None, channels=None, limit=None, feed="normal", timeout=None):
-        last_seq, rows  =  db.changes(since=since, channels=channels, limit=limit, feed=feed, timeout=timeout)
-        objects = [GenericObject._from_doc(db, row.key, row.rev, row.value) for row in rows]
-        return last_seq, objects
 
     def _get_namespace(self):
         return self._properties.get(NAMESPACE_STR)
@@ -317,29 +312,28 @@ class FamObject(object):
             self._check_uniqueness()
             self._check_immutable(doc)
 
-
             # raise a conflict if revs different
             if self.use_rev and rev != self.rev:
                 if not self.resolve_write_conflict(doc, rev):
                     raise FamResourceConflict("bad rev id: %s, rev: %s db_rev: %s" % (self.key, self.rev, rev))
 
-            self.pre_save_update_cb(doc)
+            self._pre_save_update_cb(db, doc)
             # just force the rev if not using it
             result = db._set(self.key, self._properties, rev=self.rev if self.use_rev else rev)
 
             if self.use_rev:
                 self.rev = result.rev
 
-            self.post_save_update_cb()
+            self._post_save_update_cb(db)
             updated = True
         else:
             self._check_uniqueness()
-            self.pre_save_new_cb()
+            self._pre_save_new_cb(db)
             result = db._set(self.key, self._properties)
-            self.post_save_new_cb()
+            self._post_save_new_cb(db)
             updated = False
 
-        # db.sync_up()
+
         if self.use_rev:
             self.rev = result.rev
 
@@ -351,9 +345,9 @@ class FamObject(object):
 
 
     def delete(self, db):
-        self.pre_delete_cb()
+        self._pre_delete_cb(db)
         db._delete(self.key, self.rev)
-        self.post_delete_cb()
+        self._post_delete_cb(db)
         self.delete_references(db)
         # db.sync_up()
 
@@ -469,30 +463,53 @@ class FamObject(object):
 
         return cls._from_doc(db, key, rev, doc)
 
-    def pre_save_new_cb(self):
-        pass
+
+    def _pre_save_new_cb(self, db):
+        if hasattr(self, "pre_save_new_cb"):
+            self.pre_save_new_cb(db)
     
-    def post_save_new_cb(self):
-        pass
+    def _post_save_new_cb(self, db):
+        if hasattr(self, "post_save_new_cb"):
+            self.post_save_new_cb(db)
 
-    def pre_save_update_cb(self, old_properties):
-        pass
+    def _changes_cb(self, db, new=False):
+        if hasattr(self, "changes_cb"):
+            self.changes_cb(db)
 
-    def post_save_update_cb(self):
-        pass
+    def _pre_save_update_cb(self, db, old_properties):
+        if hasattr(self, "pre_save_update_cb"):
+            self.pre_save_update_cb(db, old_properties)
 
-    def pre_delete_cb(self):
-        pass
+    def _post_save_update_cb(self, db):
+        if hasattr(self, "post_save_update_cb"):
+            self.post_save_update_cb(db)
 
-    def post_delete_cb(self):
-        pass
+    def _pre_delete_cb(self, db):
+        if hasattr(self, "pre_delete_cb"):
+            self.pre_delete_cb(db)
+
+    def _post_delete_cb(self, db):
+        if hasattr(self, "post_delete_cb"):
+            self.post_delete_cb(db)
 
 
+    @classmethod
+    def n1ql(cls, db, query, with_revs=False, *args, **kwargs):
+        if with_revs:
+            rows = db._n1ql_with_rev(query, *args, **kwargs)
+        else:
+            rows = db._n1ql(query, *args, **kwargs)
+        return [GenericObject._from_doc(db, row.key, None, row.value) for row in rows]
 
     @classmethod
     def view(cls, db, view_name, **kwargs):
         rows =  db.view(view_name, **kwargs)
         return [GenericObject._from_doc(db, row.key, row.rev, row.value) for row in rows]
+
+    @classmethod
+    def changes(cls, db, **kwargs):
+        last_seq, rows = db._changes(**kwargs)
+        return last_seq, [GenericObject._from_doc(db, row.key, row.rev, row.value) for row in rows]
 
     @classmethod
     def _query_view(cls, db, view_name, key):
@@ -514,6 +531,7 @@ class FamObject(object):
         return None
 
     def __getattr__(self, name):
+
         field = self.__class__.fields.get(name)
         if isinstance(field, ReferenceFrom):
             if self._db is None:
@@ -583,6 +601,9 @@ class FamObject(object):
                 if issubclass(field.__class__, StringField) and not (isinstance(value, basestring) or value is None):
                     value = field.to_json(value)
             self._update_property(name, value)
+        elif name.startswith("_"):
+            self.__dict__[name] = value
+            return
         else:
             raise FamValidationError("""You cant use the property name %s on the class %s
             If you would like to set additional properties on this class that are not specified

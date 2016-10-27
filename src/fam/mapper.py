@@ -27,7 +27,6 @@ class ClassMapper(object):
         self.design_js_paths = designs if designs is not None else []
 
 
-
     def extra_design_docs(self):
 
         docs = []
@@ -59,6 +58,11 @@ class ClassMapper(object):
                                 classes.append(obj)
             self._add_classes(classes)
 
+
+    def __iter__(self):
+        for name_space_name, name_space_classes in self.namespaces.iteritems():
+            for cls_name, cls in name_space_classes.iteritems():
+                yield cls
 
 
     def get_sub_class_names(self, namespace, class_name):

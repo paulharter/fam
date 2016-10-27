@@ -15,12 +15,12 @@ class CallbackBaseTests:
             with patch.object(Dog, 'pre_save_new_cb', return_value=None) as mock_pre_new:
                 dog = Dog(name="woofer")
                 self.db.put(dog)
-                mock_pre_new.assert_called_once_with()
+                mock_pre_new.assert_called_once_with(self.db)
 
             with patch.object(Dog, 'post_save_new_cb', return_value=None) as mock_post_new:
                 dog = Dog(name="woofer")
                 self.db.put(dog)
-                mock_post_new.assert_called_once_with()
+                mock_post_new.assert_called_once_with(self.db)
 
 
         def test_update_callbacks(self):
@@ -32,7 +32,7 @@ class CallbackBaseTests:
                 mock_pre_update.assert_not_called()
                 dog.name = "fly"
                 self.db.put(dog)
-                mock_pre_update.assert_called_once_with(old_properties)
+                mock_pre_update.assert_called_once_with(self.db, old_properties)
 
             with patch.object(Dog, 'post_save_update_cb', return_value=None) as mock_post_update:
                 dog = Dog(name="woofer")
@@ -40,7 +40,7 @@ class CallbackBaseTests:
                 mock_post_update.assert_not_called()
                 dog.name = "fly"
                 self.db.put(dog)
-                mock_post_update.assert_called_once_with()
+                mock_post_update.assert_called_once_with(self.db)
 
 
         def test_delete_callbacks(self):
@@ -51,7 +51,7 @@ class CallbackBaseTests:
                 mock_pre_delete.assert_not_called()
                 dog.name = "fly"
                 self.db.delete(dog)
-                mock_pre_delete.assert_called_once_with()
+                mock_pre_delete.assert_called_once_with(self.db)
 
 
             with patch.object(Dog, 'post_delete_cb', return_value=None) as mock_post_delete:
@@ -60,4 +60,4 @@ class CallbackBaseTests:
                 mock_post_delete.assert_not_called()
                 dog.name = "fly"
                 self.db.delete(dog)
-                mock_post_delete.assert_called_once_with()
+                mock_post_delete.assert_called_once_with(self.db)

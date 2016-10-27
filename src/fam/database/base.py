@@ -33,6 +33,9 @@ class BaseDatabase(object):
     def query_view(self, view_name, **kwargs):
         return GenericObject.view(self, view_name, **kwargs)
 
+    def changes(self, since=None, channels=None, limit=None, feed=None, timeout=None, filter=None):
+        return GenericObject.changes(self, since=since, channels=channels, limit=limit, feed=feed, timeout=timeout, filter=filter)
+
 #################################
 
     def class_for_type_name(self, type_name, namespace_name):

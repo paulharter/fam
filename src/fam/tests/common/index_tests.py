@@ -54,3 +54,14 @@ class IndexBaseTests:
 
             self.assertEqual(three_legged_cats[0].key, cat2.key)
 
+
+        def test_long_polling(self):
+            paul = Person(name="Paul")
+            self.db.put(paul)
+            cat1 = Cat(owner=paul, legs=4)
+            self.db.put(cat1)
+            cat2 = Cat(owner=paul, legs=3)
+            self.db.put(cat2)
+            three_legged_cats = self.db.view("animal_views/cat_legs", key=3)
+            self.assertEqual(len(three_legged_cats), 1)
+            self.assertEqual(three_legged_cats[0].key, cat2.key)

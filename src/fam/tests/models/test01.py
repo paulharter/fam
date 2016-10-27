@@ -1,4 +1,4 @@
-from fam.blud import GenericObject, StringField, ReferenceFrom, ReferenceTo, BoolField, NumberField, DictField, ObjectField
+from fam.blud import GenericObject, StringField, ReferenceFrom, ReferenceTo, BoolField, NumberField, DictField, ObjectField, ListField
 from fam.string_formats import DateTimeField
 from fam.string_formats import EmailField
 
@@ -12,11 +12,40 @@ class Dog(GenericObject):
     fields = {
         "name": StringField(),
         "owner_id": ReferenceTo(NAMESPACE, "person", cascade_delete=True),
-        "kennel_club_membership": StringField(unique=True)
+        "kennel_club_membership": StringField(unique=True),
+        "channels": ListField(default=["callbacks"])
         }
 
     def talk(self):
         return "woof"
+
+    def pre_save_new_cb(self, db):
+        pass
+
+    def post_save_new_cb(self, db):
+        pass
+
+    def pre_save_update_cb(self, db, old_properties):
+        pass
+
+    def post_save_update_cb(self, db):
+        pass
+
+    def pre_delete_cb(self, db):
+        pass
+
+    def post_delete_cb(self, db):
+        pass
+
+    def changes_new_cb(self, db):
+        if self.owner:
+            self.owner.add_callback(db, "changes_new_cb")
+
+    def changes_update_cb(self, db):
+        if self.owner:
+            self.owner.add_callback(db, "changes_update_cb")
+
+
 
 
 class JackRussell(Dog):
@@ -49,8 +78,17 @@ class Person(GenericObject):
         "name": StringField(),
         "cats": ReferenceFrom(NAMESPACE, "cat", "owner_id", cascade_delete=True),
         "dogs": ReferenceFrom(NAMESPACE, "dog", "owner_id"),
-        "animals": ReferenceFrom(NAMESPACE, ["dog", "cat"], "owner_id")
+        "animals": ReferenceFrom(NAMESPACE, ["dog", "cat"], "owner_id"),
+        "callbacks": ListField()
         }
+
+    def add_callback(self, db, name):
+
+        if self.callbacks is None:
+            self.callbacks = []
+
+        self.callbacks.append(name)
+        self.save(db)
 
 
 class Monarch(Person):

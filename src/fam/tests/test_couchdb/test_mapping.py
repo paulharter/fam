@@ -17,7 +17,7 @@ class MapperTests(unittest.TestCase):
 
     def test_sub_class_refs(self):
 
-        self.assertEqual(set(Monarch.fields.keys()), set(["name", "country", "cats", "dogs", "animals"]))
+        self.assertEqual(set(Monarch.fields.keys()), set(["name", "country", "cats", "dogs", "animals", "callbacks"]))
         self.assertEqual(Monarch.cls_fields.keys(), ["country"])
 
 

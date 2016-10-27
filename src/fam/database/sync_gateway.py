@@ -24,6 +24,7 @@ class SyncGatewayWrapper(CouchDBWrapper):
 
     def __init__(self, mapper, db_url, db_name, auth_url=None, username=None, password=None):
 
+
         self.mapper = mapper
         self.validator = mapper.validator
 
@@ -41,6 +42,8 @@ class SyncGatewayWrapper(CouchDBWrapper):
 
         if rsp.status_code == 404:
             raise Exception("Unknown database and you can't create them in the sync gateway")
+
+
 
 
     def authenticate(self):
@@ -75,6 +78,20 @@ class SyncGatewayWrapper(CouchDBWrapper):
     def view(self, name, **kwargs):
 
         return super(SyncGatewayWrapper, self).view(name, stale="false", **kwargs)
+
+    # @auth
+    def get_design(self, key):
+
+        url = "%s/%s/%s" % (self.db_url, self.db_name, key)
+        rsp = self.session.get(url)
+
+        if rsp.status_code == 200:
+            return rsp.json()
+        if rsp.status_code == 500:
+            return None
+        if rsp.status_code == 400:
+            return None
+        raise Exception("Unknown Error getting cb doc: %s %s" % (rsp.status_code, rsp.text))
 
 
     def update_designs(self):

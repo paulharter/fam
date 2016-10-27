@@ -19,6 +19,7 @@ class ResultWrapper(object):
         self.rev = rev
         self.value = value
 
+
     @classmethod
     def from_couchdb_json(cls, as_json):
         key = as_json["_id"]
@@ -133,6 +134,19 @@ class CouchDBWrapper(BaseDatabase):
             if continuous:
                 self.sync_both_continuous()
 
+
+    def info(self):
+
+        url = "%s/%s" % (self.db_url, self.db_name)
+        rsp = self.session.get(url)
+
+        if rsp.status_code == 200:
+            return rsp.json()
+
+        return None
+
+
+
     @auth
     def _get(self, key):
         url = "%s/%s/%s" % (self.db_url, self.db_name, key)
@@ -210,11 +224,15 @@ class CouchDBWrapper(BaseDatabase):
 
 
     @auth
-    def changes(self, since=None, channels=None, limit=None, feed=None, timeout=None):
+    def _changes(self, since=None, channels=None, limit=None, feed=None, timeout=None, filter=None):
         url = "%s/%s/_changes" % (self.db_url, self.db_name)
         params = {"include_docs":"true"}
         if since is not None:
             params["since"] = json.dumps(since)
+        if filter is not None and channels is not None:
+            raise Exception("you can't specify both filter and channels")
+        if filter is not None:
+            params["filter"] = filter
         if channels is not None:
             params["filter"] = "sync_gateway/bychannel"
             params["channels"] = ",".join(channels)

@@ -60,7 +60,7 @@ class MapperValidationTests(unittest.TestCase):
         dog.tail = "long"
         self.db.put(dog)
 
-        print dog.as_json()
+        # print dog.as_json()
 
 
     def test_included_refs_from_in_validator(self):
@@ -141,7 +141,7 @@ class WritingSchemaTests(unittest.TestCase):
 
         # did it write a schema
         dog_schemas = os.listdir(dog_dir)
-        print dog_schemas
+        # print dog_schemas
         self.assertEqual(len(dog_schemas), 2)
 
         # now there is one
