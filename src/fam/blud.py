@@ -189,10 +189,12 @@ class GenericMetaclass(type):
 class FamObject(object):
     use_rev = True
     additional_properties = False
+    grants_access = False
     # extra sync gateway keywords that are used by sync function
     sg_allow_public_write = False
     __metaclass__ = GenericMetaclass
     fields = {}
+    acl = None
 
     def __init__(self, key=None, rev=None, **kwargs):
 

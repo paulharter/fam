@@ -1,0 +1,13 @@
+{
+   "interface":":4984",
+   "adminInterface":":4985",
+   "log":["REST"],
+   "databases":{
+      "sync_gateway":{
+         "server":"walrus:",
+         "bucket":"sync_gateway",
+         "sync":`SYNC_FUNCTION`
+      }
+   }
+}
+

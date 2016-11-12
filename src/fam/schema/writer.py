@@ -52,6 +52,12 @@ def createJsonSchema(fam_class):
             },
             "_deleted": {
                 "type": "boolean"
+            },
+            "_id": {
+                "type": "string"
+            },
+            "_rev": {
+                "type": "string"
             }
         },
         "additionalProperties": fam_class.additional_properties,

@@ -25,6 +25,8 @@ class SchemaBaseTests:
                     "owner_id"
                 ],
                 "properties": {
+                    "_id": {"type": "string"},
+                    "_rev": {"type": "string"},
                     "name": {
                         "type": "string"
                     },
