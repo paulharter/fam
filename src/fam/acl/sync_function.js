@@ -20,7 +20,8 @@ sync = function(doc, oldDoc) {
     function check(a_doc, req){
 
         if(req  === undefined){
-            throw("requirements not given");
+            requireRole([]);
+            return;
         }
         if(req.owner !== undefined){
             if(a_doc.owner_name === undefined){
@@ -71,20 +72,24 @@ sync = function(doc, oldDoc) {
             }
             // there are set of update requirements
             var updateReqs = REQUIREMENTS_LOOKUP["update"][oldDoc.type];
-
-            for (var i = 0; i < updateReqs.length; i++) {
-                req = updateReqs[i];
-                // if no fields are defined then check
-                if(req.fields === undefined){
-                    check(oldDoc, req);
-                }
-                else{
-                    // // otherwise only do the checks if one of the named fields has changed
-                    for (var j = 0; j < req.fields.length; j++) {
-                        var field_name = req.fields[j];
-                        if (!values_are_equal(oldDoc[field_name], doc[field_name])){
-                            check(oldDoc, req);
-                            break;
+            if(updateReqs === undefined){
+                requireRole([]);
+            }
+            else{
+                for (var i = 0; i < updateReqs.length; i++) {
+                    req = updateReqs[i];
+                    // if no fields are defined then check
+                    if(req.fields === undefined){
+                        check(oldDoc, req);
+                    }
+                    else{
+                        // // otherwise only do the checks if one of the named fields has changed
+                        for (var j = 0; j < req.fields.length; j++) {
+                            var field_name = req.fields[j];
+                            if (!values_are_equal(oldDoc[field_name], doc[field_name])){
+                                check(oldDoc, req);
+                                break;
+                            }
                         }
                     }
                 }

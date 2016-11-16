@@ -28,7 +28,8 @@
     function check(a_doc, req){
 
         if(req  === undefined){
-            throw("requirements not given");
+            requireRole([]);
+            return;
         }
         if(req.owner !== undefined){
             if(a_doc.owner_name === undefined){
@@ -51,6 +52,9 @@
     var ACCESS_TYPES = ["car"];
 
     var req;
+    
+    
+    // This does requirements
 
     if(doc["_deleted"] == true){
         if(oldDoc) {

@@ -220,6 +220,10 @@ class testPermissions(unittest.TestCase):
             self.assertRaises(Exception, self.paul_db.put, bike)
 
 
+        def test_no_access_admin(self):
+            self.test_write_permissions()
+            bike = Bike(wheels=2)
+            self.admin_db.put(bike)
 
 
 
