@@ -6,7 +6,7 @@ from fam.mapper import ClassMapper
 from fam.tests.test_couchdb.config import *
 from fam.tests.models.test01 import Dog, Cat, Person, JackRussell
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+THIS_DIR = os.path.dirname(__file__)
 DATA_PATH = os.path.join(THIS_DIR, "data")
 
 
