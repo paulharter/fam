@@ -15,7 +15,7 @@ class IndexTests(unittest.TestCase):
     db = None
 
     def setUp(self):
-        filepath = os.path.join(DATA_PATH, "animal_views.js")
+        filepath = os.path.join(THIS_DIR, "animal_views.js")
         mapper = ClassMapper([Dog, Cat, Person, JackRussell], designs=[filepath])
         self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True)
         self.db.update_designs()
