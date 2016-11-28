@@ -6,7 +6,7 @@ import subprocess
 from fam.database import SyncGatewayWrapper
 from fam.mapper import ClassMapper
 from fam.tests.test_sync_gateway.config import *
-from fam.tests.models.acl import Car, Bike
+from fam.tests.models.acl import Car, Bike, Boat
 from fam.acl.writer import write_sync_function, _requirements_from_mapper
 from fam.utils import couchbase_utils
 
@@ -39,7 +39,7 @@ class testPermissions(unittest.TestCase):
             self.gateway = None
             self.db = None
 
-            self.mapper = ClassMapper([Car])
+            self.mapper = ClassMapper([Car, Boat])
 
 
 
@@ -224,6 +224,17 @@ class testPermissions(unittest.TestCase):
             self.test_write_permissions()
             bike = Bike(wheels=2)
             self.admin_db.put(bike)
+
+
+        def test_own_access_create(self):
+
+            self.test_write_permissions()
+
+            boat_id = "boaty"
+
+            boat = Boat(key=boat_id, name="steve", is_sail=True, owner_name="paul", access=["paul"], channels=[boat_id])
+
+            self.paul_db.put(boat)
 
 
 

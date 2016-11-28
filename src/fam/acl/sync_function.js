@@ -44,7 +44,9 @@ sync = function(doc, oldDoc) {
     var ACCESS_TYPES = "ACCESS_TYPES";
 
     var req;
-    
+
+
+
     
     // This does requirements
 
@@ -100,11 +102,13 @@ sync = function(doc, oldDoc) {
             check(doc, req);
         }
     }
-
+    
        // grant users whose names or groups are in doc.access to channel called doc._id
     if(ACCESS_TYPES.indexOf(doc.type) != -1){
+        console.log("granting access to " + doc.access)
         access(doc.access, doc._id);
     }
-    
+
     channel(doc.channels);
+
 }
