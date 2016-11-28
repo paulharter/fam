@@ -95,6 +95,10 @@ class testPermissions(unittest.TestCase):
                 "create": {
                     "car": {
                         "owner": True
+                    },
+                    "boat": {
+                        "owner": True,
+                        "withoutAccess": True
                     }
                 },
                 "update": {
@@ -111,16 +115,29 @@ class testPermissions(unittest.TestCase):
                                 "colour"
                             ]
                         }
+                    ],
+                    "boat": [
+                        {
+                            "role": []
+                        }
                     ]
                 },
                 "delete": {
                     "car": {
                         "owner": True
+                    },
+                    "boat": {
+                        "owner": True
                     }
                 }
             }
 
+
+
             requirements = _requirements_from_mapper(self.mapper)
+
+            print json.dumps(requirements, indent=4)
+
             self.assertEqual(expected, requirements)
 
 

@@ -45,12 +45,10 @@ sync = function(doc, oldDoc) {
 
     var req;
 
-
-
-    
     // This does requirements
 
-    if(doc["_deleted"] == true){
+    /* is delete */
+    if(doc._deleted == true){
         if(oldDoc) {
             if(oldDoc.type  === undefined){
                 throw("type not given");
@@ -67,8 +65,14 @@ sync = function(doc, oldDoc) {
         if(doc.type  === undefined){
             throw("type not given");
         }
-        doc_type = doc.type;
-        if(oldDoc){
+
+        /* is create */
+        if((oldDoc == false) || (oldDoc == null || oldDoc._deleted)){
+            req = REQUIREMENTS_LOOKUP["create"][doc.type];
+            check(doc, req);
+        }
+        /* is update */
+        else{
             if(doc.type != oldDoc.type){
                 throw("types has changed");
             }
@@ -97,18 +101,13 @@ sync = function(doc, oldDoc) {
                 }
             }
         }
-        else{
-            req = REQUIREMENTS_LOOKUP["create"][doc.type];
-            check(doc, req);
-        }
     }
     
        // grant users whose names or groups are in doc.access to channel called doc._id
     if(ACCESS_TYPES.indexOf(doc.type) != -1){
-        console.log("granting access to " + doc.access)
+        console.log("granting access to " + doc.access);
         access(doc.access, doc._id);
     }
 
     channel(doc.channels);
-
 }

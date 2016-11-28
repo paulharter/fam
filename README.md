@@ -275,7 +275,7 @@ with cache(db) as cached_db:
     
 ```
 
-## Sync Function Helpers
+## Sync Function ACLs
 
 FamObject class with the additional class attribute `sg_allow_public_write = True` can be enumerated with a ClassMapper on `mapper.allow_public_write_types`.
 
@@ -285,7 +285,6 @@ Some possible further features:
 
 - Optional class attribute **schema** to give better control over document validation.
 - Pass schemata to sync gateway's sync function to enforce typed validation on document creation and update.
-- Composed and compiled sync function maybe.
 - Migrations.
 - Unique field option using views
 
