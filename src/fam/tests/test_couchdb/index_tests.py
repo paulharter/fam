@@ -24,7 +24,7 @@ class IndexTests(unittest.TestCase):
         pass
 
     def test_create_index(self):
-        filepath = os.path.join(DATA_PATH, "animal_views.js")
+        filepath = os.path.join(THIS_DIR, "animal_views.js")
 
         as_dict = self.db.mapper._js_design_as_doc(filepath)
 
