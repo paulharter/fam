@@ -35,13 +35,11 @@ class Field(object):
         if self.default is not None and self.required is True:
             raise FamError("It doesnt really make sense to use both required and default together. Just use default")
 
-
     def is_correct_type(self, value):
         return True
 
     def get_default(self):
         return self.default
-
     
     def __str__(self):
         attr = []
@@ -474,9 +472,9 @@ class FamObject(object):
         if hasattr(self, "post_save_new_cb"):
             self.post_save_new_cb(db)
 
-    def _changes_cb(self, db, new=False):
+    def _changes_cb(self, db, queue, new=False):
         if hasattr(self, "changes_cb"):
-            self.changes_cb(db)
+            self.changes_cb(db, queue)
 
     def _pre_save_update_cb(self, db, old_properties):
         if hasattr(self, "pre_save_update_cb"):

@@ -150,10 +150,12 @@ class CouchDBWrapper(BaseDatabase):
     @auth
     def _get(self, key):
         url = "%s/%s/%s" % (self.db_url, self.db_name, key)
+        # print "_get: ", url
         rsp = self.session.get(url)
         if rsp.status_code == 200:
             return ResultWrapper.from_couchdb_json(rsp.json())
         if rsp.status_code == 404:
+            # print "not found: ", key
             return None
         if rsp.status_code == 401:
             raise FamDbAuthException(" %s %s" % (rsp.status_code, rsp.text))
