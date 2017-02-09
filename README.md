@@ -154,18 +154,16 @@ This is an example of a representation of a duration of time:
 
 class TimeDuration(object):
 
-    def __init__(self, nom=0, denom=0, count=0, per_frame=1):
+    def __init__(self, nom=0, denom=0, count=0):
         self.nom = nom
         self.denom = denom
         self.count = count
-        self.per_frame = per_frame
 
     def to_json(self):
         return {
             "nom": self.nom,
             "denom": self.denom,
             "count": self.count,
-            "per_frame": self.per_frame
         }
 
     @classmethod
@@ -291,30 +289,40 @@ Although I am a big fan Couchbase Sync Gateway I feel that the sync function is 
         DeleteRequirement(role=ANYONE, owner=True)
     ]
  ```
+ This will not be useful for everyone or it all situations as it necessarily limits the flexibility of how the sync function works. It isn't fully documented here and still requires a clear understanding of how the sync function works, so tread carefully.
  
-This will not be useful for everyone or it all situations as it necessariliy limits the flexibility of how the sync function works. It isn't fully documented here and still requires a clear understanding of how the sync function works, so tread cearfully but if you want see what it does try:
+There is then a function in `fam.acl.writer` which takes two templates, a top level one for the json config function and inner one for the js sync function, and a mapper, to generate a complete config file.
+
+```python
+write_sync_function(template_path, output_path, sync_template_path, mapper)
+```
+The templating is crude, using simple string replacement to add a collection of the requirements to the js. Have a look at the function to see what it does. You can then apply the normal sync function checks with a function something like this:
+
+```javascript
+    function check(a_doc, req){
+
+        if(req  === undefined){
+            requireRole([]);
+            return;
+        }
+        if(req.owner !== undefined){
+            if(a_doc.owner_name === undefined){
+                throw("owner_name not given");
+            }
+            requireUser(a_doc.owner_name);
+        }
+        if(req.withoutAccess === undefined){
+            requireAccess(a_doc.channels);
+        }
+        if(req.user !== undefined){
+            requireUser(req.user);
+        }
+        if(req.role !== undefined){
+            requireRole(req.role);
+        }
+    }
 
 ```
-    from fam.acl.writer import write_sync_function
-    
-    output_path = os.path.join(CONF_DIR, "sync_conf.json")
-    template_path = os.path.join(CONF_DIR, "sync_conf_template")
-
-    if os.path.exists(output_path):
-        os.remove(output_path)
-
-    write_sync_function(template_path, output_path, mapper, extra=None)
-```
-With this in the sync function template:
-
-```
-...
-"sync":`SYNC_FUNCTION`
-...
-```
-
-
-
 
 
 ##To Do?
