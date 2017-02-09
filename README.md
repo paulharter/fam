@@ -205,7 +205,7 @@ There are five optional arguments when creating a field:
 - **immutable** - A boolean, false by default asserts that you cannot change the value of ths field once it has been set.
 - **default** - A default value for this field that will be returned on read if this field is absent from the underlying json. None by default.
 - **cascade_delete** - Only applies to ReferenceTo and ReferenceFrom fields. A boolean, false by default, which if true will delete the object the reference points to when this object is deleted.
-- **unique** - The thing about uniqueness in a distributed data set is that it cannot be guarenteed, so this assertion is weaker than you would get in a monolithic dataset. This said it is still sometimes useful. It is a boolean, false by default, which if true will raise an exception when you try to add a document with a non unique field to a database using fam. It also help provides the classmethod `get_unique_instance` which can be used like this:
+- **unique** - The thing about uniqueness in a distributed data set is that it cannot be guaranteed, so this assertion is weaker than you would get in a monolithic dataset. This said it is still sometimes useful. It is a boolean, false by default, which if true will raise an exception when you try to add a document with a non unique field to a database using fam. It also help provides the classmethod `get_unique_instance` which can be used like this:
 
 ```python
 Cat.get_unique_instance(db, "email", "tiddles@glowinthedark.co.uk)
