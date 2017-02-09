@@ -4,7 +4,7 @@ import json
 from .requirement import CreateRequirement, UpdateRequirement, DeleteRequirement
 
 THIS_DIR = os.path.dirname(__file__)
-PERMISSIONS_TEMPLATE_PATH = os.path.join(THIS_DIR, "sync_function.js")
+
 
 def _access_from_mapper(mapper):
 
@@ -54,14 +54,14 @@ def _requirements_from_mapper(mapper):
     return requirements
 
 
-def write_sync_function(src, dst, mapper, extra=None):
+def write_sync_function(config_template_path, sync_template_path, mapper, output_path):
 
-    with open(src, "r") as f:
+    with open(config_template_path, "r") as f:
         config_src_str = f.read()
 
     config_src_str = config_src_str.replace("sync = ", "")
 
-    with open(PERMISSIONS_TEMPLATE_PATH, "r") as f:
+    with open(sync_template_path, "r") as f:
         permissions = f.read()
 
     requirements_str = json.dumps(_requirements_from_mapper(mapper))
@@ -73,7 +73,7 @@ def write_sync_function(src, dst, mapper, extra=None):
 
     config_str = config_src_str.replace("SYNC_FUNCTION", permissions)
 
-    with open(dst, "w") as f:
+    with open(output_path, "w") as f:
         f.write(config_str)
 
 

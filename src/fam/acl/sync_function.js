@@ -20,6 +20,7 @@ sync = function(doc, oldDoc) {
     function check(a_doc, req){
 
         if(req  === undefined){
+            // throw("no requirements for a: " + a_doc.type);
             requireRole([]);
             return;
         }

@@ -474,7 +474,7 @@ class FamObject(object):
 
     def _changes_cb(self, db, queue, new=False):
         if hasattr(self, "changes_cb"):
-            self.changes_cb(db, queue)
+            self.changes_cb(db, queue, new=new)
 
     def _pre_save_update_cb(self, db, old_properties):
         if hasattr(self, "pre_save_update_cb"):
