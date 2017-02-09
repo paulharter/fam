@@ -154,18 +154,16 @@ This is an example of a representation of a duration of time:
 
 class TimeDuration(object):
 
-    def __init__(self, nom=0, denom=0, count=0, per_frame=1):
+    def __init__(self, nom=0, denom=0, count=0):
         self.nom = nom
         self.denom = denom
         self.count = count
-        self.per_frame = per_frame
 
     def to_json(self):
         return {
             "nom": self.nom,
             "denom": self.denom,
             "count": self.count,
-            "per_frame": self.per_frame
         }
 
     @classmethod
@@ -207,7 +205,11 @@ There are five optional arguments when creating a field:
 - **immutable** - A boolean, false by default asserts that you cannot change the value of ths field once it has been set.
 - **default** - A default value for this field that will be returned on read if this field is absent from the underlying json. None by default.
 - **cascade_delete** - Only applies to ReferenceTo and ReferenceFrom fields. A boolean, false by default, which if true will delete the object the reference points to when this object is deleted.
+- **unique** - The thing about uniqueness in a distributed data set is that it cannot be guarenteed, so this assertion is weaker than you would get in a monolithic dataset. This said it is still sometimes useful. It is a boolean, false by default, which if true will raise an exception when you try to add a document with a non unique field to a database using fam. It also help provides the classmethod `get_unique_instance` which can be used like this:
 
+```python
+Cat.get_unique_instance(db, "email", "tiddles@glowinthedark.co.uk)
+```
 
 ##Validation
 
@@ -277,7 +279,51 @@ with cache(db) as cached_db:
 
 ## Sync Function ACLs
 
-FamObject class with the additional class attribute `sg_allow_public_write = True` can be enumerated with a ClassMapper on `mapper.allow_public_write_types`.
+Although I am a big fan Couchbase Sync Gateway I feel that the sync function is a little over burdened with responsibilities, so I template some portions of my sync function that protect access to writing documents. To support this I have added declarative acls in an additional class attribute on FamObjects. It looks like this:
+
+```python
+    acl = [
+        CreateRequirement(role=ANYONE, owner=True),
+        UpdateRequirement(role=NO_ONE, fields=["channels", "project_id", "immutable_name", "owner_name"]),
+        UpdateRequirement(role=ANYONE, owner=True, fields=["name"]),
+        DeleteRequirement(role=ANYONE, owner=True)
+    ]
+ ```
+ This will not be useful for everyone or it all situations as it necessarily limits the flexibility of how the sync function works. It isn't fully documented here and still requires a clear understanding of how the sync function works, so tread carefully.
+ 
+There is then a function in `fam.acl.writer` which takes two templates, a top level one for the json config function and inner one for the js sync function, and a mapper, to generate a complete config file.
+
+```python
+write_sync_function(template_path, output_path, sync_template_path, mapper)
+```
+The templating is crude, using simple string replacement to add a collection of the requirements to the js. Have a look at the function to see what it does. You can then apply the normal sync function checks with a function something like this:
+
+```javascript
+    function check(a_doc, req){
+
+        if(req  === undefined){
+            requireRole([]);
+            return;
+        }
+        if(req.owner !== undefined){
+            if(a_doc.owner_name === undefined){
+                throw("owner_name not given");
+            }
+            requireUser(a_doc.owner_name);
+        }
+        if(req.withoutAccess === undefined){
+            requireAccess(a_doc.channels);
+        }
+        if(req.user !== undefined){
+            requireUser(req.user);
+        }
+        if(req.role !== undefined){
+            requireRole(req.role);
+        }
+    }
+
+```
+
 
 ##To Do?
 
@@ -286,9 +332,4 @@ Some possible further features:
 - Optional class attribute **schema** to give better control over document validation.
 - Pass schemata to sync gateway's sync function to enforce typed validation on document creation and update.
 - Migrations.
-- Unique field option using views
-
-
-
-
 
