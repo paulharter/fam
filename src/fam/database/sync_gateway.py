@@ -21,12 +21,13 @@ class SyncGatewayWrapper(CouchDBWrapper):
     }
 }'''
 
+    database_type = "sync_gateway"
 
-    def __init__(self, mapper, db_url, db_name, auth_url=None, username=None, password=None):
+    def __init__(self, mapper, db_url, db_name, auth_url=None, username=None, password=None, validator=None):
 
 
         self.mapper = mapper
-        self.validator = mapper.validator
+        self.validator = validator
 
         self.db_name = db_name
         self.db_url = db_url

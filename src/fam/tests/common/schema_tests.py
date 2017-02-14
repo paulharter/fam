@@ -75,12 +75,11 @@ class SchemaBaseTests:
 
         def test_make_a_validator(self):
 
-            cat_schema = createJsonSchema(Cat)
-            person_schema = createJsonSchema(Person)
+
             validator = ModelValidator()
 
-            validator.add_schema(test01.NAMESPACE, "cat", cat_schema)
-            validator.add_schema(test01.NAMESPACE, "person", person_schema)
+            validator.add_schema(test01.NAMESPACE, "cat", Cat)
+            validator.add_schema(test01.NAMESPACE, "person", Person)
 
             #add validator to db
             self.db.validator = validator

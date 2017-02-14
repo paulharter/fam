@@ -90,10 +90,12 @@ class CouchDBWrapper(BaseDatabase):
     VIEW_URL = "%s/%s/_design/%s/_view/%s"
     # "%s/%s/_design/%s/_view/%s?stale=false&key=\"%s\""
 
-    def __init__(self, mapper, db_url, db_name, reset=False, remote_url=None, continuous=False):
+    database_type = "couchdb"
+
+    def __init__(self, mapper, db_url, db_name, reset=False, remote_url=None, continuous=False, validator=None):
 
         self.mapper = mapper
-        self.validator = mapper.validator
+        self.validator = validator
         self.cookies = {}
 
         self.remote_url = remote_url

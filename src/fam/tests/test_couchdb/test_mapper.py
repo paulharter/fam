@@ -3,6 +3,7 @@ import shutil
 import unittest
 from fam.database import CouchDBWrapper
 from fam.mapper import ClassMapper
+from fam.schema.validator import ModelValidator
 from fam.exceptions import FamValidationError
 from fam.tests.test_couchdb.config import *
 from fam.tests.models import test01
@@ -17,7 +18,8 @@ class MapperValidationTests(unittest.TestCase):
     def test_make_a_validator(self):
 
         mapper = ClassMapper([Dog, Cat, Person, JackRussell])
-        self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True)
+        validator = ModelValidator(classes=[Dog, Cat, Person, JackRussell])
+        self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True, validator=validator)
         self.db.update_designs()
 
         paul = Person(name="paul")
@@ -35,7 +37,8 @@ class MapperValidationTests(unittest.TestCase):
     def test_make_a_validator_from_modules(self):
 
         mapper = ClassMapper([], modules=[test01])
-        self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True)
+        validator = ModelValidator(classes=[Dog, Cat, Person, JackRussell])
+        self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True, validator=validator)
         self.db.update_designs()
 
         paul = Person(name="paul")
@@ -65,7 +68,8 @@ class MapperValidationTests(unittest.TestCase):
 
     def test_included_refs_from_in_validator(self):
         mapper = ClassMapper([], modules=[test01])
-        self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True)
+        validator = ModelValidator(modules=[test01])
+        self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True, validator=validator)
         self.db.update_designs()
 
         paul = Person(name="paul")
@@ -86,7 +90,8 @@ class MapperValidationTests(unittest.TestCase):
     def test_string_format(self):
 
         mapper = ClassMapper([], modules=[test01])
-        self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True)
+        validator = ModelValidator(modules=[test01])
+        self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True, validator=validator)
         self.db.update_designs()
 
         paul = Person(name="paul")
@@ -101,57 +106,3 @@ class MapperValidationTests(unittest.TestCase):
         cat.email = "paulglowinthedark.co.uk"
         self.assertRaises(FamValidationError, self.db.put, cat)
 
-
-class WritingSchemaTests(unittest.TestCase):
-
-
-    def test_make_a_validator_from_modules(self):
-
-        mutations_path = os.path.join(DATA_PATH, "mutations")
-        schemata_path = os.path.join(DATA_PATH, "schemata")
-        dog_dir = os.path.join(DATA_PATH, "schemata", "glowinthedark.co.uk", "test", "dog")
-
-        if os.path.exists(mutations_path):
-            shutil.rmtree(mutations_path)
-
-        os.makedirs(mutations_path)
-
-        if os.path.exists(schemata_path):
-            shutil.rmtree(schemata_path)
-
-        mapper = ClassMapper([], modules=[test01], schema_dir=DATA_PATH)
-        mapper.validator.write_out_schemata()
-
-        # did it write a schema
-        dog_schemas = os.listdir(dog_dir)
-        self.assertEqual(len(dog_schemas), 1)
-        self.assertTrue(dog_schemas[0].endswith(".json"))
-
-        mapper = ClassMapper([Dog, Cat, Person, JackRussell], schema_dir=DATA_PATH)
-        mapper.validator.write_out_schemata()
-
-        # wthout a change there is no mutations
-        mutation_names = os.listdir(mutations_path)
-        self.assertTrue(mutation_names == [])
-
-        Dog.fields["hat"] = StringField()
-
-        mapper = ClassMapper([Dog, Cat, Person, JackRussell], schema_dir=DATA_PATH)
-        mapper.validator.write_out_schemata()
-
-        # did it write a schema
-        dog_schemas = os.listdir(dog_dir)
-        # print dog_schemas
-        self.assertEqual(len(dog_schemas), 2)
-
-        # now there is one
-        mutation_names = os.listdir(mutations_path)
-        self.assertFalse(mutation_names == [])
-
-        self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True)
-        self.db.update_designs()
-
-        dog = Dog(name="woofer")
-        dog.save(self.db)
-
-        self.assertTrue(dog.schema.startswith("glowinthedark.co.uk/test/dog/"))

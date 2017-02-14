@@ -11,13 +11,12 @@ VIEW_FUNCTION_NAMES = ["map", "reduce"]
 
 class ClassMapper(object):
 
-    def __init__(self, classes, modules=None, schema_dir=None, designs=None):
+    def __init__(self, classes, modules=None, designs=None):
 
         input_modules = modules if modules else []
 
         self.allow_public_write_types = []
         self.immutable_fields = {}
-        self.validator = ModelValidator(classes=classes, modules=input_modules, schema_dir=schema_dir)
         self.namespaces = {}
         self.modules = {}
         self._add_classes(classes)
@@ -67,6 +66,7 @@ class ClassMapper(object):
 
     def get_sub_class_names(self, namespace, class_name):
         return self.sub_class_lookup[(namespace, class_name)]
+
 
     def _work_out_sub_classes(self):
         # for each class add their subclasses type names to a lookup table keyed by namespace and classname

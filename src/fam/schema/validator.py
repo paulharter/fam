@@ -2,10 +2,7 @@ import jsonschema
 import os
 import json
 import inspect
-import datetime
-import pytz
 import copy
-import difflib
 from fam.blud import GenericObject
 from fam.constants import *
 
@@ -19,10 +16,8 @@ class ModelValidator(object):
     def __init__(self, classes=None, modules=None, schema_dir=None):
 
         self.reference_store = {}
-        self.lookup_store = {}
+        self.ref_schemas = {}
         self.schema_dir = schema_dir
-        self.timestamp = self._now_timestamp()
-        self.changes = []
 
         if classes is not None:
             self._add_classes(classes)
@@ -31,11 +26,19 @@ class ModelValidator(object):
             self._add_modules(modules)
 
 
+    def iter_schemas(self):
+
+        for k, schema in self.ref_schemas.iteritems():
+            namespace = k[0]
+            typename = k[1]
+            yield namespace, typename, schema
+
+
     def _add_classes(self, classes):
         for cls in classes:
             type_name = cls.__name__.lower()
             namespace = cls.namespace.lower()
-            self.add_schema(namespace, type_name, createJsonSchema(cls))
+            self.add_schema(namespace, type_name, cls)
 
 
     def _add_modules(self, modules):
@@ -50,16 +53,22 @@ class ModelValidator(object):
             self._add_classes(classes)
 
 
-    def add_schema(self, namespace, type_name, schema):
-        self._get_timestamped_id(self.schema_dir, namespace, type_name, schema)
+    def add_schema(self, namespace, type_name, cls):
+
+        schema = createJsonSchema(cls)
+
+        if self.schema_dir is not None:
+            schema["id"] = self._check_for_changes(namespace, type_name, schema)
+        else:
+            schema["id"] = "%s/%s" % (namespace, type_name)
 
         jsonschema.Draft4Validator.check_schema(schema)
         self.reference_store[schema["id"]] = schema
-        self.lookup_store[(namespace, type_name)] = schema
+        self.ref_schemas[(namespace, type_name)] = schema
 
 
     def schema_id_for(self, namespace, type_name):
-        schema = self.lookup_store.get((namespace, type_name))
+        schema = self.ref_schemas.get((namespace, type_name))
         if schema:
             # print schema["id"]
             return schema["id"]
@@ -77,24 +86,24 @@ class ModelValidator(object):
                 schema_id = self.schema_id_for(namespace, type_name)
 
         if schema_id:
-            schema = self.reference_store[schema_id]
+            schema = self._look_schema_with_lazy_load(schema_id)
             resolver = jsonschema.RefResolver(schema_id, schema, store=self.reference_store)
             validator = jsonschema.Draft4Validator(schema, resolver=resolver)
             validator.validate(doc)
 
 
-    def _now_timestamp(self):
-        utc = pytz.utc
-        dt = datetime.datetime.now(utc)
-        # force to utc and then to RFC 3339
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=utc)
-        else:
-            dt = dt.astimezone(utc)
-        ts = dt.strftime("%Y%m%d-%H%M%S-%f")
-        return ts
+    def _look_schema_with_lazy_load(self, schema_id):
+        schema = self.reference_store.get(schema_id)
+        if schema is None:
+            schema = self._schema_from_id(schema_id)
+            self.reference_store[schema_id] = schema
+
+        return schema
+
+
 
     def _schemata_are_equal(self, schema_a, schema_b):
+
         if schema_b is None:
             return False
 
@@ -113,92 +122,75 @@ class ModelValidator(object):
         return dupe_a == dupe_b
 
 
-    def _most_recent_schema(self, dir):
-        filenames = os.listdir(dir)
-        if not filenames:
-            return None
-        most_recent_filename = sorted(filenames)[-1]
-        file_path = os.path.join(dir, most_recent_filename)
-        with open(file_path, "r") as f:
+    def _type_dir(self, namespace, type_name):
+        ns = namespace.replace("/", "_")
+        dir_path = os.path.join(self.schema_dir, "schemata", ns, type_name)
+        return dir_path
+
+    def _schema_path(self, namespace, type_name, timestamp):
+        type_dir = self._type_dir(namespace, type_name)
+        dir_path = os.path.join(type_dir, timestamp)
+        return dir_path
+
+
+    def _timestamp_from_schema_id(self, schema_id):
+        namespace, typename, timestamp = self._namespace_typename_timestamp_from_schema_id(schema_id)
+        return timestamp
+
+
+    def _schema_path_from_id(self, schema_id):
+        namespace, type_name, timestamp = self._namespace_typename_timestamp_from_schema_id(schema_id)
+        return self._schema_path(namespace, type_name, timestamp)
+
+
+    def _schema_from_id(self, schema_id):
+        schema_path = self._schema_path_from_id(schema_id)
+        return self.schema_at_schema_path(schema_path)
+
+
+    def _namespace_typename_timestamp_from_schema_id(self, schema_id):
+
+        parts = schema_id.split("/")
+        namespace = "/".join(parts[:-3])
+        type_name = parts[-3]
+        timestamp = parts[-2]
+
+        return namespace, type_name, timestamp
+
+    def schema_at_schema_path(self, schema_path):
+        schema_path = os.path.join(schema_path, "schema.json")
+        with open(schema_path, "r") as f:
             return json.loads(f.read())
 
 
-    def _unidiff_output(self, expected, actual):
-        """
-        Helper function. Returns a string containing the unified diff of two multiline strings.
-        """
-        expected=expected.splitlines(1)
-        actual=actual.splitlines(1)
-        diff=difflib.unified_diff(expected, actual)
+    def _previous_schema(self, namespace, type_name):
 
-        return ''.join(diff)
+        dir_path = self._type_dir(namespace, type_name)
+
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+        filenames = os.listdir(dir_path)
+        if not filenames:
+            return None
+
+        most_recent_filename = sorted(filenames)[-1]
+        return self.schema_at_schema_path(os.path.join(dir_path, most_recent_filename))
 
 
-    def _get_timestamped_id(self, schema_dir, namespace, type_name, schema):
 
-            if schema_dir is None:
-                most_recent_schema = None
-                dir_path = None
+    def _check_for_changes(self, namespace, type_name, schema):
+
+        existing_schema = self._previous_schema(namespace, type_name)
+
+        if existing_schema is None:
+            raise NotImplementedError("The schema for %s %s is missing" % (namespace, type_name))
+        else:
+            # compare the latest schema with the most recent
+            if self._schemata_are_equal(schema, existing_schema):
+                return existing_schema["id"]
             else:
-                dir_path = os.path.join(schema_dir, "schemata", namespace, type_name)
-                if not os.path.exists(dir_path):
-                    os.makedirs(dir_path)
-                most_recent_schema = self._most_recent_schema(dir_path)
+                raise NotImplementedError("The schema for %s %s is not up to date" % (namespace, type_name))
 
 
-             # compare the latest schema with the most recent
-            if self._schemata_are_equal(schema, most_recent_schema):
-                diff = None
-                schema["id"] = most_recent_schema["id"]
-            else:
-                # write the new schema
-                if schema_dir is not None:
-                    schema["id"] = "{}/{}/{}.json#".format(namespace, type_name, self.timestamp)
-                    schema_path = os.path.join(dir_path, "{}.json".format(self.timestamp))
-                    current_schema_string = json.dumps(schema, indent=4, sort_keys=True)
-                    with open(schema_path, "w") as f:
-                        f.write(current_schema_string)
-                else:
-                    schema["id"] = "{}/{}".format(namespace, type_name)
-
-                if most_recent_schema is None:
-                    diff = None
-                else:
-                    existing_schema_string = json.dumps(most_recent_schema, indent=4, sort_keys=True)
-                    diff = self._unidiff_output(existing_schema_string, current_schema_string)
-
-            if diff:
-                self.changes.append((namespace, type_name, diff))
-
-            return schema["id"]
-
-
-
-
-    def write_out_schemata(self):
-
-        if self.changes:
-            print "writing changes"
-            mutation_dir = os.path.join(self.schema_dir, "mutations")
-            if not os.path.exists(mutation_dir):
-                os.makedirs(mutation_dir)
-            mutation_path = os.path.join(mutation_dir, "{}.py".format(self.timestamp))
-            with open(mutation_path, "w") as f:
-                for namespace, type_name, diff in self.changes:
-                    mutation = "**** {} {} schema changed ****\n\n{}".format(namespace, type_name, diff)
-                    f.write('"""\n{}"""\n\n\n'.format(mutation))
-#                     do = """@mutate_do("{}", "{}")
-# def do_{}(doc):
-#     \"\"\" Write mutation code here \"\"\"
-#
-#
-# """
-#                     f.write(do.format(namespace, type_name, type_name))
-#                     undo = """@mutate_undo("{}", "{}")
-# def undo_{}(doc):
-#     \"\"\" Write code to undo mutation here \"\"\"
-#
-#
-# """
-#                     f.write(undo.format(namespace, type_name, type_name))
 
