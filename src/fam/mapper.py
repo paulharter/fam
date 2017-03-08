@@ -3,8 +3,9 @@ import os
 from slimit import ast
 from slimit.parser import Parser
 
-from fam.blud import GenericObject
+from fam.blud import GenericObject, ReferenceFrom
 from fam.schema.validator import ModelValidator
+from fam.buffer.buffer_views import FamWriteBufferViews
 
 VIEW_FUNCTION_NAMES = ["map", "reduce"]
 
@@ -24,6 +25,7 @@ class ClassMapper(object):
         self.sub_class_lookup = {}
         self._work_out_sub_classes()
         self.design_js_paths = designs if designs is not None else []
+        self._buffer_views = None
 
 
     def extra_design_docs(self):
@@ -34,6 +36,13 @@ class ClassMapper(object):
             docs.append(design_doc)
 
         return docs
+
+
+    @property
+    def buffer_views(self):
+        if self._buffer_views is None:
+            self._buffer_views = FamWriteBufferViews(self)
+        return self._buffer_views
 
 
     def _add_immutable_field(self, type_name, field_name):
@@ -148,6 +157,42 @@ class ClassMapper(object):
 
 
 
+    def get_design(self, namespace, namespace_name, foreign_key_str):
+
+        views = {}
+        for type_name, cls in namespace.iteritems():
+            for field_name, field in cls.cls_fields.iteritems():
+                if isinstance(field, ReferenceFrom):
+                    view_key = "%s_%s" % (type_name, field_name)
+                    # if view_key in ["person_dogs", "person_animals"]:
+                    views[view_key] = {"map" : self._get_fk_map(field.refcls, field.refns, field.fkey, foreign_key_str)}
+
+                if field.unique:
+                    view_key = "%s_%s" % (type_name, field_name)
+                    # if view_key in ["person_dogs", "person_animals"]:
+                    views[view_key] = {"map": self._get_fk_map(type_name, namespace_name, field_name, foreign_key_str)}
+
+        design = {
+           "views": views
+        }
+
+        return design
+
+
+    def _get_fk_map(self, class_name, namespace, ref_to_field_name, foreign_key_str):
+
+        if isinstance(class_name, list):
+            class_names = class_name
+        else:
+            class_names = [class_name]
+
+        all_sub_class_names = set()
+        for name in class_names:
+            sub_classes = set(self.get_sub_class_names(namespace, name))
+            all_sub_class_names = all_sub_class_names.union(sub_classes)
+
+        arrayStr = '["%s"]' % '", "'.join(all_sub_class_names)
+        return foreign_key_str % (arrayStr, namespace, ref_to_field_name)
 
 
 

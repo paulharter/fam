@@ -54,7 +54,7 @@ def _requirements_from_mapper(mapper):
     return requirements
 
 
-def write_sync_function(config_template_path, sync_template_path, mapper, output_path):
+def write_sync_function(config_template_path, sync_template_path, mapper, output_path, sync_function_symbol="SYNC_FUNCTION"):
 
     with open(config_template_path, "r") as f:
         config_src_str = f.read()
@@ -71,7 +71,7 @@ def write_sync_function(config_template_path, sync_template_path, mapper, output
     permissions = permissions.replace('"REQUIREMENTS_LOOKUP"', requirements_str)
     permissions = permissions.replace('"ACCESS_TYPES"', access_types_str)
 
-    config_str = config_src_str.replace("SYNC_FUNCTION", permissions)
+    config_str = config_src_str.replace(sync_function_symbol, permissions)
 
     with open(output_path, "w") as f:
         f.write(config_str)

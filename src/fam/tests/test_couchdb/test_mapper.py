@@ -12,6 +12,7 @@ from fam.blud import StringField
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(THIS_DIR, "data")
+DESIGN_PATH = os.path.join(DATA_PATH, "design_ref.json")
 
 class MapperValidationTests(unittest.TestCase):
 

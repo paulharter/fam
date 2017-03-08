@@ -1,4 +1,5 @@
 import simplejson as json
+import traceback
 import uuid
 import datetime
 import types
@@ -288,7 +289,9 @@ class FamObject(object):
         type_name = cls._type_with_ref(field_name)
         view_name = "%s/%s_%s" % (view_namespace, type_name, field_name)
 
-        all_existing = cls._query_view(db, view_name, value)
+        all_existing = db.query_view(view_name, key=value)
+
+
         all_non_null = [o for o in all_existing if getattr(o, field_name, None)]
         how_many_existing = len(all_non_null)
 
@@ -303,6 +306,7 @@ class FamObject(object):
 
     def save(self, db):
         self._db = db
+
         result = db._get(self.key)
 
         if result:
@@ -384,6 +388,17 @@ class FamObject(object):
 
     def __str__(self):
         return self.as_json()
+
+
+    def as_dict(self):
+        d = {}
+        d.update(self.properties)
+        d[NAMESPACE_STR] = self.namespace
+        d[TYPE_STR] = self.type
+        d["_id"] = self.key
+        if self.rev is not None:
+            d["_rev"] = self.rev
+        return d
 
     def as_json(self):
         d = {}
@@ -472,9 +487,9 @@ class FamObject(object):
         if hasattr(self, "post_save_new_cb"):
             self.post_save_new_cb(db)
 
-    def _changes_cb(self, db, queue, new=False):
+    def _changes_cb(self, db, queue, new=False, **kwargs):
         if hasattr(self, "changes_cb"):
-            self.changes_cb(db, queue, new=new)
+            self.changes_cb(db, queue, new=new, **kwargs)
 
     def _pre_save_update_cb(self, db, old_properties):
         if hasattr(self, "pre_save_update_cb"):
@@ -509,7 +524,18 @@ class FamObject(object):
     @classmethod
     def changes(cls, db, **kwargs):
         last_seq, rows = db._changes(**kwargs)
-        return last_seq, [GenericObject._from_doc(db, row.key, row.rev, row.value) for row in rows]
+
+        changeset = []
+
+        for row in rows:
+            try:
+                changeset.append(GenericObject._from_doc(db, row.key, row.rev, row.value))
+            except Exception as e:
+                print "BAD!!! swallowing all exceptions in blud changes"
+
+
+        return last_seq, changeset
+        # return last_seq, [GenericObject._from_doc(db, row.key, row.rev, row.value) for row in rows]
 
     @classmethod
     def _query_view(cls, db, view_name, key):
@@ -531,26 +557,26 @@ class FamObject(object):
         return None
 
     def __getattr__(self, name):
-
         field = self.__class__.fields.get(name)
         if isinstance(field, ReferenceFrom):
             if self._db is None:
+                traceback.print_stack()
                 raise Exception("no db")
             view_namespace = self.namespace.replace("/", "_")
             # look at super class gypes to find clas with ref
-
             type_name = self.__class__._type_with_ref(name)
-
             view_name = "%s/%s_%s" % (view_namespace, type_name, name)
-            return self._query_view(self._db, view_name, self.key)
+            return self._db.query_view(view_name, key=self.key)
 
         if "%s_id" % name in self.properties.keys():
             id_name = "%s_id" % name
             ref = self.__class__.fields.get(id_name)
             if isinstance(ref, ReferenceTo):
                 if self._db is None:
+                    traceback.print_stack()
                     raise Exception("no db")
-                return GenericObject.get(self._db, self._properties[id_name])
+                # return GenericObject.get(self._db, self._properties[id_name])
+                return self._db.get(self._properties[id_name])
         if name in self._properties.keys():
             # if it is a subclass of stringfield for string formats
             if isinstance(field, StringField) and not field.__class__ == StringField:

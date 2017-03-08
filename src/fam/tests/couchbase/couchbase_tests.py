@@ -1,16 +1,18 @@
 import unittest
 
 from fam.database import CouchbaseWrapper
-from config import *
 from fam.tests.models.test01 import Dog, Cat, Person, JackRussell, NAMESPACE
 from fam.mapper import ClassMapper
+
+COUCHBASE_HOST = "127.0.0.1"
+COUCHBASE_BUCKET = "test"
 
 class CouchbaseModelTests(object):
 
 
     def setUp(self):
         mapper = ClassMapper([Dog, Cat, Person, JackRussell])
-        self.db = CouchbaseWrapper(COUCHBASE_HOST, COUCHBASE_PORT, COUCHBASE_BUCKET, COUCHBASE_ADMIN, COUCHBASE_ADMIN_PASSWORD, reset=True)
+        self.db = CouchbaseWrapper(mapper, COUCHBASE_HOST, COUCHBASE_BUCKET, read_only=False)
         self.db.update_designs()
 
     def tearDown(self):

@@ -1,4 +1,7 @@
 import simplejson as json
+import copy
+
+
 from fam.fam_json import object_default
 import jsonschema
 from copy import deepcopy
@@ -92,10 +95,18 @@ class CouchDBWrapper(BaseDatabase):
 
     database_type = "couchdb"
 
-    def __init__(self, mapper, db_url, db_name, reset=False, remote_url=None, continuous=False, validator=None):
+    def __init__(self, mapper,
+                 db_url,
+                 db_name,
+                 reset=False,
+                 remote_url=None,
+                 continuous=False,
+                 validator=None
+                 ):
 
         self.mapper = mapper
         self.validator = validator
+
         self.cookies = {}
 
         self.remote_url = remote_url
@@ -137,6 +148,7 @@ class CouchDBWrapper(BaseDatabase):
                 self.sync_both_continuous()
 
 
+
     def info(self):
 
         url = "%s/%s" % (self.db_url, self.db_name)
@@ -147,6 +159,9 @@ class CouchDBWrapper(BaseDatabase):
 
         return None
 
+
+    def get_design(self, key):
+        return self._get(key)
 
 
     @auth
@@ -228,7 +243,7 @@ class CouchDBWrapper(BaseDatabase):
 
 
     @auth
-    def _changes(self, since=None, channels=None, limit=None, feed=None, timeout=None, filter=None):
+    def _changes(self, since=None, channels=None, limit=1000, feed=None, timeout=None, filter=None):
         url = "%s/%s/_changes" % (self.db_url, self.db_name)
         params = {"include_docs":"true"}
         if since is not None:
@@ -308,6 +323,7 @@ class CouchDBWrapper(BaseDatabase):
         raise Exception("Error creating sync down: %s %s" % (rsp.status_code, rsp.text))
 
 
+
     def create_sync_up_continuous(self, replicator_db):
 
         if self.remote_url is None:
@@ -369,12 +385,31 @@ class CouchDBWrapper(BaseDatabase):
         raise Exception("Unknown Error _ensure_full_commit in remote: %s %s" % (rsp.status_code, rsp.text))
 
 
-    def update_designs(self):
+    def ensure_design_doc(self, key, doc):
+        # first put it into dev
+        dev_key = key.replace("_design/", "_design/dev_")
+        dev_doc = copy.deepcopy(doc)
+        dev_doc["_id"] = dev_key
 
-        doc_id = "_design/raw"
+        previous_dev = self._get(dev_key)
+
+        self._set(dev_key, dev_doc, rev=None if previous_dev is None else previous_dev.rev)
+
+        # then get it back again to compare
+        existing = self._get(key)
+        existing_dev = self._get(dev_key)
+
+        if existing == existing_dev:
+            print "************  designs up to date ************"
+        else:
+            print "************  updating designs ************"
+            print "new_design: ", doc
+            self._set(key, doc, rev=None if existing is None else existing.rev)
+
+
+    def _raw_design_doc(self):
 
         design_doc = {
-            "_id": doc_id,
             "views": {
                 "all": {
                     "map": "function(doc) {emit(doc.type, doc);}"
@@ -382,18 +417,28 @@ class CouchDBWrapper(BaseDatabase):
             }
         }
 
-        existing = self._get(doc_id)
-        self._set(doc_id, design_doc, rev=existing.rev if existing else None)
+        return design_doc
 
+
+    def update_designs(self):
+
+        ## simple type index
+        doc = self._raw_design_doc()
+        key = "_design/raw"
+
+        doc["_id"] = key
+
+        self.ensure_design_doc(key, doc)
+
+        ## relational indexes
         for namespace_name, namespace in self.mapper.namespaces.iteritems():
             view_namespace = namespace_name.replace("/", "_")
-            doc_id = "_design/%s" % view_namespace
-            attrs = self._get_design(namespace, namespace_name)
-            attrs["_id"] = doc_id
-            existing = self._get(doc_id)
-            self._set(doc_id, attrs, rev=existing.rev if existing else None)
+            key = "_design/%s" % view_namespace
+            doc = self.mapper.get_design(namespace, namespace_name, self.FOREIGN_KEY_MAP_STRING)
+            doc["_id"] = key
+            self.ensure_design_doc(key, doc)
 
+        ## extra indexes
         for doc in self.mapper.extra_design_docs():
-            doc_id = doc["_id"]
-            existing = self._get(doc_id)
-            self._set(doc_id, doc, rev=existing.rev if existing else None)
+            key = doc["_id"]
+            self.ensure_design_doc(key, doc)

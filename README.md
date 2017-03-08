@@ -253,25 +253,29 @@ cats_with_three_legs = db.view("animal_views/cat_legs", key=3)
 
 The StringField can easiliy be extended to define strings of data in certain formats. Currently there are two in fam.string_formats, EmailField and DateTimeField.
 
-## Cache
+## Write Buffer
 
-As of v1.0.7 there is a cache in fam.database.caching. This is an in-memory document cache, so the same Python object always represents same db doc within scope of a context manager. Document changes are saved back to the database when the context manager closes.
+This is a context managed in-memory object buffer. Reads pass through it so the same Python object always represents same db doc,
+and document write are only saved back to the database when the context manager closes.
+
+This replaces the old cache it is aliased to it so existing code won't break.
+
 
 ```python
 
-from fam.database.caching import cache
+from fam.buffer import buffered_db
 
 # create a database db as usual
 
 # then create an in memory cache in front of it
-with cache(db) as cached_db:
+with buffered_db(db) as bdb:
 
-    # now use cached_db instead of db
+    # now use bdb instead of db
     dog = Dog(name="fly")
-    cached_db.put(dog)
+    bdb.put(dog)
     
     # dog2 will be the exact same python object as dog
-    dog2 = cached_db.get(dog.key)
+    dog2 = bdb.get(dog.key)
     
 #when the context closes the docs are saved back to db
     
@@ -279,7 +283,9 @@ with cache(db) as cached_db:
 
 ## Sync Function ACLs
 
-Although I am a big fan Couchbase Sync Gateway I feel that the sync function is a little over burdened with responsibilities, so I template some portions of my sync function that protect access to writing documents. To support this I have added declarative acls in an additional class attribute on FamObjects. It looks like this:
+Although I am a big fan Couchbase Sync Gateway I feel that the sync function is a little over burdened with responsibilities,
+so I template some portions of my sync function that protect access to writing documents.
+To support this I have added declarative acls in an additional class attribute on FamObjects. It looks like this:
 
 ```python
     acl = [
@@ -331,5 +337,4 @@ Some possible further features:
 
 - Optional class attribute **schema** to give better control over document validation.
 - Pass schemata to sync gateway's sync function to enforce typed validation on document creation and update.
-- Migrations.
 

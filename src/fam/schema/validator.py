@@ -177,8 +177,6 @@ class ModelValidator(object):
         most_recent_filename = sorted(filenames)[-1]
         return self.schema_at_schema_path(os.path.join(dir_path, most_recent_filename))
 
-
-
     def _check_for_changes(self, namespace, type_name, schema):
 
         existing_schema = self._previous_schema(namespace, type_name)

@@ -1,4 +1,6 @@
-
+import simplejson as json
+import hashlib
+import copy
 
 from base64 import b64encode
 
@@ -44,9 +46,6 @@ class SyncGatewayWrapper(CouchDBWrapper):
         if rsp.status_code == 404:
             raise Exception("Unknown database and you can't create them in the sync gateway")
 
-
-
-
     def authenticate(self):
         if self.username is None:
             raise Exception("failed to authenticate no username")
@@ -72,18 +71,31 @@ class SyncGatewayWrapper(CouchDBWrapper):
     def sync_up(self):
         pass
 
-
     def sync_down(self):
         pass
 
-    def view(self, name, **kwargs):
 
+    def purge(self, key):
+
+        data = {
+            key: ["*"]
+        }
+
+        rsp = self.session.post("%s/%s/_purge" % (self.db_url, self.db_name), data=json.dumps(data))
+
+        if rsp.status_code == 200 or rsp.status_code == 202:
+            return
+
+
+
+    def view(self, name, **kwargs):
         return super(SyncGatewayWrapper, self).view(name, stale="false", **kwargs)
 
     # @auth
     def get_design(self, key):
 
         url = "%s/%s/%s" % (self.db_url, self.db_name, key)
+        print url
         rsp = self.session.get(url)
 
         if rsp.status_code == 200:
@@ -92,15 +104,38 @@ class SyncGatewayWrapper(CouchDBWrapper):
             return None
         if rsp.status_code == 400:
             return None
+        if rsp.status_code == 404:
+            return None
         raise Exception("Unknown Error getting cb doc: %s %s" % (rsp.status_code, rsp.text))
 
 
-    def update_designs(self):
 
-        doc_id = "_design/raw"
+    def ensure_design_doc(self, key, doc):
+
+        # first put it into dev
+        dev_key = key.replace("_design/", "_design/dev_")
+        dev_doc = copy.deepcopy(doc)
+        dev_doc["_id"] = dev_key
+        self._set(dev_key, dev_doc)
+
+        # then get it back again to compare
+
+        existing = self.get_design(key)
+
+        existing_dev = self.get_design(dev_key)
+
+        if existing == existing_dev:
+            print "************  design doc %s up to date ************" % key
+        else:
+            print "************  updating design doc %s ************" % key
+            print "new_design: ", doc
+            self._set(key, doc)
+
+
+
+    def _raw_design_doc(self):
 
         design_doc = {
-            "_id": doc_id,
             "views": {
                 "all": {
                     "map": """function(doc, meta) {
@@ -112,16 +147,4 @@ class SyncGatewayWrapper(CouchDBWrapper):
             }
         }
 
-        self._set(doc_id, design_doc)
-
-        for namespace_name, namespace in self.mapper.namespaces.iteritems():
-            view_namespace = namespace_name.replace("/", "_")
-            doc_id = "_design/%s" % view_namespace
-            attrs = self._get_design(namespace, namespace_name)
-            attrs["_id"] = doc_id
-            self._set(doc_id, attrs)
-
-
-        for doc in self.mapper.extra_design_docs():
-            doc_id = doc["_id"]
-            self._set(doc_id, doc)
+        return design_doc

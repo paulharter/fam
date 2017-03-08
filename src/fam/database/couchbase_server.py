@@ -108,6 +108,7 @@ class CouchbaseWrapper(BaseDatabase):
         query = N1QLQuery(query, *args, **kwargs)
         rows = self.bucket.n1ql_query(query)
         rows_list = list(rows)
+        # print "rows_list: ", rows_list
         keys = rows_list[0].keys()
         keys.remove("id")
         keys.remove("cas")
