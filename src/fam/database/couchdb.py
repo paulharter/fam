@@ -101,11 +101,13 @@ class CouchDBWrapper(BaseDatabase):
                  reset=False,
                  remote_url=None,
                  continuous=False,
-                 validator=None
+                 validator=None,
+                 read_only=False
                  ):
 
         self.mapper = mapper
         self.validator = validator
+        self.read_only = read_only
 
         self.cookies = {}
 
@@ -163,6 +165,11 @@ class CouchDBWrapper(BaseDatabase):
     def get_design(self, key):
         return self._get(key)
 
+    def ensure_role(self, role_name):
+        pass
+
+    def ensure_user_role(self, username, role):
+        pass
 
     @auth
     def _get(self, key):
@@ -180,6 +187,9 @@ class CouchDBWrapper(BaseDatabase):
 
 
     def _set(self, key, value, rev=None):
+
+        if self.read_only:
+            raise Exception("This db is read only")
 
         if self.validator is not None:
             if "namespace" in value and not "schema" in value:
@@ -208,6 +218,10 @@ class CouchDBWrapper(BaseDatabase):
 
 
     def _delete(self, key, rev):
+
+        if self.read_only:
+            raise Exception("This db is read only")
+
         rsp = self.session.delete("%s/%s/%s?rev=%s" % (self.db_url, self.db_name, key, rev))
         if rsp.status_code == 200 or rsp.status_code == 202:
             return
@@ -386,6 +400,10 @@ class CouchDBWrapper(BaseDatabase):
 
 
     def ensure_design_doc(self, key, doc):
+
+        if self.read_only:
+            raise Exception("This db is read only")
+
         # first put it into dev
         dev_key = key.replace("_design/", "_design/dev_")
         dev_doc = copy.deepcopy(doc)

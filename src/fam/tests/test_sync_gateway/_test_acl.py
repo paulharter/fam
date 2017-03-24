@@ -149,7 +149,13 @@ class testPermissions(unittest.TestCase):
             if os.path.exists(dst_path):
                 os.remove(dst_path)
 
+
+
+
             write_sync_function(src_path, dst_path, self.mapper)
+
+
+
 
             self.start_gateway(dst_path)
 

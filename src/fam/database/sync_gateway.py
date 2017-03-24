@@ -1,6 +1,7 @@
 import simplejson as json
 import hashlib
 import copy
+from fam.fam_json import object_default
 
 from base64 import b64encode
 
@@ -25,11 +26,17 @@ class SyncGatewayWrapper(CouchDBWrapper):
 
     database_type = "sync_gateway"
 
-    def __init__(self, mapper, db_url, db_name, auth_url=None, username=None, password=None, validator=None):
+    def __init__(self, mapper, db_url, db_name,
+                 auth_url=None,
+                 username=None,
+                 password=None,
+                 validator=None,
+                 read_only=False):
 
 
         self.mapper = mapper
         self.validator = validator
+        self.read_only = read_only
 
         self.db_name = db_name
         self.db_url = db_url
@@ -39,6 +46,8 @@ class SyncGatewayWrapper(CouchDBWrapper):
         self.session = requests.Session()
 
         url = "%s/%s" % (db_url, db_name)
+
+        print url
         rsp = self.session.get(url)
 
         self.cookies = {}
@@ -77,6 +86,9 @@ class SyncGatewayWrapper(CouchDBWrapper):
 
     def purge(self, key):
 
+        if self.read_only:
+            raise Exception("This db is read only")
+
         data = {
             key: ["*"]
         }
@@ -86,6 +98,63 @@ class SyncGatewayWrapper(CouchDBWrapper):
         if rsp.status_code == 200 or rsp.status_code == 202:
             return
 
+
+    def user(self, username):
+        url = "%s/%s/_user/%s" % (self.db_url, self.db_name, username)
+        rsp = self.session.get(url)
+        if rsp.status_code == 200:
+            return rsp.json()
+        else:
+            return None
+
+    def role(self, role_name):
+        url = "%s/%s/_role/%s" % (self.db_url, self.db_name, role_name)
+        rsp = self.session.get(url)
+        if rsp.status_code == 200:
+            return rsp.json()
+        else:
+            return None
+
+
+    def ensure_role(self, role_name):
+
+        role_info = self.role(role_name)
+        if role_info is None:
+            data = {
+                "name": role_name,
+                "db": self.db_name
+            }
+
+            url = "%s/%s/_role/%s" % (self.db_url, self.db_name, role_name)
+
+            rsp = self.session.put(url, data=json.dumps(data, indent=4, sort_keys=True, default=object_default),
+                                   headers={"Content-Type": "application/json", "Accept": "application/json"})
+            if rsp.status_code == 200 or rsp.status_code == 201:
+               return True
+            else:
+                return False
+        else:
+            return True
+
+
+    def ensure_user_role(self, username, role):
+
+        user_info = self.user(username)
+        roles = user_info["admin_roles"]
+
+        if not role in roles:
+            roles.append(role)
+
+            url = "%s/%s/_user/%s" % (self.db_url, self.db_name, username)
+
+            rsp = self.session.put(url, data=json.dumps(user_info, indent=4, sort_keys=True, default=object_default),
+                                   headers={"Content-Type": "application/json", "Accept": "application/json"})
+            if rsp.status_code == 200 or rsp.status_code == 201:
+               return True
+            else:
+                return False
+        else:
+            return True
 
 
     def view(self, name, **kwargs):
@@ -111,6 +180,9 @@ class SyncGatewayWrapper(CouchDBWrapper):
 
 
     def ensure_design_doc(self, key, doc):
+
+        if self.read_only:
+            raise Exception("This db is read only")
 
         # first put it into dev
         dev_key = key.replace("_design/", "_design/dev_")
