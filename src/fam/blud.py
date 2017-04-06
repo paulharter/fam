@@ -302,8 +302,6 @@ class FamObject(object):
         else:
             return None
 
-
-
     def save(self, db):
         self._db = db
 

@@ -34,6 +34,18 @@ class ResultWrapper(object):
             rev = None
         del as_json["_id"]
         value = as_json
+
+        if rev is None:
+            print "****************************"
+            print as_json
+            print "****************************"
+        else:
+            if rev[1:2] != "-":
+                print "****************************"
+                print rev
+                print as_json
+                print "****************************"
+
         return cls(key, rev, value)
 
 
@@ -65,6 +77,12 @@ class ResultWrapper(object):
         except KeyError, e:
             print "key error raised in from_gateway_view_json on object: %s" % json.dumps(as_json, indent=4)
             raise e
+
+        if rev[1:2] != "-":
+            print "how is this rev wrong!: ", rev
+            print as_json
+
+
         return cls(key, rev, value)
 
 
@@ -292,6 +310,7 @@ class CouchDBWrapper(BaseDatabase):
 
 
     def clear_all_replications(self):
+        return
 
         url = "{}/_config/replicator/db".format(self.db_url)
         old_replicator_db = self.session.get(url).json()
