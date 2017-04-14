@@ -35,16 +35,16 @@ class ResultWrapper(object):
         del as_json["_id"]
         value = as_json
 
-        if rev is None:
-            print "****************************"
-            print as_json
-            print "****************************"
-        else:
-            if rev[1:2] != "-":
-                print "****************************"
-                print rev
-                print as_json
-                print "****************************"
+        # if rev is None:
+        #     print "****************************"
+        #     print as_json
+        #     print "****************************"
+        # else:
+        #     if rev[1:2] != "-":
+        #         print "****************************"
+        #         print rev
+        #         print as_json
+        #         print "****************************"
 
         return cls(key, rev, value)
 
@@ -78,9 +78,9 @@ class ResultWrapper(object):
             print "key error raised in from_gateway_view_json on object: %s" % json.dumps(as_json, indent=4)
             raise e
 
-        if rev[1:2] != "-":
-            print "how is this rev wrong!: ", rev
-            print as_json
+        # if rev[1:2] != "-":
+        #     print "how is this rev wrong!: ", rev
+        #     print as_json
 
 
         return cls(key, rev, value)
