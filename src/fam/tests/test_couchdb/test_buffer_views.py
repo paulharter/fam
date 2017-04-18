@@ -41,3 +41,28 @@ class CacheTests(unittest.TestCase):
         obj = views.query_view("glowinthedark.co.uk/test/person_dogs", key=paul.key)
         self.assertEqual(obj, [dog])
 
+
+    def test_views_keys(self):
+
+        views = FamWriteBufferViews(self.mapper)
+        paul = Person(name="paul")
+        dog = Dog(name="woofer", owner=paul)
+        views.index_obj(dog)
+        print views.indexes.keys()
+
+        self.assertEqual(views.indexes.keys(), ['glowinthedark_co_uk_test_person_animals', 'glowinthedark_co_uk_test_person_dogs', 'raw_all', 'glowinthedark_co_uk_test_dog_kennel_club_membership'])
+
+        self.fail()
+
+
+    def test_compound_views_keys(self):
+
+        views = FamWriteBufferViews(self.mapper)
+        paul = Person(name="paul")
+        dog = Dog(name="woofer", owner=paul)
+        views.index_obj(dog)
+        print views.indexes.keys()
+
+        self.assertEqual(views.indexes.keys(), ['glowinthedark_co_uk_test_person_animals', 'glowinthedark_co_uk_test_person_dogs', 'raw_all', 'glowinthedark_co_uk_test_dog_kennel_club_membership'])
+
+        self.fail()

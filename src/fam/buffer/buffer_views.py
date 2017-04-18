@@ -28,11 +28,15 @@ class FamWriteBufferViews(object):
 
 
     def query_view(self, view_name, key, **kwargs):
+
+        k = tuple(key) if type(key) == list else key
+
         name = self._clean_name(view_name)
         view_index = self.indexes.get(name)
+        # print "****************** - ", self.indexes.get("join_views_reel_item_memberships")
         if view_index is None:
             return []
-        values = view_index.get(key)
+        values = view_index.get(k)
         if values is None:
             return []
         return [item[1] for item in values.iteritems()]
@@ -53,11 +57,14 @@ class FamWriteBufferViews(object):
 
     def _add_to_index(self, k):
 
+        # print "********* adding: ", k
+
         kstr = repr(k).replace("'", "\"").replace("u\"", "\"")
         key = None if kstr == '"undefined"' else json.loads(kstr)
 
         if type(key) == list:
             key = tuple(key)
+            # print "************ adding key: ", key
 
         index = self.indexes.get(self.view_name)
         reverse_index = self.reverse_indexes.get(self.view_name)
