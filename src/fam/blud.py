@@ -373,7 +373,8 @@ class FamObject(object):
             if isinstance(field, ReferenceFrom):
 
                 view_namespace = self.namespace.replace("/", "_")
-                view_name = "%s/%s_%s" % (view_namespace, self.type, field_name)
+                type_name = self.__class__._type_with_ref(field_name)
+                view_name = "%s/%s_%s" % (view_namespace, type_name, field_name)
                 objs = self._query_view(self._db, view_name, self.key)
 
                 if field.cascade_delete:
