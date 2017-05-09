@@ -24,7 +24,9 @@ class DateTimeField(StringField):
 
     @staticmethod
     def from_json(as_json):
-        dt = datetime.datetime.strptime(as_json, '%Y-%m-%dT%H:%M:%S.%fZ')
+        if "." in as_json:
+            dt = datetime.datetime.strptime(as_json, '%Y-%m-%dT%H:%M:%S.%fZ')
+        else:
+            dt = datetime.datetime.strptime(as_json, '%Y-%m-%dT%H:%M:%SZ')
         dt = dt.replace(tzinfo=pytz.utc)
         return dt
-
