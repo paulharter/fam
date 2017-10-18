@@ -4,7 +4,6 @@ import unittest
 from fam.database import CouchbaseWrapper
 from fam.mapper import ClassMapper
 
-
 from fam.tests.models.test01 import Dog, Cat
 
 COUCHBASE_HOST = "127.0.0.1"

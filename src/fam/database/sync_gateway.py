@@ -178,31 +178,42 @@ class SyncGatewayWrapper(CouchDBWrapper):
         raise Exception("Unknown Error getting cb doc: %s %s" % (rsp.status_code, rsp.text))
 
 
+    def _new_matches_existing(self, new_doc, existing_doc):
+
+        new_view_names = new_doc["views"].keys()
+        existing_view_names = existing_doc["views"].keys()
+
+        # print "new_view_names: ", new_view_names
+        # print "existing_view_names: ", existing_view_names
+
+        if set(new_view_names) != set(existing_view_names):
+            # print "names dont match"
+            return False
+
+        for view_name in new_view_names:
+            new_view_function = new_doc["views"][view_name]["map"]
+            existing_view_function = existing_doc["views"][view_name]["map"]
+            index = existing_view_function.find(new_view_function)
+            if index == -1:
+                # print "functions dont match"
+                return False
+
+        return True
+
 
     def ensure_design_doc(self, key, doc):
 
         if self.read_only:
             raise Exception("This db is read only")
 
-        # first put it into dev
-        dev_key = key.replace("_design/", "_design/dev_")
-        dev_doc = copy.deepcopy(doc)
-        dev_doc["_id"] = dev_key
-        self._set(dev_key, dev_doc)
-
-        # then get it back again to compare
-
         existing = self.get_design(key)
 
-        existing_dev = self.get_design(dev_key)
-
-        if existing == existing_dev:
-            print "************  design doc %s up to date ************" % key
-        else:
+        if existing is None or not self._new_matches_existing(doc, existing):
             print "************  updating design doc %s ************" % key
             print "new_design: ", doc
             self._set(key, doc)
-
+        else:
+            print "************  design doc %s up to date **********" % key
 
 
     def _raw_design_doc(self):

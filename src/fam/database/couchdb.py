@@ -420,6 +420,7 @@ class CouchDBWrapper(BaseDatabase):
 
     def ensure_design_doc(self, key, doc):
 
+
         if self.read_only:
             raise Exception("This db is read only")
 

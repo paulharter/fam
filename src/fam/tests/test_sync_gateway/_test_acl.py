@@ -149,13 +149,7 @@ class testPermissions(unittest.TestCase):
             if os.path.exists(dst_path):
                 os.remove(dst_path)
 
-
-
-
             write_sync_function(src_path, dst_path, self.mapper)
-
-
-
 
             self.start_gateway(dst_path)
 
@@ -252,11 +246,8 @@ class testPermissions(unittest.TestCase):
         def test_own_access_create(self):
 
             self.test_write_permissions()
-
             boat_id = "boaty"
-
             boat = Boat(key=boat_id, name="steve", is_sail=True, owner_name="paul", access=["paul"], channels=[boat_id])
-
             self.paul_db.put(boat)
 
 
