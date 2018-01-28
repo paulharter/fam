@@ -11,6 +11,8 @@ from fam.constants import *
 from fam.utils import requests_shim as requests
 from fam.database.base import BaseDatabase, FamDbAuthException
 
+from fam.utils.backoff import http_backoff
+
 
 JSON_KEY_STRINGS = ["endkey", "end_key", "key", "keys", "startkey", "start_key"]
 
@@ -74,8 +76,8 @@ class ResultWrapper(object):
                 del value["_rev"]
             else:
                 rev = None
-        except KeyError, e:
-            print "key error raised in from_gateway_view_json on object: %s" % json.dumps(as_json, indent=4)
+        except KeyError as e:
+            print("key error raised in from_gateway_view_json on object: %s" % json.dumps(as_json, indent=4))
             raise e
 
         # if rev[1:2] != "-":
@@ -151,7 +153,7 @@ class CouchDBWrapper(BaseDatabase):
 
         rsp = self.session.get(url)
         if rsp.status_code == 200:
-            print "exists", db_name, db_url
+            print("exists", db_name, db_url)
 
         if rsp.status_code == 404:
             rsp = self.session.put(url)
@@ -203,8 +205,8 @@ class CouchDBWrapper(BaseDatabase):
             raise FamDbAuthException(" %s %s" % (rsp.status_code, rsp.text))
         raise Exception("Unknown Error getting cb doc: %s %s" % (rsp.status_code, rsp.text))
 
-
-    def _set(self, key, value, rev=None):
+    @http_backoff
+    def _set(self, key, value, rev=None, backoff=False):
 
         if self.read_only:
             raise Exception("This db is read only")
@@ -216,7 +218,7 @@ class CouchDBWrapper(BaseDatabase):
                     value["schema"] = schema_id
             try:
                 self.validator.validate(value)
-            except jsonschema.ValidationError, e:
+            except jsonschema.ValidationError as e:
                 raise FamValidationError(e)
 
 
@@ -225,8 +227,12 @@ class CouchDBWrapper(BaseDatabase):
             value["_rev"] = rev
 
         url = "%s/%s/%s" % (self.db_url, self.db_name, key)
+        rsp = self.session.put(url, data=json.dumps(value,
+                                                    indent=4,
+                                                    sort_keys=True,
+                                                    default=object_default),
+                               headers={"Content-Type": "application/json", "Accept": "application/json"})
 
-        rsp = self.session.put(url, data=json.dumps(value, indent=4, sort_keys=True, default=object_default), headers={"Content-Type": "application/json", "Accept": "application/json"})
         if rsp.status_code == 200 or rsp.status_code == 201:
             if rsp.content:
                 value["_rev"] = rsp.json()["rev"]
@@ -252,11 +258,11 @@ class CouchDBWrapper(BaseDatabase):
 
     def _encode_for_view_query(self, kwargs):
         encoded = {}
-        for k, v in kwargs.iteritems():
+        for k, v in kwargs.items():
             encoded[k] = json.dumps(v) if k in JSON_KEY_STRINGS else v
         return encoded
 
-    @ensure_views
+    # @ensure_views
     def view(self, name, **kwargs):
         design_doc_id, view_name = name.split("/")
 
@@ -296,11 +302,16 @@ class CouchDBWrapper(BaseDatabase):
                     params["timeout"] = 60000
                 else:
                     params["timeout"] = timeout
-        rsp = self.session.get(url, params=params, cookies=self.cookies)
+        # rsp = self.session.get(url, params=params, cookies=self.cookies)
+        rsp = self.session.get(url, cookies=self.cookies)
         if rsp.status_code == 200:
+
             results = rsp.json()
             last_seq = results.get("last_seq")
             rows = results.get("results")
+
+            print("*********  200", last_seq)
+
             return last_seq, [ResultWrapper.from_couchdb_json(row["doc"]) for row in rows if "doc" in row.keys() and row["doc"].get(TYPE_STR) is not None]
         if rsp.status_code == 404:
             return None, None
@@ -350,7 +361,7 @@ class CouchDBWrapper(BaseDatabase):
 
         rsp = self.session.post("%s/%s" % (self.db_url, replicator_db), data=json.dumps(attrs), headers=headers)
         if rsp.status_code < 300:
-            print "sync down created"
+            print("sync down created")
             return
 
         raise Exception("Error creating sync down: %s %s" % (rsp.status_code, rsp.text))
@@ -373,7 +384,7 @@ class CouchDBWrapper(BaseDatabase):
 
         rsp = self.session.post("%s/%s" % (self.db_url, replicator_db), data=json.dumps(attrs), headers=headers)
         if rsp.status_code < 300:
-            print "sync_up created"
+            print("sync_up created")
             return
         raise Exception("Error creating sync up to remote: %s %s" % (rsp.status_code, rsp.text))
 
@@ -419,8 +430,6 @@ class CouchDBWrapper(BaseDatabase):
 
 
     def ensure_design_doc(self, key, doc):
-
-
         if self.read_only:
             raise Exception("This db is read only")
 
@@ -431,6 +440,8 @@ class CouchDBWrapper(BaseDatabase):
 
         previous_dev = self._get(dev_key)
 
+        # print "self.db_url: ", self.db_url, self.db_name
+
         self._set(dev_key, dev_doc, rev=None if previous_dev is None else previous_dev.rev)
 
         # then get it back again to compare
@@ -438,10 +449,10 @@ class CouchDBWrapper(BaseDatabase):
         existing_dev = self._get(dev_key)
 
         if existing == existing_dev:
-            print "************  designs up to date ************"
+            print("************  designs up to date ************")
         else:
-            print "************  updating designs ************"
-            print "new_design: ", doc
+            print("************  updating designs ************")
+            print("new_design: ", doc)
             self._set(key, doc, rev=None if existing is None else existing.rev)
 
 
@@ -468,10 +479,13 @@ class CouchDBWrapper(BaseDatabase):
 
         self.ensure_design_doc(key, doc)
 
+
         ## relational indexes
-        for namespace_name, namespace in self.mapper.namespaces.iteritems():
+        for namespace_name, namespace in self.mapper.namespaces.items():
+
             view_namespace = namespace_name.replace("/", "_")
             key = "_design/%s" % view_namespace
+
             doc = self.mapper.get_design(namespace, namespace_name, self.FOREIGN_KEY_MAP_STRING)
             doc["_id"] = key
             self.ensure_design_doc(key, doc)

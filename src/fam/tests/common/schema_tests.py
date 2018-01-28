@@ -68,7 +68,7 @@ class SchemaBaseTests:
 
             cat_schema = createJsonSchema(Cat)
 
-            print json.dumps(cat_schema, indent=4)
+            print(json.dumps(cat_schema, indent=4))
             self.maxDiff = None
             self.assertEqual(expected, cat_schema)
 

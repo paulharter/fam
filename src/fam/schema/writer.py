@@ -25,6 +25,9 @@ FIELD_TYPE_LOOKUP = {
     },
     "DateTimeField": {
         "type": "string"
+    },
+    "RationalNumberField": {
+        "type": "string"
     }
 }
 
@@ -65,7 +68,7 @@ def createJsonSchema(fam_class):
 
     required_fields = []
 
-    for name, field in fam_class.fields.iteritems():
+    for name, field in fam_class.fields.items():
         field_class_name = field.__class__.__name__
         if field_class_name != "ReferenceFrom":
             field_dict = copy.deepcopy(FIELD_TYPE_LOOKUP[field_class_name])
@@ -76,7 +79,6 @@ def createJsonSchema(fam_class):
                 required_fields.append(name)
 
     if len(required_fields) > 0:
-        schema["required"] = required_fields
-
+        schema["required"] = sorted(required_fields)
 
     return schema

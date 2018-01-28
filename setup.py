@@ -12,7 +12,7 @@ setup(name='fam',
         'License :: OSI Approved :: MIT License'
     ],
     author='Paul Harter',
-    author_email='username: paul, domain: glowinthedark.co.uk',
+    author_email='paul@glowinthedark.co.uk',
     license="LICENSE",
     install_requires=['js2py', 'requests', 'simplejson', 'jsonschema', 'mock', 'pytz', 'slimit', 'ply==3.4'],
     packages=find_packages('src'),

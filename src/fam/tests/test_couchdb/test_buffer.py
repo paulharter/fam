@@ -29,7 +29,7 @@ class CacheTests(unittest.TestCase):
 
         got = self.db.get(dog.key)
 
-        self.assertTrue(got != None)
+        self.assertTrue(got is not None)
 
 
     def test_cache_doesnt_save(self):

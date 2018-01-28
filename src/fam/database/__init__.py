@@ -1,9 +1,9 @@
 from .couchdb import CouchDBWrapper
 from .sync_gateway import SyncGatewayWrapper
 try:
-    from .couchbase_server import CouchbaseWrapper
+    from fam.database.couchbase_server import CouchbaseWrapper
 except Exception as e:
-    print "failed to import couchbase wrapper"
+    print("failed to import couchbase wrapper", e)
 
 from fam.utils.backoff import http_backoff
 

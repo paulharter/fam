@@ -1,5 +1,6 @@
 import unittest
 import datetime
+from fractions import Fraction
 import pytz
 
 from fam.tests.models.test01 import Event
@@ -40,4 +41,14 @@ class MapperTests(unittest.TestCase):
         timestamp = event._properties["created"]
         self.assertEqual(timestamp, "2015-12-05T10:10:13.876532Z")
         self.assertEqual(event.created, birthday.replace(tzinfo=utc))
+
+
+    def test_rational(self):
+
+        third = Fraction(numerator=1, denominator=3)
+        event = Event(chance=third)
+        self.db.put(event)
+        rationalstring = event._properties["chance"]
+        self.assertEqual(rationalstring, "1/3")
+        self.assertEqual(event.chance, Fraction(numerator=1, denominator=3))
 

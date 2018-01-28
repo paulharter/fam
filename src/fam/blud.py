@@ -170,7 +170,7 @@ class GenericMetaclass(type):
                 attrs["fields"].update(b.fields)
 
         #check that the names of all ref to fields end with _id
-        for fieldname, field in attrs["fields"].iteritems():
+        for fieldname, field in attrs["fields"].items():
             if isinstance(field, ReferenceTo) and not fieldname.endswith("_id"):
                 raise FamError("All ReferenceTo field names must end with _id, %s doesn't" % fieldname)
 
@@ -185,28 +185,31 @@ class GenericMetaclass(type):
         return newcls
 
 
-class FamObject(object):
+class FamObject(object, metaclass=GenericMetaclass):
     use_rev = True
     additional_properties = False
     grants_access = False
     # extra sync gateway keywords that are used by sync function
     sg_allow_public_write = False
-    __metaclass__ = GenericMetaclass
+
+    # __metaclass__ = GenericMetaclass
+
     fields = {}
     acl = None
 
     def __init__(self, key=None, rev=None, **kwargs):
 
         type_name = self.__class__.__name__.lower()
+
         namespace = self.__class__.namespace.lower()
 
-        self.key = key if key is not None else u"%s_%s" % (type_name, unicode(uuid.uuid4()))
+        self.key = key if key is not None else u"%s_%s" % (type_name, str(uuid.uuid4()))
         if rev is not None:
             self.rev = rev
 
         self._properties = {}
 
-        for k, v in kwargs.iteritems():
+        for k, v in kwargs.items():
             if not k.startswith("_"):
                 setattr(self, k, v)
 
@@ -242,19 +245,20 @@ class FamObject(object):
 
 
     def _check_defaults(self):
-        for field_name, field in self.__class__.fields.iteritems():
+        for field_name, field in self.__class__.fields.items():
             if field.default is not None and not field_name in self._properties:
                 self._properties[field_name] = field.get_default()
 
-    def _check_immutable(self, existing_doc):
-        for field_name, field in self.__class__.fields.iteritems():
+    def _check_immutable(self, existing):
+        for field_name, field in self.__class__.fields.items():
             if field.immutable:
-                if field_name in existing_doc and getattr(self, field_name) != existing_doc[field_name]:
-                    raise FamImmutableError("You can't change the value of {} on a {} it has been made immutable".format(field_name, self.__class__.__name__))
+                attr = getattr(existing, field_name)
+                if attr is not None and getattr(self, field_name) != attr:
+                    raise FamImmutableError("You can't change the value of {} on a {} it has been made immutable: {}".format(field_name, self.__class__.__name__, getattr(existing, field_name)))
 
 
     def _check_uniqueness(self):
-        for field_name, field in self.__class__.fields.iteritems():
+        for field_name, field in self.__class__.fields.items():
             if field.unique:
                 this_value = getattr(self, field_name)
                 if this_value is None:
@@ -302,24 +306,27 @@ class FamObject(object):
         else:
             return None
 
+
     def save(self, db):
         self._db = db
 
-        result = db._get(self.key)
+        # result = db._get(self.key)
 
-        if result:
-            doc = result.value
-            rev = result.rev
+        existing = FamObject.get(db, self.key)
+
+        if existing:
+            # doc = result.value
+            rev = existing.rev
 
             self._check_uniqueness()
-            self._check_immutable(doc)
+            self._check_immutable(existing)
 
             # raise a conflict if revs different
             if self.use_rev and rev != self.rev:
-                if not self.resolve_write_conflict(doc, rev):
+                if not self.resolve_write_conflict(existing, rev):
                     raise FamResourceConflict("bad rev id: %s, rev: %s db_rev: %s" % (self.key, self.rev, rev))
 
-            self._pre_save_update_cb(db, doc)
+            self._pre_save_update_cb(db, existing._properties)
             # just force the rev if not using it
             result = db._set(self.key, self._properties, rev=self.rev if self.use_rev else rev)
 
@@ -361,12 +368,15 @@ class FamObject(object):
 
 
     def delete_references(self, db):
-        for field_name, field in self.__class__.fields.iteritems():
+
+        for field_name, field in self.__class__.fields.items():
             if isinstance(field, ReferenceTo):
                 if field.cascade_delete:
                     if field_name.endswith("_id"):
+
                         obj = getattr(self, field_name[:-3])
                         if obj is not None:
+
                             obj.delete(db)
                     else:
                         raise Exception("should have _id")
@@ -515,10 +525,32 @@ class FamObject(object):
             rows = db._n1ql(query, *args, **kwargs)
         return [GenericObject._from_doc(db, row.key, None, row.value) for row in rows]
 
+
     @classmethod
     def view(cls, db, view_name, **kwargs):
-        rows =  db.view(view_name, **kwargs)
-        return [GenericObject._from_doc(db, row.key, row.rev, row.value) for row in rows]
+        return cls.view_iterator(db, view_name, **kwargs)
+
+    @classmethod
+    def view_iterator(cls, db, view_name, **kwargs):
+
+        if "limit" in kwargs:
+            rows = db.view(view_name, **kwargs)
+            for row in rows:
+                yield GenericObject._from_doc(db, row.key, row.rev, row.value)
+        else:
+
+            limit = 100
+            skip = 0
+
+            while True:
+                rows =  db.view(view_name, limit=limit, skip=skip, **kwargs)
+                if len(rows) == 0:
+                    break
+                skip += limit
+                for row in rows:
+                    yield GenericObject._from_doc(db, row.key, row.rev, row.value)
+
+
 
     @classmethod
     def changes(cls, db, **kwargs):
@@ -530,7 +562,7 @@ class FamObject(object):
             try:
                 changeset.append(GenericObject._from_doc(db, row.key, row.rev, row.value))
             except Exception as e:
-                print "BAD!!! swallowing all exceptions in blud changes"
+                print("BAD!!! swallowing all exceptions in blud changes")
 
 
         return last_seq, changeset
@@ -576,12 +608,17 @@ class FamObject(object):
                     raise Exception("no db")
                 # return GenericObject.get(self._db, self._properties[id_name])
                 return self._db.get(self._properties[id_name])
+
+
         if name in self._properties.keys():
+            # print("found in properties", name)
             # if it is a subclass of stringfield for string formats
             if isinstance(field, StringField) and not field.__class__ == StringField:
                 if hasattr(field, "from_json"):
                     return field.from_json(self._properties[name])
             return self._properties[name]
+
+
         if name in self.__class__.fields:
             return None
         elif "%s_id" % name in self.__class__.fields:
@@ -589,6 +626,7 @@ class FamObject(object):
         elif name == "rev":
             return None
         else:
+            # print("self: ", self, name)
             raise AttributeError("Not found %s" % name)
 
 
@@ -623,7 +661,7 @@ class FamObject(object):
                     #cast the items in the list into a certain class
                     value = [field.item_cls.from_json(i) for i in value]
 
-                if issubclass(field.__class__, StringField) and not (isinstance(value, basestring) or value is None):
+                if issubclass(field.__class__, StringField) and not (isinstance(value, str) or value is None):
                     value = field.to_json(value)
             self._update_property(name, value)
         elif name.startswith("_"):

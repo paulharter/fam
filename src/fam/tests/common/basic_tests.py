@@ -128,8 +128,10 @@ class BasicBaseTestCases:
             cat.save(self.db)
             cat2 = Cat(name="puss", owner_id=paul.key, legs=2)
             cat2.save(self.db)
-            self.assertEqual(len(paul.cats), 2)
-            self.assertTrue(paul.cats[0] == cat or paul.cats[1] == cat)
+            cats = list(paul.cats)
+            self.assertEqual(len(cats), 2)
+            cats = list(paul.cats)
+            self.assertTrue(cats[0] == cat or cats[1] == cat)
 
 
         def test_ref_from_multiple_index(self):
@@ -139,9 +141,12 @@ class BasicBaseTestCases:
             cat.save(self.db)
             dog = Dog(name="fly", owner=paul)
             self.db.put(dog)
-            self.assertEqual(len(paul.cats), 1)
-            self.assertEqual(len(paul.dogs), 1)
-            self.assertEqual(len(paul.animals), 2)
+            cats = list(paul.cats)
+            self.assertEqual(len(cats), 1)
+            dogs = list(paul.dogs)
+            self.assertEqual(len(dogs), 1)
+            animals = list(paul.animals)
+            self.assertEqual(len(animals), 2)
 
 
         def test_refs_with_inheritance(self):
@@ -151,7 +156,9 @@ class BasicBaseTestCases:
             jack.owner_id = paul.key
             jack.name = "jack"
             jack.save(self.db)
-            self.assertEqual(paul.dogs[0], jack)
+
+
+            self.assertEqual(list(paul.dogs)[0], jack)
 
 
         def test_refs_with_other_inheritance(self):
@@ -161,7 +168,8 @@ class BasicBaseTestCases:
             jack.owner = paul
             jack.name = "jack"
             self.db.put(jack)
-            self.assertEqual(paul.dogs[0], jack)
+            dogs = list(paul.dogs)
+            self.assertEqual(dogs[0], jack)
 
 
         def test_delete_cat_dd(self):
@@ -185,13 +193,13 @@ class BasicBaseTestCases:
             key = dog.key
             dog2 = Dog(name="fly", owner_id=paul.key)
             dog2.save(self.db)
-            self.assertNotEqual(dog2.owner, None)
+            self.assertTrue(dog2.owner is not None)
             key = paul.key
             dog.delete(self.db)
             revivedpaul = self.db.get(key)
-            self.assertEqual(revivedpaul, None)
+            self.assertTrue(revivedpaul is None)
             refresheddog2 = Dog.get(self.db, dog2.key)
-            self.assertEqual(refresheddog2.owner, None)
+            self.assertTrue(refresheddog2.owner is None)
 
 
         def test_delete_cat_refs(self):
@@ -203,10 +211,12 @@ class BasicBaseTestCases:
             cat2 = Cat(name="puss", owner_id=paul.key, legs=2)
             cat2.save(self.db)
             revivedcat1 = self.db.get(key)
-            self.assertNotEqual(revivedcat1, None)
+
+            self.assertTrue(revivedcat1 is not None)
+
             paul.delete(self.db)
             revivedcat2 = self.db.get(key)
-            self.assertEqual(revivedcat2, None)
+            self.assertTrue(revivedcat2 is None)
 
 
         def test_delete_dog_refs(self):
@@ -218,10 +228,10 @@ class BasicBaseTestCases:
             dog2 = Dog(name="fly", owner_id=paul.key)
             dog2.save(self.db)
             reviveddog1 = self.db.get(key)
-            self.assertNotEqual(reviveddog1, None)
+            self.assertTrue(reviveddog1 is not None)
             paul.delete(self.db)
             reviveddog2 = self.db.get(key)
-            self.assertNotEqual(reviveddog2, None)
+            self.assertTrue(reviveddog2 is not None)
 
 
         def test_update_cat(self):
@@ -305,6 +315,6 @@ class BasicBaseTestCases:
 
             def duff_import():
                 from fam.tests.models import test02
-                print test02
+                print(test02)
 
             self.assertRaises(FamError, duff_import)

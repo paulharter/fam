@@ -68,6 +68,6 @@ class FieldAttributeBaseTests:
 
             def duff_import():
                 from fam.tests.models import test03
-                print test03
+                print(test03)
 
             self.assertRaises(FamError, duff_import)

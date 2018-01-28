@@ -46,8 +46,8 @@ class BaseDatabase(object):
     #     views = {}
     #
     #
-    #     for type_name, cls in namespace.iteritems():
-    #         for field_name, field in cls.cls_fields.iteritems():
+    #     for type_name, cls in namespace.items():
+    #         for field_name, field in cls.cls_fields.items():
     #             if isinstance(field, ReferenceFrom):
     #                 view_key = "%s_%s" % (type_name, field_name)
     #                 # if view_key in ["person_dogs", "person_animals"]:

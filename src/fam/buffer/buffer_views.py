@@ -39,14 +39,14 @@ class FamWriteBufferViews(object):
         values = view_index.get(k)
         if values is None:
             return []
-        return [item[1] for item in values.iteritems()]
+        return [item[1] for item in values.items()]
 
 
     def index_obj(self, obj):
 
         self.obj = obj
         doc = obj.as_dict()
-        for view_name, view in self.views.iteritems():
+        for view_name, view in self.views.items():
             self.view_name = view_name
             view(doc)
 
@@ -132,7 +132,7 @@ class FamWriteBufferViews(object):
         self._add_design(self.js_context, key, doc)
 
         # ## relational indexes
-        for namespace_name, namespace in self.mapper.namespaces.iteritems():
+        for namespace_name, namespace in self.mapper.namespaces.items():
             view_namespace = self._clean_name(namespace_name)
             key = "_design/%s" % view_namespace
             doc = self.mapper.get_design(namespace, namespace_name, self.FOREIGN_KEY_MAP_STRING)
@@ -152,7 +152,7 @@ class FamWriteBufferViews(object):
 
         design_name = key[len("_design/"):]
 
-        for view_name, view in doc["views"].iteritems():
+        for view_name, view in doc["views"].items():
             name = "%s_%s" % (design_name, view_name)
             name = self._clean_name(name)
             code = "var %s = %s" % (name, view["map"])

@@ -47,7 +47,7 @@ class SyncGatewayWrapper(CouchDBWrapper):
 
         url = "%s/%s" % (db_url, db_name)
 
-        print url
+        print(url)
         rsp = self.session.get(url)
 
         self.cookies = {}
@@ -164,7 +164,7 @@ class SyncGatewayWrapper(CouchDBWrapper):
     def get_design(self, key):
 
         url = "%s/%s/%s" % (self.db_url, self.db_name, key)
-        print url
+
         rsp = self.session.get(url)
 
         if rsp.status_code == 200:
@@ -183,8 +183,8 @@ class SyncGatewayWrapper(CouchDBWrapper):
         new_view_names = new_doc["views"].keys()
         existing_view_names = existing_doc["views"].keys()
 
-        # print "new_view_names: ", new_view_names
-        # print "existing_view_names: ", existing_view_names
+        # print("new_view_names: ", new_view_names)
+        # print("existing_view_names: ", existing_view_names)
 
         if set(new_view_names) != set(existing_view_names):
             # print "names dont match"
@@ -195,7 +195,6 @@ class SyncGatewayWrapper(CouchDBWrapper):
             existing_view_function = existing_doc["views"][view_name]["map"]
             index = existing_view_function.find(new_view_function)
             if index == -1:
-                # print "functions dont match"
                 return False
 
         return True
@@ -209,11 +208,10 @@ class SyncGatewayWrapper(CouchDBWrapper):
         existing = self.get_design(key)
 
         if existing is None or not self._new_matches_existing(doc, existing):
-            print "************  updating design doc %s ************" % key
-            print "new_design: ", doc
-            self._set(key, doc)
+            print("************  updating design doc %s ************" % key)
+            self._set(key, doc, backoff=True)
         else:
-            print "************  design doc %s up to date **********" % key
+            print("************  design doc %s up to date **********" % key)
 
 
     def _raw_design_doc(self):

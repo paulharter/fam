@@ -1,6 +1,8 @@
 import requests
 import time
 
+from fam.exceptions import FamResourceConflict
+
 def http_backoff(func):
 
     def func_wrapper(*args, **kwargs):
@@ -13,7 +15,7 @@ def http_backoff(func):
             while not connected:
                 try:
                     return func(*args, **kwargs)
-                except requests.exceptions.ConnectionError as e:
+                except (requests.exceptions.ConnectionError, FamResourceConflict) as e:
                     counter += 1
                     if counter < 8:
                         nap = 2 ** counter
@@ -21,7 +23,7 @@ def http_backoff(func):
                          Has failed {} times.
                          Will try again after {} seconds backoff
                          Origional Error: {}""".format(counter, nap, e)
-                        print msg
+                        print(msg)
                         time.sleep(nap)
                     else:
                         raise e

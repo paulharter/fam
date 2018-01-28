@@ -48,7 +48,13 @@ class CacheTests(unittest.TestCase):
         paul = Person(name="paul")
         dog = Dog(name="woofer", owner=paul)
         views.index_obj(dog)
-        self.assertEqual(views.indexes.keys(), ['glowinthedark_co_uk_test_person_animals', 'glowinthedark_co_uk_test_person_dogs', 'raw_all', 'glowinthedark_co_uk_test_dog_kennel_club_membership'])
+
+        print("keys: ", views.indexes.keys())
+
+        self.assertEqual(set(views.indexes.keys()), {'glowinthedark_co_uk_test_person_animals',
+                                                'glowinthedark_co_uk_test_person_dogs',
+                                                'raw_all',
+                                                'glowinthedark_co_uk_test_dog_kennel_club_membership'})
 
 
 

@@ -1,5 +1,6 @@
 from .blud import StringField
 import pytz
+from fractions import Fraction
 
 import datetime
 
@@ -30,3 +31,16 @@ class DateTimeField(StringField):
             dt = datetime.datetime.strptime(as_json, '%Y-%m-%dT%H:%M:%SZ')
         dt = dt.replace(tzinfo=pytz.utc)
         return dt
+
+
+class RationalNumberField(StringField):
+    pattern = """^[1-9][0-9]*/[1-9][0-9]*$"""
+
+    @staticmethod
+    def to_json(fraction):
+        return "%s/%s" % (fraction.numerator, fraction.denominator)
+
+    @staticmethod
+    def from_json(as_json):
+        numerator, denominator = as_json.split("/")
+        return Fraction(numerator=int(numerator), denominator=int(denominator))

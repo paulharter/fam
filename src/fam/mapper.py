@@ -58,18 +58,22 @@ class ClassMapper(object):
     def _add_modules(self, modules):
         for module in modules:
             classes = []
-            for k, obj in module.__dict__.iteritems():
+            for k, obj in module.__dict__.items():
                 if inspect.isclass(obj):
                     if issubclass(obj, GenericObject):
                         if obj != GenericObject:
                             if not k.startswith("_"):
                                 classes.append(obj)
+
+
+
+
             self._add_classes(classes)
 
 
     def __iter__(self):
-        for name_space_name, name_space_classes in self.namespaces.iteritems():
-            for cls_name, cls in name_space_classes.iteritems():
+        for name_space_name, name_space_classes in self.namespaces.items():
+            for cls_name, cls in name_space_classes.items():
                 yield cls
 
 
@@ -80,11 +84,11 @@ class ClassMapper(object):
     def _work_out_sub_classes(self):
         # for each class add their subclasses type names to a lookup table keyed by namespace and classname
         # only works within a given namespace
-        for namespace_name, namespace in self.namespaces.iteritems():
-            for class_name_super, cls_super in namespace.iteritems():
+        for namespace_name, namespace in self.namespaces.items():
+            for class_name_super, cls_super in namespace.items():
                 subclasses = []
                 self.sub_class_lookup[(namespace_name, class_name_super)] = subclasses
-                for class_name_sub, cls_sub in namespace.iteritems():
+                for class_name_sub, cls_sub in namespace.items():
                     if issubclass(cls_sub, cls_super):
                         subclasses.append(class_name_sub)
 
@@ -92,12 +96,14 @@ class ClassMapper(object):
     def _add_classes(self, classes):
 
         for cls in classes:
+
             namespace_name = cls.namespace
+
             type_name = cls.type
             # gathers up information that gets added to the sync_gateway function
             if cls.sg_allow_public_write:
                 self.allow_public_write_types.append(type_name)
-            for field_name, field in cls.fields.iteritems():
+            for field_name, field in cls.fields.items():
                 if field.immutable:
                     self._add_immutable_field(type_name, field_name)
             namespace = self.namespaces.get(namespace_name)
@@ -160,8 +166,8 @@ class ClassMapper(object):
     def get_design(self, namespace, namespace_name, foreign_key_str):
 
         views = {}
-        for type_name, cls in namespace.iteritems():
-            for field_name, field in cls.cls_fields.iteritems():
+        for type_name, cls in namespace.items():
+            for field_name, field in cls.cls_fields.items():
                 if isinstance(field, ReferenceFrom):
                     view_key = "%s_%s" % (type_name, field_name)
                     # if view_key in ["person_dogs", "person_animals"]:

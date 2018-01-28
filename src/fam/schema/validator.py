@@ -28,7 +28,7 @@ class ModelValidator(object):
 
     def iter_schemas(self):
 
-        for k, schema in self.ref_schemas.iteritems():
+        for k, schema in self.ref_schemas.items():
             namespace = k[0]
             typename = k[1]
             yield namespace, typename, schema
@@ -44,7 +44,7 @@ class ModelValidator(object):
     def _add_modules(self, modules):
         for module in modules:
             classes = []
-            for k, obj in module.__dict__.iteritems():
+            for k, obj in module.__dict__.items():
                 if inspect.isclass(obj):
                     if issubclass(obj, GenericObject):
                         if obj != GenericObject:
@@ -100,9 +100,10 @@ class ModelValidator(object):
 
         return schema
 
-
+        return ''.join(diff)
 
     def _schemata_are_equal(self, schema_a, schema_b):
+
 
         if schema_b is None:
             return False

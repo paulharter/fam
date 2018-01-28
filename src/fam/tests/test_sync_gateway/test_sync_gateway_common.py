@@ -21,7 +21,7 @@ def iterSyncGatewayTests():
         def setUp(self):
 
             cmd = "{} -log=* -url walrus: ".format(SYNC_GATEWAY_PATH)
-            print cmd
+            # print cmd
 
             time.sleep(0.25)
             self.gateway = subprocess.Popen(cmd, shell=True)

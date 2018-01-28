@@ -56,7 +56,7 @@ def number_of_buckets(couchbase_url, user_name, password):
 
     buckets = rsp.json()
 
-    print buckets
+    print(buckets)
     return len(buckets)
 
 

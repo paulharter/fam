@@ -7,7 +7,7 @@ It is far from complete and just does the things I needed at the time
 
 try:
     from requests import *
-except ImportError, e:
+except ImportError as e:
     import urllib
     import json
     from google.appengine.api import urlfetch

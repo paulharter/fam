@@ -9,8 +9,8 @@ THIS_DIR = os.path.dirname(__file__)
 def _access_from_mapper(mapper):
 
     types = []
-    for ns_name, ns in mapper.namespaces.iteritems():
-        for class_name, cls in ns.iteritems():
+    for ns_name, ns in mapper.namespaces.items():
+        for class_name, cls in ns.items():
             if cls.grants_access:
                 types.append(class_name)
     return types
@@ -26,8 +26,8 @@ def _requirements_from_mapper(mapper):
                     "update": update_reqs,
                     "delete": delete_reqs}
 
-    for ns_name, ns in mapper.namespaces.iteritems():
-        for class_name, cls in ns.iteritems():
+    for ns_name, ns in mapper.namespaces.items():
+        for class_name, cls in ns.items():
             if cls.acl is not None:
                 class_create_req = [r for r in cls.acl if isinstance(r, CreateRequirement)]
                 if len(class_create_req) == 0:

@@ -48,7 +48,7 @@ class testPermissions(unittest.TestCase):
         def start_gateway(self):
 
             cmd = "{} -log=* -url walrus: ".format(SYNC_GATEWAY_PATH)
-            print cmd
+            # print cmd
 
             time.sleep(0.25)
             self.gateway = subprocess.Popen(cmd, shell=True)
@@ -94,7 +94,7 @@ class testPermissions(unittest.TestCase):
         def test_get_user(self):
 
             user_info = self.admin_db.user("paul")
-            print user_info
+            # print user_info
             self.assertTrue(user_info != None)
             roles = user_info["admin_roles"]
 
@@ -104,13 +104,13 @@ class testPermissions(unittest.TestCase):
         def test_create_role(self):
 
             role_info = self.admin_db.role("new_role")
-            print "role: ",  role_info
+            # print "role: ",  role_info
             self.assertTrue(role_info == None)
 
             self.admin_db.ensure_role("new_role")
 
             role_info = self.admin_db.role("new_role")
-            print "role: ",  role_info
+            # print "role: ",  role_info
             self.assertTrue(role_info != None)
 
 

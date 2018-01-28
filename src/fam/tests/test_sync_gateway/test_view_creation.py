@@ -49,7 +49,7 @@ class testPermissions(unittest.TestCase):
         def start_gateway(self):
 
             cmd = "{} -log=* -url walrus: ".format(SYNC_GATEWAY_PATH)
-            print cmd
+            # print cmd
 
             time.sleep(0.25)
             self.gateway = subprocess.Popen(cmd, shell=True)
@@ -94,7 +94,7 @@ class testPermissions(unittest.TestCase):
 
         def test_ensure_designs(self):
 
-            for namespace_name, namespace in self.admin_db.mapper.namespaces.iteritems():
+            for namespace_name, namespace in self.admin_db.mapper.namespaces.items():
                 view_namespace = namespace_name.replace("/", "_")
                 key = "_design/%s" % view_namespace
                 doc = self.mapper.get_design(namespace, namespace_name, self.admin_db.FOREIGN_KEY_MAP_STRING)
@@ -106,7 +106,7 @@ class testPermissions(unittest.TestCase):
             # Add another class
             self.admin_db.mapper._add_classes([Person])
 
-            for namespace_name, namespace in self.admin_db.mapper.namespaces.iteritems():
+            for namespace_name, namespace in self.admin_db.mapper.namespaces.items():
                 view_namespace = namespace_name.replace("/", "_")
                 key = "_design/%s" % view_namespace
                 doc = self.mapper.get_design(namespace, namespace_name, self.admin_db.FOREIGN_KEY_MAP_STRING)

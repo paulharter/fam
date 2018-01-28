@@ -74,12 +74,12 @@ class CouchbaseWrapper(BaseDatabase):
         if self.read_only:
             raise FamWriteError("You can't write to this database")
         try:
-            print "rev", rev
+            print("rev", rev)
             if rev is not None:
                 result = self.bucket.upsert(key, value, cas=rev)
             else:
                 result = self.bucket.upsert(key, value)
-            print "result", result
+            print("result", result)
             return ResultWrapper(key, result.cas, value)
         except KeyExistsError as e:
             raise FamResourceConflict("key alreday exists in couchbase: %s - %s" % (key, e))
