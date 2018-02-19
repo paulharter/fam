@@ -185,7 +185,7 @@ class ClassMapper(object):
         return design
 
 
-    def _get_fk_map(self, class_name, namespace, ref_to_field_name, foreign_key_str):
+    def get_all_subclass_names(self, namespace, class_name):
 
         if isinstance(class_name, list):
             class_names = class_name
@@ -196,6 +196,14 @@ class ClassMapper(object):
         for name in class_names:
             sub_classes = set(self.get_sub_class_names(namespace, name))
             all_sub_class_names = all_sub_class_names.union(sub_classes)
+
+        return all_sub_class_names
+
+
+
+    def _get_fk_map(self, class_name, namespace, ref_to_field_name, foreign_key_str):
+
+        all_sub_class_names = self.get_all_subclass_names(namespace, class_name)
 
         arrayStr = '["%s"]' % '", "'.join(all_sub_class_names)
         return foreign_key_str % (arrayStr, namespace, ref_to_field_name)

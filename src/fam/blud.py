@@ -228,7 +228,9 @@ class FamObject(object, metaclass=GenericMetaclass):
 
     @classmethod
     def all(cls, db):
-        return cls._query_view(db, "raw/all", cls.type)
+
+        return db.get_all_type(cls.namespace, cls.type)
+
 
 
     def _get_namespace(self):
@@ -263,21 +265,20 @@ class FamObject(object, metaclass=GenericMetaclass):
                 this_value = getattr(self, field_name)
                 if this_value is None:
                     continue
-                view_namespace = self.namespace.replace("/", "_")
-                type_name = self.__class__._type_with_ref(field_name)
-                view_name = "%s/%s_%s" % (view_namespace, type_name, field_name)
-                all_existing = self._query_view(self._db, view_name, this_value)
-                all_non_null = [o for o in all_existing if getattr(o, field_name, None)]
 
-                how_many_existing = len(all_non_null)
-
-                if how_many_existing > 1:
-                    raise FamUniqueError("more than {} with a {} of value {}".format(type_name, field_name, this_value))
-                elif how_many_existing == 1:
-                    if all_non_null[0].key != self.key:
-                        raise FamUniqueError("You cannot add a {} with {} set to {} as one already exists".format(type_name, field_name,  this_value))
-                else:
-                    pass
+                # type_name = self.__class__._type_with_ref(field_name)
+                # all_existing = self._db.get_with_value(self.namespace, type_name, field_name, this_value)
+                # all_non_null = [o for o in all_existing if getattr(o, field_name, None)]
+                #
+                # how_many_existing = len(all_non_null)
+                #
+                # if how_many_existing > 1:
+                #     raise FamUniqueError("more than {} with a {} of value {}".format(type_name, field_name, this_value))
+                # elif how_many_existing == 1:
+                #     if all_non_null[0].key != self.key:
+                #         raise FamUniqueError("You cannot add a {} with {} set to {} as one already exists".format(type_name, field_name,  this_value))
+                # else:
+                #     pass
 
     @classmethod
     def get_unique_instance(cls, db, field_name, value):
@@ -289,22 +290,45 @@ class FamObject(object, metaclass=GenericMetaclass):
         if not field.unique:
             return None
 
-        view_namespace = cls.namespace.replace("/", "_")
-        type_name = cls._type_with_ref(field_name)
-        view_name = "%s/%s_%s" % (view_namespace, type_name, field_name)
+        return None
 
-        all_existing = db.query_view(view_name, key=value)
+        # view_namespace = cls.namespace.replace("/", "_")
+        # type_name = cls._type_with_ref(field_name)
+        # view_name = "%s/%s_%s" % (view_namespace, type_name, field_name)
+        #
+        # all_existing = db.query_view(view_name, key=value)
+        #
+        # all_non_null = [o for o in all_existing if getattr(o, field_name, None)]
+        # how_many_existing = len(all_non_null)
+        #
+        # if how_many_existing > 1:
+        #     raise FamUniqueError("more than {} with a {} of value {}".format(type_name, field_name, value))
+        # elif how_many_existing == 1:
+        #     return all_non_null[0]
+        # else:
+        #     return None
 
 
-        all_non_null = [o for o in all_existing if getattr(o, field_name, None)]
-        how_many_existing = len(all_non_null)
 
-        if how_many_existing > 1:
-            raise FamUniqueError("more than {} with a {} of value {}".format(type_name, field_name, value))
-        elif how_many_existing == 1:
-            return all_non_null[0]
-        else:
-            return None
+
+
+
+
+
+
+
+
+
+    @classmethod
+    def create(cls, db, key=None, **kwargs):
+        obj = cls(key=key, **kwargs)
+        obj._check_uniqueness()
+        obj._pre_save_new_cb(db)
+        created = db._set(obj.key, obj._properties)
+        if obj.use_rev and hasattr(created, "rev") and created.rev is not None:
+            obj.rev = created.rev
+        obj._post_save_new_cb(db)
+        return obj
 
 
     def save(self, db):
@@ -312,7 +336,7 @@ class FamObject(object, metaclass=GenericMetaclass):
 
         # result = db._get(self.key)
 
-        existing = FamObject.get(db, self.key)
+        existing = FamObject.get(db, self.key, class_name=self.type)
 
         if existing:
             # doc = result.value
@@ -355,7 +379,7 @@ class FamObject(object, metaclass=GenericMetaclass):
 
     def delete(self, db):
         self._pre_delete_cb(db)
-        db._delete(self.key, self.rev)
+        db._delete(self.key, self.rev, self.type)
         self._post_delete_cb(db)
         self.delete_references(db)
         # db.sync_up()
@@ -368,7 +392,7 @@ class FamObject(object, metaclass=GenericMetaclass):
 
 
     def delete_references(self, db):
-
+        # print("delete_references in ")
         for field_name, field in self.__class__.fields.items():
             if isinstance(field, ReferenceTo):
                 if field.cascade_delete:
@@ -380,12 +404,10 @@ class FamObject(object, metaclass=GenericMetaclass):
                             obj.delete(db)
                     else:
                         raise Exception("should have _id")
-            if isinstance(field, ReferenceFrom):
 
-                view_namespace = self.namespace.replace("/", "_")
+            if isinstance(field, ReferenceFrom):
                 type_name = self.__class__._type_with_ref(field_name)
-                view_name = "%s/%s_%s" % (view_namespace, type_name, field_name)
-                objs = self._query_view(self._db, view_name, self.key)
+                objs = self._db.get_refs_from(self.namespace, type_name, field_name, self.key, field)
 
                 if field.cascade_delete:
                     for obj in objs:
@@ -444,14 +466,16 @@ class FamObject(object, metaclass=GenericMetaclass):
 
 
     @classmethod
-    def get(cls, db, key):
+    def get(cls, db, key, class_name=None):
         # ugly thing to get around cache double dispatch
+
+        cn = class_name if class_name is not None else cls.__name__.lower()
 
         if not hasattr(db, "_get"):
             #this will call back here but using the correct db
-            return db.get(key)
+            return db.get(key, class_name=cn)
 
-        result = db._get(key)
+        result = db._get(key, class_name=cn)
         if result is None:
             return None
         doc = result.value
@@ -526,9 +550,16 @@ class FamObject(object, metaclass=GenericMetaclass):
         return [GenericObject._from_doc(db, row.key, None, row.value) for row in rows]
 
 
+
+
     @classmethod
     def view(cls, db, view_name, **kwargs):
-        return cls.view_iterator(db, view_name, **kwargs)
+        if db.database_type == "sync_gateway":
+            rows = db.view(view_name, **kwargs)
+            return [GenericObject._from_doc(db, row.key, row.rev, row.value) for row in rows]
+        else:
+            return cls.view_iterator(db, view_name, **kwargs)
+
 
     @classmethod
     def view_iterator(cls, db, view_name, **kwargs):
@@ -587,17 +618,18 @@ class FamObject(object, metaclass=GenericMetaclass):
 
         return None
 
+
+
     def __getattr__(self, name):
         field = self.__class__.fields.get(name)
         if isinstance(field, ReferenceFrom):
             if self._db is None:
                 traceback.print_stack()
                 raise Exception("no db")
-            view_namespace = self.namespace.replace("/", "_")
             # look at super class gypes to find clas with ref
             type_name = self.__class__._type_with_ref(name)
-            view_name = "%s/%s_%s" % (view_namespace, type_name, name)
-            return self._db.query_view(view_name, key=self.key)
+            return self._db.get_refs_from(self.namespace, type_name, name, self.key, field)
+
 
         if "%s_id" % name in self.properties.keys():
             id_name = "%s_id" % name
@@ -607,8 +639,7 @@ class FamObject(object, metaclass=GenericMetaclass):
                     traceback.print_stack()
                     raise Exception("no db")
                 # return GenericObject.get(self._db, self._properties[id_name])
-                return self._db.get(self._properties[id_name])
-
+                return self._db.get(self._properties[id_name], ref.refcls)
 
         if name in self._properties.keys():
             # print("found in properties", name)
@@ -630,12 +661,16 @@ class FamObject(object, metaclass=GenericMetaclass):
             raise AttributeError("Not found %s" % name)
 
 
-    def _update_property(self, key, value):
+    def _update_property(self, key, value, field):
         if value is None:
             if key in self._properties:
                 del self._properties[key]
         else:
             self._properties[key] = value
+
+        if "_db" in self.__dict__:
+            if hasattr(self._db, "update"):
+                self._db.update(self.type, self.key, key, value, field)
 
 
     def __setattr__(self, name, value):
@@ -644,12 +679,13 @@ class FamObject(object, metaclass=GenericMetaclass):
             self.__dict__[name] = value
             return
 
+        field = self.fields.get(name)
+
         alias = "%s_id" % name
         if alias in self.fields.keys():
-            self._update_property(alias, value.key)
+            self._update_property(alias, value.key, field)
 
         elif name in self.fields or name in ("type", "namespace", "schema") or self.additional_properties :
-            field = self.fields.get(name)
             if field is not None:
                 if field.immutable and name in self._properties:
                     raise FamImmutableError("You cannot change the immutable property %s" % name)
@@ -657,13 +693,13 @@ class FamObject(object, metaclass=GenericMetaclass):
                     value = field.cls.from_json(value)
 
                 if isinstance(field, ListField) and field.item_cls is not None:
-
                     #cast the items in the list into a certain class
                     value = [field.item_cls.from_json(i) for i in value]
 
                 if issubclass(field.__class__, StringField) and not (isinstance(value, str) or value is None):
                     value = field.to_json(value)
-            self._update_property(name, value)
+
+            self._update_property(name, value, field)
         elif name.startswith("_"):
             self.__dict__[name] = value
             return

@@ -1,14 +1,14 @@
 from setuptools import setup, find_packages
 
 setup(name='fam',
-    version='1.1.3',
+    version='2.0.0',
     description="Simple Python ORM for CouchDB, and Sync Gateway",
     url="https://github.com/paulharter/fam",
     classifiers=[
         'Development Status :: 4 - Beta',
         'Natural Language :: English',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.6',
         'License :: OSI Approved :: MIT License'
     ],
     author='Paul Harter',

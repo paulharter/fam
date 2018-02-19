@@ -114,6 +114,7 @@ class CouchDBWrapper(BaseDatabase):
     # "%s/%s/_design/%s/_view/%s?stale=false&key=\"%s\""
 
     database_type = "couchdb"
+    supports_skip = True
 
     def __init__(self, mapper,
                  db_url,
@@ -192,7 +193,7 @@ class CouchDBWrapper(BaseDatabase):
         pass
 
     @auth
-    def _get(self, key):
+    def _get(self, key, class_name=None):
         url = "%s/%s/%s" % (self.db_url, self.db_name, key)
         # print "_get: ", url
         rsp = self.session.get(url)
@@ -204,6 +205,22 @@ class CouchDBWrapper(BaseDatabase):
         if rsp.status_code == 401:
             raise FamDbAuthException(" %s %s" % (rsp.status_code, rsp.text))
         raise Exception("Unknown Error getting cb doc: %s %s" % (rsp.status_code, rsp.text))
+
+
+    def get_refs_from(self, namespace, type_name, name, key, field):
+        view_namespace = namespace.replace("/", "_")
+        view_name = "%s/%s_%s" % (view_namespace, type_name, name)
+        return self.query_view(view_name, key=key)
+
+
+    def get_with_value(self, namespace, type_name, field_name, value):
+        view_namespace = namespace.replace("/", "_")
+        view_name = "%s/%s_%s" % (view_namespace, type_name, field_name)
+        return self.query_view(view_name, key=value)
+
+    def get_all_type(self, namespace, type_name):
+        return self.query_view("raw/all", key=type_name)
+
 
     @http_backoff
     def _set(self, key, value, rev=None, backoff=False):
@@ -241,7 +258,7 @@ class CouchDBWrapper(BaseDatabase):
             raise FamResourceConflict("Unknown Error setting CBLite doc: %s %s" % (rsp.status_code, rsp.text))
 
 
-    def _delete(self, key, rev):
+    def _delete(self, key, rev, classname):
 
         if self.read_only:
             raise Exception("This db is read only")
@@ -267,6 +284,7 @@ class CouchDBWrapper(BaseDatabase):
         design_doc_id, view_name = name.split("/")
 
         url = self.VIEW_URL % (self.db_url, self.db_name, design_doc_id, view_name)
+
         rsp = self.session.get(url, params=self._encode_for_view_query(kwargs))
 
         if rsp.status_code == 200:
@@ -456,6 +474,7 @@ class CouchDBWrapper(BaseDatabase):
             self._set(key, doc, rev=None if existing is None else existing.rev)
 
 
+
     def _raw_design_doc(self):
 
         design_doc = {
@@ -467,7 +486,6 @@ class CouchDBWrapper(BaseDatabase):
         }
 
         return design_doc
-
 
     def update_designs(self):
 

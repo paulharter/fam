@@ -32,6 +32,10 @@ class FamWriteBuffer(object):
             self.store[thing.key] = thing
         self.to_be_saved.add(key)
 
+    def get_refs_from(self, namespace, type_name, name, key, field):
+        view_namespace = namespace.replace("/", "_")
+        view_name = "%s/%s_%s" % (view_namespace, type_name, name)
+        return self.query_view(view_name, key=key)
 
     def query_view(self, view_name, **kwargs):
         db_objs = self.db.query_view(view_name, **kwargs)

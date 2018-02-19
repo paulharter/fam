@@ -1,5 +1,6 @@
 from .couchdb import CouchDBWrapper
 from .sync_gateway import SyncGatewayWrapper
+from .firestore import FirestoreWrapper
 try:
     from fam.database.couchbase_server import CouchbaseWrapper
 except Exception as e:

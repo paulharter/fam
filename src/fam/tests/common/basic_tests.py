@@ -157,7 +157,6 @@ class BasicBaseTestCases:
             jack.name = "jack"
             jack.save(self.db)
 
-
             self.assertEqual(list(paul.dogs)[0], jack)
 
 
@@ -216,7 +215,8 @@ class BasicBaseTestCases:
 
             paul.delete(self.db)
             revivedcat2 = self.db.get(key)
-            self.assertTrue(revivedcat2 is None)
+            print("revivedcat2:" , revivedcat2)
+            self.assertTrue(revivedcat2 is None, "revivedcat2: %s" % revivedcat2)
 
 
         def test_delete_dog_refs(self):

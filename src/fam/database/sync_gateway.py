@@ -25,6 +25,7 @@ class SyncGatewayWrapper(CouchDBWrapper):
 }'''
 
     database_type = "sync_gateway"
+    supports_skip = False
 
     def __init__(self, mapper, db_url, db_name,
                  auth_url=None,

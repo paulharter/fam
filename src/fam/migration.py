@@ -23,5 +23,3 @@ class FamMigration(object):
 def migrate(db, obj, migrations, ts=None):
 
     dst = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ") if ts is None else ts
-
-    
