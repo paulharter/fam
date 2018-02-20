@@ -3,7 +3,9 @@
 .idea
 *.egg-info
 
+
 /build
 /dist
 /src/fam/tests/test_couchdb/data/
+src/fam/tests/test_firestore/config_local.py
 

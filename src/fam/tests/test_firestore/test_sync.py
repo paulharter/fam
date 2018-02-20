@@ -3,9 +3,6 @@ import json
 import time
 import os
 
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
 
 from fam.exceptions import *
 from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell, Monkey, Monarch, NAMESPACE

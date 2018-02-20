@@ -13,6 +13,8 @@ from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell
 from fam.database import FirestoreWrapper
 from fam.mapper import ClassMapper
 
+from.config_local import *
+
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))))
 
 
@@ -36,9 +38,9 @@ class TestDB(unittest.TestCase):
 
         self.db = FirestoreWrapper(mapper,
                                    None,
-                                   project_id="earth-rover-land",
+                                   project_id=PROJECT_NAME,
                                    custom_token=custom_token.decode("utf-8"),
-                                   api_key="AIzaSyAeMKfSUjglQGHSDpI8u15iZNmIvx9y_Ak"
+                                   api_key=API_KEY
                                    )
 
 
