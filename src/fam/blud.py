@@ -328,6 +328,7 @@ class FamObject(object, metaclass=GenericMetaclass):
         if obj.use_rev and hasattr(created, "rev") and created.rev is not None:
             obj.rev = created.rev
         obj._post_save_new_cb(db)
+        obj._db = db
         return obj
 
 
@@ -669,8 +670,10 @@ class FamObject(object, metaclass=GenericMetaclass):
             self._properties[key] = value
 
         if "_db" in self.__dict__:
+            # print("has db", self.__dict__)
             if hasattr(self._db, "update"):
                 self._db.update(self.type, self.key, key, value, field)
+
 
 
     def __setattr__(self, name, value):

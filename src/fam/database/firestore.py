@@ -35,12 +35,13 @@ delete(item)
 def refresh_check(func):
     def func_wrapper(instance, *args, **kwargs):
         now = time.time()
-        if instance.expires < now + 10:
+        if instance.expires is not None and instance.expires < now + 10:
             instance.refresh()
         try:
             return func(instance, *args, **kwargs)
         except _Rendezvous as e:
-            instance.refresh()
+            if instance.expires is not None:
+                instance.refresh()
             return func(instance, *args, **kwargs)
     return func_wrapper
 
@@ -219,6 +220,7 @@ class FirestoreWrapper(BaseDatabase):
         coll_ref = self.db.collection(type_name)
         self._delete_collection(coll_ref, 10)
 
+
     def set_unique_doc(self, type_name, key, field_name, value):
 
         doc_ref = self.db.collection(type_name).document(key)
@@ -246,8 +248,30 @@ class FirestoreWrapper(BaseDatabase):
             existing_unique_doc_ref.delete()
 
 
+    def query_snapshots(self, firebase_query, batch_size=100):
+        return self.query_snapshots_iterator(firebase_query, batch_size=batch_size)
+
+    def query_snapshots_iterator(self, firebase_query, batch_size):
+
+        skip = 0
+        query = firebase_query.order_by(u'_id').limit(batch_size)
+
+        while True:
+            docs = query.get()
+            docs_list = list(docs)
+            if len(docs_list) == 0:
+                break
+            for doc_snapshot in docs_list:
+                yield doc_snapshot
+            last_doc = docs_list[-1]
+            last_id = last_doc.to_dict()["_id"]
+            query = firebase_query.order_by(u'_id').start_after({
+                u'_id': last_id
+            }).limit(batch_size)
+
     @refresh_check
     def update(self, type_name, key, field_name, value, field):
+        print(type_name, key, field_name, value, field)
 
         doc_ref = self.db.collection(type_name).document(key)
 

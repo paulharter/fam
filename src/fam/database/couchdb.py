@@ -320,16 +320,12 @@ class CouchDBWrapper(BaseDatabase):
                     params["timeout"] = 60000
                 else:
                     params["timeout"] = timeout
-        # rsp = self.session.get(url, params=params, cookies=self.cookies)
-        rsp = self.session.get(url, cookies=self.cookies)
+        rsp = self.session.get(url, params=params, cookies=self.cookies)
+        # rsp = self.session.get(url, cookies=self.cookies)
         if rsp.status_code == 200:
-
             results = rsp.json()
             last_seq = results.get("last_seq")
             rows = results.get("results")
-
-            print("*********  200", last_seq)
-
             return last_seq, [ResultWrapper.from_couchdb_json(row["doc"]) for row in rows if "doc" in row.keys() and row["doc"].get(TYPE_STR) is not None]
         if rsp.status_code == 404:
             return None, None
