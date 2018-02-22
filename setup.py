@@ -1,5 +1,5 @@
 import os
-
+import atexit
 from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.install import install
@@ -21,18 +21,11 @@ def delete_old_slimit_files():
             os.remove(file_path)
 
 
-class PostDevelopCommand(develop):
-    """Post-installation for development mode."""
-    def finalize_options(self):
-        delete_old_slimit_files()
-        develop.finalize_options(self)
+class new_install(install):
+    def __init__(self, *args, **kwargs):
+        super(new_install, self).__init__(*args, **kwargs)
+        atexit.register(delete_old_slimit_files)
 
-
-class PostInstallCommand(install):
-    """Post-installation for installation mode."""
-    def finalize_options(self):
-        delete_old_slimit_files()
-        install.finalize_options(self)
 
 
 setup(name='fam',
@@ -55,8 +48,6 @@ setup(name='fam',
     package_dir={'': 'src'},
     include_package_data=True,
     zip_safe=False,
-    cmdclass={
-      'develop': PostDevelopCommand,
-      'install': PostInstallCommand,
-    }
+    cmdclass={'install': new_install}
 )
+
