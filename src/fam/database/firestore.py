@@ -98,10 +98,8 @@ class FirestoreWrapper(BaseDatabase):
             except ValueError as e:
                 print("already initaialised")
         else:
-            pass
             # in app engine environment
-            # just do nothing
-            # firebase_admin.initialize_app()
+            firebase_admin.initialize_app()
 
         self.db = firestore.client()
 
