@@ -21,11 +21,22 @@ def delete_old_slimit_files():
             os.remove(file_path)
 
 
-class new_install(install):
-    def __init__(self, *args, **kwargs):
-        super(new_install, self).__init__(*args, **kwargs)
-        atexit.register(delete_old_slimit_files)
+class PostDevelopCommand(develop):
+    """Post-installation for development mode."""
+    def run(self):
+        def _post_install():
+            delete_old_slimit_files()
+        atexit.register(_post_install)
+        develop.run(self)
 
+
+class PostInstallCommand(install):
+    """Post-installation for installation mode."""
+    def run(self):
+        def _post_install():
+            delete_old_slimit_files()
+        atexit.register(_post_install)
+        install.run(self)
 
 
 setup(name='fam',
@@ -48,6 +59,8 @@ setup(name='fam',
     package_dir={'': 'src'},
     include_package_data=True,
     zip_safe=False,
-    cmdclass={'install': new_install}
+    cmdclass={
+      'develop': PostDevelopCommand,
+      'install': PostInstallCommand,
+    }
 )
-
