@@ -23,16 +23,16 @@ def delete_old_slimit_files():
 
 class PostDevelopCommand(develop):
     """Post-installation for development mode."""
-    def run(self):
+    def finalize_options(self):
         delete_old_slimit_files()
-        develop.run(self)
+        develop.finalize_options(self)
 
 
-class PostInstallCommand(install):
+class finalize_options(install):
     """Post-installation for installation mode."""
     def run(self):
         delete_old_slimit_files()
-        install.run(self)
+        install.finalize_options(self)
 
 
 setup(name='fam',
