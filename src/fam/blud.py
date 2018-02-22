@@ -20,7 +20,7 @@ __all__ = [
     "ObjectField",
     "ReferenceTo",
     "ReferenceFrom",
-    "GenericObject"
+    "GenericObject",
     "FamObject"
 ]
 

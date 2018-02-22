@@ -51,7 +51,7 @@ class PostInstallCommand(install):
 
 
 setup(name='fam',
-    version='2.0.0',
+    version='2.0.1',
     description="Simple Python ORM for CouchDB, and Sync Gateway",
     url="https://github.com/paulharter/fam",
     classifiers=[
