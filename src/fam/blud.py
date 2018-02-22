@@ -21,6 +21,7 @@ __all__ = [
     "ReferenceTo",
     "ReferenceFrom",
     "GenericObject"
+    "FamObject"
 ]
 
 class Field(object):
