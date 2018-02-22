@@ -28,9 +28,9 @@ class PostDevelopCommand(develop):
         develop.finalize_options(self)
 
 
-class finalize_options(install):
+class PostInstallCommand(install):
     """Post-installation for installation mode."""
-    def run(self):
+    def finalize_options(self):
         delete_old_slimit_files()
         install.finalize_options(self)
 
