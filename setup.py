@@ -24,19 +24,21 @@ def delete_old_slimit_files():
 class PostDevelopCommand(develop):
     """Post-installation for development mode."""
     def run(self):
+        develop.run(self)
         def _post_install():
             delete_old_slimit_files()
         atexit.register(_post_install)
-        develop.run(self)
+
 
 
 class PostInstallCommand(install):
     """Post-installation for installation mode."""
     def run(self):
+        install.run(self)
         def _post_install():
             delete_old_slimit_files()
         atexit.register(_post_install)
-        install.run(self)
+
 
 
 setup(name='fam',
@@ -53,7 +55,7 @@ setup(name='fam',
     author='Paul Harter',
     author_email='paul@glowinthedark.co.uk',
     license="LICENSE",
-    install_requires=['js2py', 'requests', 'simplejson', 'jsonschema', 'mock', 'pytz', 'slimit', 'ply==3.8',
+    install_requires=['js2py', 'requests', 'simplejson', 'jsonschema', 'mock', 'pytz', 'slimit', 'ply',
                     'firebase_admin'],
     packages=find_packages('src'),
     package_dir={'': 'src'},
