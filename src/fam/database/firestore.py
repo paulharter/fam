@@ -141,6 +141,8 @@ class FirestoreWrapper(BaseDatabase):
     @refresh_check
     def _set(self, key, value, rev=None):
 
+        self._check_uniqueness(key, value)
+
         if self.read_only:
             raise Exception("This db is read only")
 
@@ -226,35 +228,9 @@ class FirestoreWrapper(BaseDatabase):
         self._delete_collection(coll_ref, 10)
 
 
-    def set_unique_doc(self, type_name, key, field_name, value):
-
-        doc_ref = self.db.collection(type_name).document(key)
-
-        unique_type_name = "%s__%s" % (type_name, field_name)
-        if value is not None:
-            unique_doc_ref = self.db.collection(unique_type_name).document(value)
-            try:
-                unique_doc = unique_doc_ref.get()
-                ## if it exists then check to see if its owned by another
-                if unique_doc.to_dict()["owner"] != key:
-                    raise FamUniqueError("The value %s for %s is already taken" % (value, field_name))
-                else:
-                    # no op in the case where the value is already set
-                    return
-            except NotFound:
-                unique_doc_ref.set({"owner": key})
-
-        # delete any existing
-        doc = doc_ref.get()
-        as_dict = doc.to_dict()
-        existing_key = as_dict.get(field_name)
-        if existing_key is not None:
-            existing_unique_doc_ref = self.db.collection(unique_type_name).document(existing_key)
-            existing_unique_doc_ref.delete()
-
-
     def query_snapshots(self, firebase_query, batch_size=100):
         return self.query_snapshots_iterator(firebase_query, batch_size=batch_size)
+
 
     def query_snapshots_iterator(self, firebase_query, batch_size):
 
@@ -274,17 +250,19 @@ class FirestoreWrapper(BaseDatabase):
                 u'_id': last_id
             }).limit(batch_size)
 
+
     @refresh_check
-    def update(self, type_name, key, field_name, value, field):
-        print(type_name, key, field_name, value, field)
+    def update(self, namespace, type_name, key, values):
 
+        self._check_uniqueness_typed(namespace, type_name, key, values)
         doc_ref = self.db.collection(type_name).document(key)
+        if self.read_only:
+            raise Exception("This db is read only")
 
-        if field.unique:
-            self.set_unique_doc(type_name, key, field_name, value)
-
-        value = firestore.DELETE_FIELD if value is None else value
-        doc_ref.update({field_name: value})
+        for k, v in values.items():
+            if v is None:
+                values[k] = firestore.DELETE_FIELD
+        doc_ref.update(values)
 
 
     def _delete_collection(self, coll_ref, batch_size):
@@ -297,3 +275,105 @@ class FirestoreWrapper(BaseDatabase):
 
         if deleted >= batch_size:
             return self._delete_collection(coll_ref, batch_size)
+
+
+    ##############   unique stuff ##########################
+
+
+    def _get_unique_ref(self, type_name, key, field_name, field_value):
+        unique_type_name = "%s__%s" % (type_name, field_name)
+        unique_doc_ref = self.db.collection(unique_type_name).document(field_value)
+        try:
+            unique_doc = unique_doc_ref.get()
+            ## if it exists then check to see if its owned by another
+            if unique_doc.to_dict()["owner"] != key:
+                raise FamUniqueError("The value %s for %s is already taken" % (field_value, field_name))
+            else:
+                # no op in the case where the value is already set
+                return None
+        except NotFound:
+            ## go ahead and set the new one
+            return unique_doc_ref, unique_type_name, field_name
+
+
+    def _check_uniqueness(self, key, value):
+
+        type_name = value["type"]
+        namespace = value["namespace"]
+        self._check_uniqueness_typed(namespace, type_name, key, value)
+
+
+    def _check_uniqueness_typed(self, namespace, type_name, key, value):
+
+
+        print(type_name, namespace)
+
+        cls = self.mapper.get_class(type_name, namespace)
+
+        to_set = []
+
+        # check all the unique objects and fail if any are bad before setting anything
+        for field_name, field_value in value.items():
+            if field_name in cls.fields:
+                field = cls.fields[field_name]
+                if field.unique:
+                    ref_name_fieldname = self._get_unique_ref(type_name, key, field_name, field_value)
+                    if ref_name_fieldname is not None:
+                        to_set.append(ref_name_fieldname)
+
+        if len(to_set) > 0:
+
+            try:
+                doc_ref = self.db.collection(type_name).document(key)
+                doc = doc_ref.get()
+                as_dict = doc.to_dict()
+            except NotFound:
+                as_dict = None
+
+            for unique_doc_ref, unique_type_name, field_name in to_set:
+
+                unique_doc_ref.set({"owner": key})
+
+                if as_dict is not None:
+                    existing_key = as_dict.get(field_name)
+                    if existing_key is not None:
+                        existing_unique_doc_ref = self.db.collection(unique_type_name).document(existing_key)
+                        existing_unique_doc_ref.delete()
+
+
+    def set_unique_doc(self, type_name, key, field_name, value):
+        doc_ref = self.db.collection(type_name).document(key)
+        unique_type_name = "%s__%s" % (type_name, field_name)
+        if value is not None:
+            unique_doc_ref = self.db.collection(unique_type_name).document(value)
+            try:
+                unique_doc = unique_doc_ref.get()
+                ## if it exists then check to see if its owned by another
+                if unique_doc.to_dict()["owner"] != key:
+                    raise FamUniqueError("The value %s for %s is already taken" % (value, field_name))
+                else:
+                    # no op in the case where the value is already set
+                    return
+            except NotFound:
+                unique_doc_ref.set({"owner": key})
+
+        # delete any existing
+        try:
+            doc = doc_ref.get()
+            as_dict = doc.to_dict()
+            existing_key = as_dict.get(field_name)
+            if existing_key is not None:
+                existing_unique_doc_ref = self.db.collection(unique_type_name).document(existing_key)
+                existing_unique_doc_ref.delete()
+        except NotFound:
+            # this is fine it just means there is no suxh doc yet
+            pass
+
+
+    def get_unique_instance(self, namespace, type_name, field_name, value):
+        unique_type_name = "%s__%s" % (type_name, field_name)
+        unique_doc_ref = self.db.collection(unique_type_name).document(value)
+        try:
+            return unique_doc_ref.get()
+        except NotFound:
+            return None

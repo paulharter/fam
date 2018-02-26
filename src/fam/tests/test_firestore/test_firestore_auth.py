@@ -22,7 +22,7 @@ class TestDB(unittest.TestCase):
 
 
     def setUp(self):
-        creds_path = os.path.join(ROOT_DIR, "secrets", "earth-rover-land-1d04f00fb276.json")
+        creds_path = os.path.join(ROOT_DIR, "secrets", "earth-rover-dev-7ae653d271a0.json")
         mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey])
 
         cred = credentials.Certificate(creds_path)

@@ -228,6 +228,9 @@ class CouchDBWrapper(BaseDatabase):
         if self.read_only:
             raise Exception("This db is read only")
 
+        if "type" in value:
+            self._check_uniqueness(key, value)
+
         if self.validator is not None:
             if "namespace" in value and not "schema" in value:
                 schema_id = self.validator.schema_id_for(value["namespace"], value["type"])
@@ -278,6 +281,7 @@ class CouchDBWrapper(BaseDatabase):
         for k, v in kwargs.items():
             encoded[k] = json.dumps(v) if k in JSON_KEY_STRINGS else v
         return encoded
+
 
     # @ensure_views
     def view(self, name, **kwargs):
@@ -508,3 +512,43 @@ class CouchDBWrapper(BaseDatabase):
         for doc in self.mapper.extra_design_docs():
             key = doc["_id"]
             self.ensure_design_doc(key, doc)
+
+
+    def get_unique_instance(self, namespace, type_name, field_name, value):
+
+        view_namespace = namespace.replace("/", "_")
+        view_name = "%s/%s_%s" % (view_namespace, type_name, field_name)
+        all_existing = self.query_view(view_name, key=value)
+        all_non_null = [o for o in all_existing if getattr(o, field_name, None)]
+        how_many_existing = len(all_non_null)
+
+        if how_many_existing > 1:
+            raise FamUniqueError("more than {} with a {} of value {}".format(type_name, field_name, value))
+        elif how_many_existing == 1:
+            return all_non_null[0]
+        else:
+            return None
+
+
+    def _check_uniqueness(self, key, value):
+
+        print(value)
+
+        type_name = value["type"]
+        namespace = value["namespace"]
+
+        cls = self.mapper.get_class(type_name, namespace)
+
+        for field_name in value:
+            if field_name in cls.fields:
+                field = cls.fields[field_name]
+                if field.unique:
+                    this_value = value.get(field_name)
+                    if this_value is None:
+                        continue
+
+                    type_name = cls._type_with_ref(field_name)
+                    existing = self.get_unique_instance(namespace, type_name, field_name, this_value)
+
+                    if existing and existing.key != key:
+                        raise FamUniqueError("more than {} with a {} of value {}".format(type_name, field_name, this_value))

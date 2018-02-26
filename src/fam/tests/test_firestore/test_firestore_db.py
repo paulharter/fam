@@ -7,13 +7,14 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 
+import fam
 from fam.exceptions import *
 from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell, Monkey, Monarch, NAMESPACE
 
 from fam.database import FirestoreWrapper
 from fam.mapper import ClassMapper
 
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))))
+SECRETS_DIR = os.path.join(os.path.dirname(fam.__file__), "tests", "secrets")
 
 
 class TestDB(unittest.TestCase):
@@ -21,8 +22,8 @@ class TestDB(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
-        creds_path = os.path.join(ROOT_DIR, "secrets", "earth-rover-land-1d04f00fb276.json")
-        mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey])
+        creds_path = os.path.join(SECRETS_DIR, "earth-rover-dev-7ae653d271a0.json")
+        mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch])
         cls.db = FirestoreWrapper(mapper, creds_path)
         cls.clear_db()
 
@@ -34,6 +35,7 @@ class TestDB(unittest.TestCase):
         cls.db.delete_all("person")
         cls.db.delete_all("jackrussell")
         cls.db.delete_all("monkey")
+        cls.db.delete_all("dog__kennel_club_membership")
 
     def test_app(self):
         self.assertNotEqual(self.db, None)
@@ -250,6 +252,7 @@ class TestDB(unittest.TestCase):
         cat = Cat(name="whiskers", owner_id=paul.key, legs=2)
         cat.save(self.db)
         cat.name = "blackie"
+        cat.save(self.db)
 
         self.assertEqual(cat.name, "blackie")
         self.assertEqual(cat._properties["name"], "blackie")
@@ -270,6 +273,7 @@ class TestDB(unittest.TestCase):
         def change_colour():
             cat.colour = "white"
         self.assertRaises(FamImmutableError, change_colour)
+
 
 
     def setcatfood(self):
@@ -296,21 +300,35 @@ class TestDB(unittest.TestCase):
         monkey.name = "jess"
         self.db.put(monkey)
 
+
+    def test_updates_from_dict(self):
+        self.clear_db()
+        paul = Person.create(self.db, name="paul")
+        dog1 = Dog.create(self.db, name="rufus", owner_id=paul.key, kennel_club_membership="123456")
+
+        attrs = {
+            "name":"joe",
+            "kennel_club_membership": "9876543"
+        }
+
+        dog1.update(attrs)
+        dog2 = Dog.get(self.db, dog1.key)
+        self.assertTrue(dog2.kennel_club_membership == "9876543")
+
+
+
     def test_uniqueness(self):
         self.clear_db()
         paul = Person(name="paul")
         self.db.put(paul)
-        dog1 = Dog(name="rufus", owner_id=paul.key, kennel_club_membership="123456")
+        dog1 = Dog.create(self.db, name="rufus", owner_id=paul.key, kennel_club_membership="123456")
+        dog2 = Dog.create(self.db, name="fly", owner_id=paul.key)
 
-        dog1.save(self.db)
-        # time.sleep(1)
+        # raises if setting one value
+        self.assertRaises(FamUniqueError, dog2.update, {"kennel_club_membership": "123456"})
+        self.assertIsNone(dog2.kennel_club_membership)
+
+        # raises if creating a new one
+        self.assertRaises(FamUniqueError, Dog.create, self.db, name="steve", owner_id=paul.key, kennel_club_membership="123456")
 
 
-        # print dog1.as_json()
-        # dog2 = Dog(name="fly", owner_id=paul.key, kennel_club_membership="123456")
-        # print dog2.as_json()
-        # # self.db.put(dog2)
-        # self.assertRaises(FamUniqueError, self.db.put, dog2)
-        # # print "*********** end ***************"
-
-        self.fail()

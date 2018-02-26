@@ -260,26 +260,8 @@ class FamObject(object, metaclass=GenericMetaclass):
                     raise FamImmutableError("You can't change the value of {} on a {} it has been made immutable: {}".format(field_name, self.__class__.__name__, getattr(existing, field_name)))
 
 
-    def _check_uniqueness(self):
-        for field_name, field in self.__class__.fields.items():
-            if field.unique:
-                this_value = getattr(self, field_name)
-                if this_value is None:
-                    continue
 
-                # type_name = self.__class__._type_with_ref(field_name)
-                # all_existing = self._db.get_with_value(self.namespace, type_name, field_name, this_value)
-                # all_non_null = [o for o in all_existing if getattr(o, field_name, None)]
-                #
-                # how_many_existing = len(all_non_null)
-                #
-                # if how_many_existing > 1:
-                #     raise FamUniqueError("more than {} with a {} of value {}".format(type_name, field_name, this_value))
-                # elif how_many_existing == 1:
-                #     if all_non_null[0].key != self.key:
-                #         raise FamUniqueError("You cannot add a {} with {} set to {} as one already exists".format(type_name, field_name,  this_value))
-                # else:
-                #     pass
+
 
     @classmethod
     def get_unique_instance(cls, db, field_name, value):
@@ -291,39 +273,14 @@ class FamObject(object, metaclass=GenericMetaclass):
         if not field.unique:
             return None
 
-        return None
-
-        # view_namespace = cls.namespace.replace("/", "_")
-        # type_name = cls._type_with_ref(field_name)
-        # view_name = "%s/%s_%s" % (view_namespace, type_name, field_name)
-        #
-        # all_existing = db.query_view(view_name, key=value)
-        #
-        # all_non_null = [o for o in all_existing if getattr(o, field_name, None)]
-        # how_many_existing = len(all_non_null)
-        #
-        # if how_many_existing > 1:
-        #     raise FamUniqueError("more than {} with a {} of value {}".format(type_name, field_name, value))
-        # elif how_many_existing == 1:
-        #     return all_non_null[0]
-        # else:
-        #     return None
-
-
-
-
-
-
-
-
-
+        type_name = cls._type_with_ref(field_name)
+        return db.get_unique_instance(cls.namespace, type_name, field_name, value)
 
 
 
     @classmethod
     def create(cls, db, key=None, **kwargs):
         obj = cls(key=key, **kwargs)
-        obj._check_uniqueness()
         obj._pre_save_new_cb(db)
         created = db._set(obj.key, obj._properties)
         if obj.use_rev and hasattr(created, "rev") and created.rev is not None:
@@ -344,7 +301,6 @@ class FamObject(object, metaclass=GenericMetaclass):
             # doc = result.value
             rev = existing.rev
 
-            self._check_uniqueness()
             self._check_immutable(existing)
 
             # raise a conflict if revs different
@@ -362,7 +318,6 @@ class FamObject(object, metaclass=GenericMetaclass):
             self._post_save_update_cb(db)
             updated = True
         else:
-            self._check_uniqueness()
             self._pre_save_new_cb(db)
             result = db._set(self.key, self._properties)
             self._post_save_new_cb(db)
@@ -461,18 +416,13 @@ class FamObject(object, metaclass=GenericMetaclass):
             if k != "schema" and k != "channels":
                 if other._properties[k] != self._properties[k]:
                     return False
-
         return True
-
-
 
 
     @classmethod
     def get(cls, db, key, class_name=None):
         # ugly thing to get around cache double dispatch
-
         cn = class_name if class_name is not None else cls.__name__.lower()
-
         if not hasattr(db, "_get"):
             #this will call back here but using the correct db
             return db.get(key, class_name=cn)
@@ -550,7 +500,6 @@ class FamObject(object, metaclass=GenericMetaclass):
         else:
             rows = db._n1ql(query, *args, **kwargs)
         return [GenericObject._from_doc(db, row.key, None, row.value) for row in rows]
-
 
 
 
@@ -663,18 +612,23 @@ class FamObject(object, metaclass=GenericMetaclass):
             raise AttributeError("Not found %s" % name)
 
 
+    def update(self, values):
+        if "_db" in self.__dict__:
+            if hasattr(self._db, "update"):
+                self._db.update(self.namespace, self.type, self.key, values)
+
+        for k, v in values.items():
+            setattr(self, k, v)
+
+
+
     def _update_property(self, key, value, field):
+
         if value is None:
             if key in self._properties:
                 del self._properties[key]
         else:
             self._properties[key] = value
-
-        if "_db" in self.__dict__:
-            # print("has db", self.__dict__)
-            if hasattr(self._db, "update"):
-                self._db.update(self.type, self.key, key, value, field)
-
 
 
     def __setattr__(self, name, value):
