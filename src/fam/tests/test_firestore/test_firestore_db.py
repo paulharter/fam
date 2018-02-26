@@ -332,3 +332,12 @@ class TestDB(unittest.TestCase):
         self.assertRaises(FamUniqueError, Dog.create, self.db, name="steve", owner_id=paul.key, kennel_club_membership="123456")
 
 
+    def test_get_unique(self):
+        self.clear_db()
+        paul = Person(name="paul")
+        self.db.put(paul)
+        dog1 = Dog.create(self.db, name="rufus", owner_id=paul.key, kennel_club_membership="123456")
+
+        dog2 = Dog.get_unique_instance(self.db, "kennel_club_membership", "123456")
+        self.assertIsNotNone(dog2)
+        self.assertTrue(dog2.kennel_club_membership == "123456")

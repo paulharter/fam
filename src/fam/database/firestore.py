@@ -332,7 +332,7 @@ class FirestoreWrapper(BaseDatabase):
 
             for unique_doc_ref, unique_type_name, field_name in to_set:
 
-                unique_doc_ref.set({"owner": key})
+                unique_doc_ref.set({"owner": key, "type_name": type_name})
 
                 if as_dict is not None:
                     existing_key = as_dict.get(field_name)
@@ -374,6 +374,10 @@ class FirestoreWrapper(BaseDatabase):
         unique_type_name = "%s__%s" % (type_name, field_name)
         unique_doc_ref = self.db.collection(unique_type_name).document(value)
         try:
-            return unique_doc_ref.get()
+            doc = unique_doc_ref.get()
+            as_dict = doc.to_dict()
+            wrapper = self._get(as_dict["owner"], as_dict["type_name"])
+            return GenericObject._from_doc(self, wrapper.key, wrapper.rev, wrapper.value)
+
         except NotFound:
             return None
