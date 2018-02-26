@@ -355,7 +355,7 @@ class FirestoreWrapper(BaseDatabase):
                     # no op in the case where the value is already set
                     return
             except NotFound:
-                unique_doc_ref.set({"owner": key})
+                unique_doc_ref.set({"owner": key, "type_name": type_name})
 
         # delete any existing
         try:
