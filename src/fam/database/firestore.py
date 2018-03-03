@@ -219,6 +219,7 @@ class FirestoreWrapper(BaseDatabase):
 
         if self.read_only:
             raise Exception("This db is read only")
+        self._clear_uniqueness_typed(key, type_name)
         self.db.collection(type_name).document(key).delete()
 
 
@@ -303,10 +304,23 @@ class FirestoreWrapper(BaseDatabase):
         self._check_uniqueness_typed(namespace, type_name, key, value)
 
 
+    def _clear_uniqueness_typed(self, key, type_name):
+
+        doc_ref = self.db.collection(type_name).document(key)
+        doc = doc_ref.get()
+        as_dict = doc.to_dict()
+        cls = self.mapper.get_class(as_dict["type"], as_dict["namespace"])
+
+        for field_name, field_value in as_dict.items():
+            if field_name in cls.fields:
+                field = cls.fields[field_name]
+                if field.unique:
+                    unique_type_name = "%s__%s" % (type_name, field_name)
+                    unique_doc_ref = self.db.collection(unique_type_name).document(field_value)
+                    unique_doc_ref.delete()
+
+
     def _check_uniqueness_typed(self, namespace, type_name, key, value):
-
-
-        print(type_name, namespace)
 
         cls = self.mapper.get_class(type_name, namespace)
 
@@ -339,6 +353,8 @@ class FirestoreWrapper(BaseDatabase):
                     if existing_key is not None:
                         existing_unique_doc_ref = self.db.collection(unique_type_name).document(existing_key)
                         existing_unique_doc_ref.delete()
+
+
 
 
     def set_unique_doc(self, type_name, key, field_name, value):

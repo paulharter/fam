@@ -22,7 +22,7 @@ class TestDB(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
-        creds_path = os.path.join(SECRETS_DIR, "earth-rover-dev-7ae653d271a0.json")
+        creds_path = os.path.join(SECRETS_DIR, "earth-rover-test-d241bce5266d.json")
         mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch])
         cls.db = FirestoreWrapper(mapper, creds_path)
         cls.clear_db()
@@ -330,6 +330,20 @@ class TestDB(unittest.TestCase):
 
         # raises if creating a new one
         self.assertRaises(FamUniqueError, Dog.create, self.db, name="steve", owner_id=paul.key, kennel_club_membership="123456")
+
+    def test_uniqueness_delete(self):
+        self.clear_db()
+        paul = Person(name="paul")
+        self.db.put(paul)
+        dog1 = Dog.create(self.db, name="rufus", owner_id=paul.key, kennel_club_membership="123456")
+
+        dog1.delete(self.db)
+        dog2 = Dog.create(self.db, name="another", owner_id=paul.key, kennel_club_membership="123456")
+
+        self.fail()
+
+
+
 
 
     def test_get_unique(self):
