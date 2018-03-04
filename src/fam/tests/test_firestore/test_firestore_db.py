@@ -340,11 +340,6 @@ class TestDB(unittest.TestCase):
         dog1.delete(self.db)
         dog2 = Dog.create(self.db, name="another", owner_id=paul.key, kennel_club_membership="123456")
 
-        self.fail()
-
-
-
-
 
     def test_get_unique(self):
         self.clear_db()

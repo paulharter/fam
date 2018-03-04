@@ -55,6 +55,10 @@ def raise_detailed_error(request_object):
         raise HTTPError(e, request_object.text)
 
 
+
+
+
+
 class FirestoreWrapper(BaseDatabase):
 
     def query_view(self, view_name, **kwargs):

@@ -82,6 +82,7 @@ class ListField(Field):
     def is_correct_type(self, value):
         return type(value) == types.ListType or type(value) == types.NoneType
 
+
 class DictField(Field):
 
     def get_default(self):
