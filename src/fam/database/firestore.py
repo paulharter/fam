@@ -103,7 +103,9 @@ class FirestoreWrapper(BaseDatabase):
                 print("already initaialised")
         else:
             # in app engine environment
-            firebase_admin.initialize_app()
+            already_initialised = firebase_admin._DEFAULT_APP_NAME in firebase_admin._apps
+            if not already_initialised:
+                firebase_admin.initialize_app()
 
         self.db = firestore.client()
 
