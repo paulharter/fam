@@ -15,6 +15,7 @@ from fam.exceptions import *
 from fam.constants import *
 from fam.database.base import BaseDatabase
 from fam.database.couchdb import ResultWrapper
+from fam.database.firestore_adapter import FirestoreDataAdapter
 
 from grpc._channel import _Rendezvous
 
@@ -56,9 +57,6 @@ def raise_detailed_error(request_object):
 
 
 
-
-
-
 class FirestoreWrapper(BaseDatabase):
 
     def query_view(self, view_name, **kwargs):
@@ -85,6 +83,8 @@ class FirestoreWrapper(BaseDatabase):
         self.api_key = api_key
 
         self.expires = None
+
+        self.data_adapter = FirestoreDataAdapter()
 
         # Use a service account
 
@@ -145,7 +145,9 @@ class FirestoreWrapper(BaseDatabase):
 
 
     @refresh_check
-    def _set(self, key, value, rev=None):
+    def _set(self, key, input_value, rev=None):
+
+        value = self.data_adapter.serialise(input_value)
 
         self._check_uniqueness(key, value)
 
@@ -173,7 +175,8 @@ class FirestoreWrapper(BaseDatabase):
         doc_ref = self.db.collection(class_name).document(key)
         try:
             doc = doc_ref.get()
-            return ResultWrapper.from_couchdb_json(doc.to_dict())
+            deserialised = self.data_adapter.deserialise(doc.to_dict())
+            return ResultWrapper.from_couchdb_json(deserialised)
         except NotFound:
             return None
 

@@ -30,12 +30,6 @@ class FieldAttributeBaseTests:
             cat = Cat(legs=4, owner=paul)
             self.make_red(cat)
 
-        def test_defaults(self):
-            paul = Person(name="paul")
-            paul.save(self.db)
-            cat = Cat(legs=4, owner=paul)
-            self.assertTrue(cat.email == "cat@home.com")
-
         def test_getting_absent_no_defaults_returns_none(self):
             paul = Person(name="paul")
             paul.save(self.db)

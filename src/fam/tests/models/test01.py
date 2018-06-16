@@ -1,7 +1,6 @@
-from fam.blud import GenericObject, StringField, ReferenceFrom, ReferenceTo, BoolField, NumberField, DictField, ObjectField, ListField
-from fam.string_formats import DateTimeField
-from fam.string_formats import EmailField
-from fam.string_formats import RationalNumberField
+from fam.blud import GenericObject
+from fam.fields import *
+
 
 NAMESPACE = "glowinthedark.co.uk/test"
 
@@ -63,8 +62,7 @@ class Cat(GenericObject):
         "colour": StringField(immutable=True),
         "tail": BoolField(immutable=True, default=True),
         "legs": NumberField(required=True),
-        "owner_id": ReferenceTo(NAMESPACE, "person", required=True),
-        "email": EmailField(default="cat@home.com")
+        "owner_id": ReferenceTo(NAMESPACE, "person", required=True)
         }
 
 
@@ -141,5 +139,5 @@ class Event(GenericObject):
     fields = {
         "name": StringField(),
         "created": DateTimeField(),
-        "chance": RationalNumberField()
+        "chance": FractionField()
         }

@@ -117,7 +117,6 @@ class ClassMapper(object):
 
 
     def get_class(self, type_name, namespace_name):
-
         namespace = self.namespaces.get(namespace_name)
         if namespace is None:
             return None

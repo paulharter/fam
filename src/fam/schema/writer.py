@@ -26,7 +26,7 @@ FIELD_TYPE_LOOKUP = {
     "DateTimeField": {
         "type": "string"
     },
-    "RationalNumberField": {
+    "FractionField": {
         "type": "string"
     }
 }

@@ -12,6 +12,7 @@ from fam.utils import requests_shim as requests
 from fam.database.base import BaseDatabase, FamDbAuthException
 
 from fam.utils.backoff import http_backoff
+from .couchdb_adapter import CouchDBDataAdapter
 
 
 JSON_KEY_STRINGS = ["endkey", "end_key", "key", "keys", "startkey", "start_key"]
@@ -136,6 +137,7 @@ class CouchDBWrapper(BaseDatabase):
         self.db_name = db_name
         self.db_url = db_url
         self.session = requests.Session()
+        self.data_adapter = CouchDBDataAdapter()
 
         url = "%s/%s" % (db_url, db_name)
 
@@ -198,7 +200,7 @@ class CouchDBWrapper(BaseDatabase):
         # print "_get: ", url
         rsp = self.session.get(url)
         if rsp.status_code == 200:
-            return ResultWrapper.from_couchdb_json(rsp.json())
+            return ResultWrapper.from_couchdb_json(self.data_adapter.deserialise(rsp.json()))
         if rsp.status_code == 404:
             # print "not found: ", key
             return None
@@ -223,7 +225,9 @@ class CouchDBWrapper(BaseDatabase):
 
 
     @http_backoff
-    def _set(self, key, value, rev=None, backoff=False):
+    def _set(self, key, input_value, rev=None, backoff=False):
+
+        value = self.data_adapter.serialise(input_value)
 
         if self.read_only:
             raise Exception("This db is read only")
@@ -256,7 +260,8 @@ class CouchDBWrapper(BaseDatabase):
         if rsp.status_code == 200 or rsp.status_code == 201:
             if rsp.content:
                 value["_rev"] = rsp.json()["rev"]
-            return ResultWrapper.from_couchdb_json(value)
+
+            return ResultWrapper.from_couchdb_json(self.data_adapter.deserialise(value))
         else:
             raise FamResourceConflict("Unknown Error setting CBLite doc: %s %s" % (rsp.status_code, rsp.text))
 
@@ -330,7 +335,7 @@ class CouchDBWrapper(BaseDatabase):
             results = rsp.json()
             last_seq = results.get("last_seq")
             rows = results.get("results")
-            return last_seq, [ResultWrapper.from_couchdb_json(row["doc"]) for row in rows if "doc" in row.keys() and row["doc"].get(TYPE_STR) is not None]
+            return last_seq, [ResultWrapper.from_couchdb_json(self.data_adapter.deserialise(row["doc"])) for row in rows if "doc" in row.keys() and row["doc"].get(TYPE_STR) is not None]
         if rsp.status_code == 404:
             return None, None
         if rsp.status_code == 403:
@@ -532,7 +537,6 @@ class CouchDBWrapper(BaseDatabase):
 
     def _check_uniqueness(self, key, value):
 
-        print(value)
 
         type_name = value["type"]
         namespace = value["namespace"]

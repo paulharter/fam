@@ -1,5 +1,5 @@
 from fam.blud import GenericObject, StringField, ReferenceFrom, ReferenceTo, BoolField, NumberField, DictField
-from fam.string_formats import EmailField
+
 
 NAMESPACE = "glowinthedark.co.uk/test/3"
 

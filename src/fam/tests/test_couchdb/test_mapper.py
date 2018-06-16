@@ -88,22 +88,22 @@ class MapperValidationTests(unittest.TestCase):
 
 
 
-    def test_string_format(self):
-
-        mapper = ClassMapper([], modules=[test01])
-        validator = ModelValidator(modules=[test01])
-        self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True, validator=validator)
-        self.db.update_designs()
-
-        paul = Person(name="paul")
-        paul.save(self.db)
-        cat = Cat(name="whiskers", owner_id=paul.key, legs=4)
-        cat.save(self.db)
-        self.assertEqual(cat.owner, paul)
-        self.assertEqual(cat.owner.name, "paul")
-
-        cat = Cat(name="puss", owner_id=paul.key, legs=3, email="paul@glowinthedark.co.uk")
-        cat.save(self.db)
-        cat.email = "paulglowinthedark.co.uk"
-        self.assertRaises(FamValidationError, self.db.put, cat)
+    # def test_string_format(self):
+    #
+    #     mapper = ClassMapper([], modules=[test01])
+    #     validator = ModelValidator(modules=[test01])
+    #     self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True, validator=validator)
+    #     self.db.update_designs()
+    #
+    #     paul = Person(name="paul")
+    #     paul.save(self.db)
+    #     cat = Cat(name="whiskers", owner_id=paul.key, legs=4)
+    #     cat.save(self.db)
+    #     self.assertEqual(cat.owner, paul)
+    #     self.assertEqual(cat.owner.name, "paul")
+    #
+    #     cat = Cat(name="puss", owner_id=paul.key, legs=3, email="paul@glowinthedark.co.uk")
+    #     cat.save(self.db)
+    #     cat.email = "paulglowinthedark.co.uk"
+    #     self.assertRaises(FamValidationError, self.db.put, cat)
 

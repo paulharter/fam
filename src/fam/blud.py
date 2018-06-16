@@ -4,12 +4,14 @@ import uuid
 import datetime
 import types
 import sys
+import six
 from copy import deepcopy
 
 from fam.fam_json import object_default
 
 from .constants import *
 from .exceptions import *
+from .fields import *
 
 __all__ = [
     "BoolField",
@@ -24,131 +26,7 @@ __all__ = [
     "FamObject"
 ]
 
-class Field(object):
-    
-    object = "base"
-    
-    def __init__(self, required=False, immutable=False, default=None, unique=False):
-        self.required = required
-        self.immutable = immutable
-        self.default = default
-        self.unique = unique
 
-        if self.default is not None and self.required is True:
-            raise FamError("It doesnt really make sense to use both required and default together. Just use default")
-
-    def is_correct_type(self, value):
-        return True
-
-    def get_default(self):
-        return self.default
-    
-    def __str__(self):
-        attr = []
-        if self.required:
-            attr.append(FIELD_REQUIRED)
-        return " ".join(attr)
-
-    as_string = property(__str__)
-
-
-class BoolField(Field):
-
-    def is_correct_type(self, value):
-        return type(value) == types.BooleanType or type(value) == types.NoneType
-
-class NumberField(Field):
-
-    def is_correct_type(self, value):
-        return type(value) == types.IntType or type(value) == types.LongType or type(value) == types.FloatType or type(value) == types.NoneType
-
-class StringField(Field):
-
-    def is_correct_type(self, value):
-        return type(value) == types.StringType or type(value) == types.UnicodeType or type(value) == types.NoneType
-
-class ListField(Field):
-
-    def __init__(self, item_cls=None, required=False, immutable=False, default=None):
-        self.item_cls = item_cls
-        if not hasattr(item_cls, "to_json") and hasattr(item_cls, "from_json"):
-            raise Exception("the class used for a lists items must have to_json and from_json methods")
-
-        super(ListField, self).__init__(required=required, immutable=immutable, default=default)
-
-    def get_default(self):
-        return deepcopy(self.default)
-
-    def is_correct_type(self, value):
-        return type(value) == types.ListType or type(value) == types.NoneType
-
-
-class DictField(Field):
-
-    def get_default(self):
-        return deepcopy(self.default)
-
-    def is_correct_type(self, value):
-        return type(value) == types.DictType or type(value) == types.NoneType
-
-class ObjectField(Field):
-
-    def get_default(self):
-        return self.cls()
-
-    def __init__(self, cls, default=None, required=False):
-        self.cls = cls
-        if not hasattr(cls, "to_json") and hasattr(cls, "from_json"):
-            raise Exception("the class used for a n ObjectField must have to_json and from_json methods")
-
-        super(ObjectField, self).__init__(default=default, required=required)
-
-    def is_correct_type(self, value):
-        return value.__class__ == self.cls
-
-
-class ReferenceTo(Field):
-
-    def __init__(self, refns, refcls, required=False, immutable=False, default=None, unique=False, cascade_delete=False):
-        self.refns = refns
-        self.refcls = refcls
-        self.cascade_delete = cascade_delete
-        super(ReferenceTo, self).__init__(required, immutable, default, unique)
-
-    def is_correct_type(self, value):
-        return type(value) == types.StringType or type(value) == types.UnicodeType or type(value) == types.NoneType
-
-    def __str__(self):
-        attr = []
-
-        attr.append("ns:%s"  % self.refns)
-        attr.append("resource:%s"  % self.refcls)
-
-        if self.required:
-            attr.append(FIELD_REQUIRED)
-        return " ".join(attr)
-
-    as_string = property(__str__)
-
-class ReferenceFrom(Field):
-
-    def __init__(self, refns, refcls, fkey, required=False, immutable=False, default=None, cascade_delete=False):
-        self.refns = refns
-        self.refcls = refcls
-        self.fkey = fkey
-        self.cascade_delete = cascade_delete
-        super(ReferenceFrom, self).__init__(required, immutable, default)
-
-    def __str__(self):
-        attr = []
-        attr.append("ns:%s"  % self.refns)
-        attr.append("resource:%s"  % self.refcls)
-        attr.append("key:%s"  % self.fkey)
-        if self.required:
-            attr.append(FIELD_REQUIRED)
-        return " ".join(attr)
-
-    as_string = property(__str__)
 
 def current_xml_time():
     now = datetime.datetime.utcnow()
@@ -187,7 +65,8 @@ class GenericMetaclass(type):
         return newcls
 
 
-class FamObject(object, metaclass=GenericMetaclass):
+# class FamObject(object, metaclass=GenericMetaclass):
+class FamObject(six.with_metaclass(GenericMetaclass)):
     use_rev = True
     additional_properties = False
     grants_access = False
@@ -230,9 +109,7 @@ class FamObject(object, metaclass=GenericMetaclass):
 
     @classmethod
     def all(cls, db):
-
         return db.get_all_type(cls.namespace, cls.type)
-
 
 
     def _get_namespace(self):
@@ -596,9 +473,9 @@ class FamObject(object, metaclass=GenericMetaclass):
         if name in self._properties.keys():
             # print("found in properties", name)
             # if it is a subclass of stringfield for string formats
-            if isinstance(field, StringField) and not field.__class__ == StringField:
-                if hasattr(field, "from_json"):
-                    return field.from_json(self._properties[name])
+            # if isinstance(field, StringField) and not field.__class__ == StringField:
+            #     if hasattr(field, "from_json"):
+            #         return field.from_json(self._properties[name])
             return self._properties[name]
 
 
@@ -620,7 +497,6 @@ class FamObject(object, metaclass=GenericMetaclass):
 
         for k, v in values.items():
             setattr(self, k, v)
-
 
 
     def _update_property(self, key, value, field):
@@ -649,14 +525,17 @@ class FamObject(object, metaclass=GenericMetaclass):
                 if field.immutable and name in self._properties:
                     raise FamImmutableError("You cannot change the immutable property %s" % name)
                 if isinstance(field, ObjectField) and not isinstance(value, field.cls):
-                    value = field.cls.from_json(value)
+                    if hasattr(field.cls, "from_json"):
+                        value = field.cls.from_json(value)
+                    else:
+                        value = field.from_json(value)
 
                 if isinstance(field, ListField) and field.item_cls is not None:
                     #cast the items in the list into a certain class
                     value = [field.item_cls.from_json(i) for i in value]
 
-                if issubclass(field.__class__, StringField) and not (isinstance(value, str) or value is None):
-                    value = field.to_json(value)
+                # if issubclass(field.__class__, StringField) and not (isinstance(value, str) or value is None):
+                #     value = field.to_json(value)
 
             self._update_property(name, value, field)
         elif name.startswith("_"):

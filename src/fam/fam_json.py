@@ -1,5 +1,4 @@
-# import sys
-# import simplejson as json
+
 
 def object_default(o):
     if hasattr(o, "to_json"):

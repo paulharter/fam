@@ -51,7 +51,7 @@ class PostInstallCommand(install):
 
 
 setup(name='fam',
-    version='2.0.2',
+    version='2.0.3',
     description="Simple Python ORM for CouchDB, and Sync Gateway",
     url="https://github.com/paulharter/fam",
     classifiers=[
@@ -65,7 +65,7 @@ setup(name='fam',
     author_email='paul@glowinthedark.co.uk',
     license="LICENSE",
     install_requires=['js2py', 'requests', 'simplejson', 'jsonschema', 'mock', 'pytz', 'slimit', 'ply==3.8',
-                    'firebase_admin'],
+                    'firebase_admin', 'six'],
     packages=find_packages('src'),
     package_dir={'': 'src'},
     include_package_data=True,
