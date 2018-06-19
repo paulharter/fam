@@ -74,7 +74,8 @@ class FirestoreWrapper(BaseDatabase):
                  custom_token=None,
                  api_key=None,
                  validator=None,
-                 read_only=False
+                 read_only=False,
+                 name=None
                  ):
 
         self.mapper = mapper
@@ -93,7 +94,10 @@ class FirestoreWrapper(BaseDatabase):
             self.user = self.sign_in_with_custom_token(custom_token)
             self.update_expires()
             self.creds = CustomToken(self.user["idToken"], project_id)
-            firebase_admin.initialize_app(self.creds)
+            if name is not None:
+                firebase_admin.initialize_app(self.creds, name=name)
+            else:
+                firebase_admin.initialize_app(self.creds)
         elif creds_path is not None:
             # in dev with service creds
             try:
