@@ -89,29 +89,31 @@ class FirestoreWrapper(BaseDatabase):
 
         # Use a service account
 
+        app = None
+
         if custom_token is not None:
             # from device client
             self.user = self.sign_in_with_custom_token(custom_token)
             self.update_expires()
             self.creds = CustomToken(self.user["idToken"], project_id)
             if name is not None:
-                firebase_admin.initialize_app(self.creds, name=name)
+                app = firebase_admin.initialize_app(self.creds, name=name)
             else:
-                firebase_admin.initialize_app(self.creds)
+                app = firebase_admin.initialize_app(self.creds)
         elif creds_path is not None:
             # in dev with service creds
             try:
                 self.creds = credentials.Certificate(creds_path)
-                firebase_admin.initialize_app(self.creds)
+                app = firebase_admin.initialize_app(self.creds)
             except ValueError as e:
                 print("already initaialised")
         else:
             # in app engine environment
             already_initialised = firebase_admin._DEFAULT_APP_NAME in firebase_admin._apps
             if not already_initialised:
-                firebase_admin.initialize_app()
+                app = firebase_admin.initialize_app()
 
-        self.db = firestore.client()
+        self.db = firestore.client(app=app)
 
 
     def update_expires(self):
