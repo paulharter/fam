@@ -30,7 +30,7 @@ def delete_old_slimit_files():
             os.remove(file_path)
 
 
-class PostDevelopCommand(develop):
+class PostDevelopCommand(develop, object):
     """Post-installation for development mode."""
 
     def __init__(self, *args, **kwargs):
@@ -40,7 +40,7 @@ class PostDevelopCommand(develop):
         atexit.register(_post_install)
 
 
-class PostInstallCommand(install):
+class PostInstallCommand(install, object):
     """Post-installation for installation mode."""
 
     def __init__(self, *args, **kwargs):
