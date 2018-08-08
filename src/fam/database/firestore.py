@@ -95,7 +95,7 @@ class FirestoreWrapper(BaseDatabase):
             # from device client
             self.user = self.sign_in_with_custom_token(custom_token)
             self.update_expires()
-            self.creds = CustomToken(self.user["idToken"], project_id)
+            self.creds = CustomToken(self.user["idToken"], project_id).get_credential()
             if name is not None:
                 app = firebase_admin.initialize_app(self.creds, name=name)
             else:
