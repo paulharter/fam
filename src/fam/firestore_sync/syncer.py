@@ -1,6 +1,8 @@
 
 from fam.exceptions import *
 
+from fam.database.firestore_adapter import FirestoreDataAdapter
+
 
 class FirestoreSyncer(object):
 
@@ -11,6 +13,8 @@ class FirestoreSyncer(object):
         self.queries = []
         self.since = 0
         self.batch_size = batch_size
+
+        self.data_adapter = FirestoreDataAdapter()
 
 
     def add_query(self, query):
@@ -58,7 +62,8 @@ class FirestoreSyncer(object):
                     if "update_seconds" in value:
                         del value["update_seconds"]
                     value["_id"] = item.key
-                    batch.set(fs.collection(item.value["type"]).document(item.key), item.value)
+                    serialised_value = self.data_adapter.serialise(value)
+                    batch.set(fs.collection(item.value["type"]).document(item.key), serialised_value)
                 batch.commit()
             else:
                 break
