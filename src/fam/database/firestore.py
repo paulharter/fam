@@ -1,5 +1,6 @@
 import json
 import time
+import sys
 
 import requests
 from requests.exceptions import HTTPError
@@ -22,6 +23,11 @@ from grpc._channel import _Rendezvous
 from fam.blud import GenericObject
 
 from .custom_token import CustomToken
+
+if sys.version_info[0] < 3:
+    PYTHON_VERSION = 2
+else:
+    PYTHON_VERSION = 3
 
 
 """
@@ -95,7 +101,13 @@ class FirestoreWrapper(BaseDatabase):
             # from device client
             self.user = self.sign_in_with_custom_token(custom_token)
             self.update_expires()
-            self.creds = CustomToken(self.user["idToken"], project_id).get_credential()
+
+            # ugly hack to account for different behaviour of google libs
+            if PYTHON_VERSION == 2:
+                self.creds = CustomToken(self.user["idToken"], project_id)
+            else:
+                self.creds = CustomToken(self.user["idToken"], project_id).get_credential()
+
             if name is not None:
                 app = firebase_admin.initialize_app(self.creds, name=name)
             else:
