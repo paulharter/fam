@@ -92,8 +92,11 @@ class BaseDataAdapter(object):
         fixed = as_iso.replace("+00:00", "")
         return "::datetime::%s" % str(fixed)
 
+
     def serialise_bytes(self, btes):
-        return "::bytes::%s" % base64.b64encode(btes)
+        encoded = base64.b64encode(btes)
+        result = "::bytes::%s" % encoded.decode("utf-8")
+        return result
 
     def serialise_string(self, string):
         return string
