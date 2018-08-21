@@ -278,7 +278,7 @@ class CouchDBWrapper(BaseDatabase):
 
 
     def _wrapper_from_view_json(self, as_json):
-        return ResultWrapper.from_couchdb_view_json(as_json)
+        return ResultWrapper.from_couchdb_view_json(self.data_adapter.deserialise(as_json))
 
 
     def _encode_for_view_query(self, kwargs):

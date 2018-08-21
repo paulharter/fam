@@ -158,7 +158,6 @@ class TestDatabase(unittest.TestCase):
         self.assertTrue(type(fish2.location) == LatLong)
         self.assertEqual(fish2.location.latitude, 51.2345)
 
-        print(fish2.born)
         self.assertTrue(isinstance(fish2.born, datetime.datetime))
         self.assertEqual(fish2.born, birthday)
 
@@ -171,6 +170,24 @@ class TestDatabase(unittest.TestCase):
         self.assertTrue(isinstance(fish2.image, bytes))
         self.assertEqual(fish2.image, image_data)
 
+        ## test for view query
+        fishes = list(Fish.all(self.db))
+        fish3 = fishes[0]
+
+        self.assertTrue(type(fish3.location) == LatLong)
+        self.assertEqual(fish3.location.latitude, 51.2345)
+
+        self.assertTrue(isinstance(fish3.born, datetime.datetime))
+        self.assertEqual(fish3.born, birthday)
+
+        self.assertTrue(isinstance(fish3.length, Decimal))
+        self.assertEqual(fish3.length, Decimal("45.7"))
+
+        self.assertTrue(isinstance(fish3.edible_fraction, Fraction))
+        self.assertEqual(fish3.edible_fraction, Fraction(1, 3))
+
+        self.assertTrue(isinstance(fish3.image, bytes))
+        self.assertEqual(fish3.image, image_data)
 
 
 
