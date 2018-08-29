@@ -65,9 +65,6 @@ class ClassMapper(object):
                             if not k.startswith("_"):
                                 classes.append(obj)
 
-
-
-
             self._add_classes(classes)
 
 

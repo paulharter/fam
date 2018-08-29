@@ -289,7 +289,7 @@ class CouchDBWrapper(BaseDatabase):
 
 
     # @ensure_views
-    def view(self, name, **kwargs):
+    def view(self, name, raw=False, **kwargs):
         design_doc_id, view_name = name.split("/")
 
         url = self.VIEW_URL % (self.db_url, self.db_name, design_doc_id, view_name)
@@ -298,6 +298,8 @@ class CouchDBWrapper(BaseDatabase):
 
         if rsp.status_code == 200:
             results = rsp.json()
+            if raw:
+                return results
             rows = results["rows"]
             return [self._wrapper_from_view_json(row) for row in rows]
 
