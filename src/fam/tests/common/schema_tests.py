@@ -20,10 +20,7 @@ class SchemaBaseTests:
         def test_make_a_schema(self):
             expected = {
                 "title": "A Fam object model for class glowinthedark.co.uk/test:Cat",
-                "required": [
-                    "legs",
-                    "owner_id"
-                ],
+                "required": ['legs', 'namespace', 'owner_id', 'type'],
                 "properties": {
                     "_id": {"type": "string"},
                     "_rev": {"type": "string"},

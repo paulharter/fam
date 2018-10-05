@@ -27,7 +27,7 @@ class FirestoreSyncer(object):
         for query in self.queries:
 
             for snapshot in self.firestore_wrapper.query_snapshots(query, batch_size=self.batch_size):
-                item = snapshot.to_dict()
+                item = self.firestore_wrapper.data_adapter.deserialise(snapshot.to_dict())
                 update_time = snapshot.update_time
                 item["update_seconds"] = update_time.seconds
                 item["update_nanos"] = update_time.nanos

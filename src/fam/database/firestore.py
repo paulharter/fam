@@ -101,17 +101,22 @@ class FirestoreWrapper(BaseDatabase):
             # from device client
             self.user = self.sign_in_with_custom_token(custom_token)
             self.update_expires()
+            self.creds = CustomToken(self.user["idToken"], project_id)
 
             # ugly hack to account for different behaviour of google libs
-            if PYTHON_VERSION == 2:
-                self.creds = CustomToken(self.user["idToken"], project_id)
-            else:
-                self.creds = CustomToken(self.user["idToken"], project_id).get_credential()
 
-            if name is not None:
-                app = firebase_admin.initialize_app(self.creds, name=name)
-            else:
-                app = firebase_admin.initialize_app(self.creds)
+            try:
+                if name is not None:
+                    app = firebase_admin.initialize_app(self.creds, name=name)
+                else:
+                    app = firebase_admin.initialize_app(self.creds)
+            except Exception as e:
+                self.creds = self.creds.get_credential()
+                if name is not None:
+                    app = firebase_admin.initialize_app(self.creds, name=name)
+                else:
+                    app = firebase_admin.initialize_app(self.creds)
+
         elif creds_path is not None:
             # in dev with service creds
             try:
@@ -166,7 +171,6 @@ class FirestoreWrapper(BaseDatabase):
     def _set(self, key, input_value, rev=None):
 
         value = self.data_adapter.serialise(input_value)
-
         self._check_uniqueness(key, value)
 
         if self.read_only:
@@ -175,6 +179,7 @@ class FirestoreWrapper(BaseDatabase):
         if self.validator is not None:
             if "namespace" in value and not "schema" in value:
                 schema_id = self.validator.schema_id_for(value["namespace"], value["type"])
+                # print("schema_id", schema_id)
                 if schema_id is not None:
                     value["schema"] = schema_id
             try:
@@ -256,8 +261,21 @@ class FirestoreWrapper(BaseDatabase):
         self._delete_collection(coll_ref, 10)
 
 
+    def query_items(self, firebase_query, batch_size):
+        return self.query_items_iterator(firebase_query, batch_size=batch_size)
+
     def query_snapshots(self, firebase_query, batch_size=100):
         return self.query_snapshots_iterator(firebase_query, batch_size=batch_size)
+
+
+    def query_items_iterator(self, firebase_query, batch_size):
+
+        for snapshop in self.query_snapshots_iterator(firebase_query, batch_size=batch_size):
+            deserialised = self.data_adapter.deserialise(snapshop.to_dict())
+            wrapper = ResultWrapper.from_couchdb_json(deserialised)
+            obj = GenericObject.from_row(self, wrapper)
+            yield obj
+
 
 
     def query_snapshots_iterator(self, firebase_query, batch_size):

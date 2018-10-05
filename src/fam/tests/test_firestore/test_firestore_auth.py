@@ -15,6 +15,7 @@ from fam.mapper import ClassMapper
 
 from.config_local import *
 
+
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))))
 
 
@@ -22,8 +23,11 @@ class TestDB(unittest.TestCase):
 
 
     def setUp(self):
-        creds_path = os.path.join(ROOT_DIR, "secrets", "earth-rover-dev-7ae653d271a0.json")
-        mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey])
+
+        creds_path = os.path.join(ROOT_DIR, "secrets", "earth-rover-test-d241bce5266d.json")
+        mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch])
+        # self.db = FirestoreWrapper(mapper, creds_path)
+
 
         cred = credentials.Certificate(creds_path)
         app = firebase_admin.initialize_app(cred)
@@ -34,6 +38,9 @@ class TestDB(unittest.TestCase):
         }
 
         custom_token = auth.create_custom_token(uid, additional_claims)
+        print(custom_token)
+        print(PROJECT_NAME)
+        print(API_KEY)
         firebase_admin.delete_app(app)
 
         self.db = FirestoreWrapper(mapper,

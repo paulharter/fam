@@ -435,6 +435,11 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
 
 
     @classmethod
+    def from_row(cls, db, row):
+        return GenericObject._from_doc(db, row.key, row.rev, row.value)
+
+
+    @classmethod
     def _type_with_ref(cls, name):
 
         if name in cls.cls_fields.keys():

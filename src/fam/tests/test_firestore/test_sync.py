@@ -53,8 +53,9 @@ class TestDB(unittest.TestCase):
         dogs_ref = self.firestore.db.collection("dog")
         q = dogs_ref.where("owner_id", "==", paul.key)
 
-        dogs = self.firestore.query_snapshots(q, batch_size=1)
+        dogs = self.firestore.query_items(q, batch_size=1)
         dogs_list = list(dogs)
+        self.assertTrue(isinstance(dogs_list[0], Dog))
 
         self.assertEquals(len(dogs_list), 3)
 

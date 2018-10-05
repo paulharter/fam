@@ -293,7 +293,6 @@ class CouchDBWrapper(BaseDatabase):
         design_doc_id, view_name = name.split("/")
 
         url = self.VIEW_URL % (self.db_url, self.db_name, design_doc_id, view_name)
-
         rsp = self.session.get(url, params=self._encode_for_view_query(kwargs))
 
         if rsp.status_code == 200:
@@ -304,6 +303,7 @@ class CouchDBWrapper(BaseDatabase):
             return [self._wrapper_from_view_json(row) for row in rows]
 
         raise FamViewError("Unknown Error view cb doc: %s %s %s" % (rsp.status_code, rsp.text, url))
+
 
     def authenticate(self):
         pass

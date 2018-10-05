@@ -1,10 +1,10 @@
 from .couchdb import CouchDBWrapper
 from .sync_gateway import SyncGatewayWrapper
 from .firestore import FirestoreWrapper
-try:
-    from fam.database.couchbase_server import CouchbaseWrapper
-except Exception as e:
-    print("failed to import couchbase wrapper", e)
+# try:
+#     from fam.database.couchbase_server import CouchbaseWrapper
+# except Exception as e:
+#     print("failed to import couchbase wrapper", e)
 
 from fam.utils.backoff import http_backoff
 
@@ -28,9 +28,9 @@ def get_db(db_type,
         url = _get_url(host, 5984 if port is None else port, https, username, password)
         ## kwargs may inc reset, remote_url, continuous
         return CouchDBWrapper(mapper, url, db_name, **kwargs)
-    elif db_type == "couchbase":
-        ## kwargs may inc read_only
-        return CouchbaseWrapper(mapper, host, db_name, **kwargs)
+    # elif db_type == "couchbase":
+    #     ## kwargs may inc read_only
+    #     return CouchbaseWrapper(mapper, host, db_name, **kwargs)
     else:
         raise NotImplementedError("Can't make a database of type %s" % db_type)
 

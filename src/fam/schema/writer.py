@@ -66,7 +66,7 @@ def createJsonSchema(fam_class):
         "additionalProperties": fam_class.additional_properties,
     }
 
-    required_fields = []
+    required_fields = ["namespace", "type"]
 
     for name, field in fam_class.fields.items():
         field_class_name = field.__class__.__name__
