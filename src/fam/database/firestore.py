@@ -298,7 +298,9 @@ class FirestoreWrapper(BaseDatabase):
 
 
     @refresh_check
-    def update(self, namespace, type_name, key, values):
+    def update(self, namespace, type_name, key, input_value):
+
+        values = self.data_adapter.serialise(input_value)
 
         self._check_uniqueness_typed(namespace, type_name, key, values)
         doc_ref = self.db.collection(type_name).document(key)
