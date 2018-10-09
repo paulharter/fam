@@ -525,7 +525,7 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
         if alias in self.fields.keys():
             self._update_property(alias, value.key, field)
 
-        elif name in self.fields or name in ("type", "namespace", "schema") or self.additional_properties :
+        elif name in self.fields or name in ("type", "namespace", "schema", "update_seconds", "update_nanos") or self.additional_properties :
             if field is not None:
                 if field.immutable and name in self._properties:
                     raise FamImmutableError("You cannot change the immutable property %s" % name)
