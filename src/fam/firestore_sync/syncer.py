@@ -14,17 +14,15 @@ class FirestoreSyncer(object):
         self.doc_refs = []
         self.since = 0
         self.batch_size = batch_size
-
         self.data_adapter = FirestoreDataAdapter()
+        self.types_to_sync_up = None
 
 
     def add_query(self, query):
-
         self.queries.append(query)
 
 
     def add_doc_ref(self, doc_ref):
-
         self.doc_refs.append(doc_ref)
 
     def add_snapshot(self, snapshot):
@@ -77,14 +75,16 @@ class FirestoreSyncer(object):
                 self.since = last_seq
                 batch = fs.batch()
                 for item in changes:
-                    value = item.value
-                    if "update_nanos" in value:
-                        del value["update_nanos"]
-                    if "update_seconds" in value:
-                        del value["update_seconds"]
-                    value["_id"] = item.key
-                    serialised_value = self.data_adapter.serialise(value)
-                    batch.set(fs.collection(item.value["type"]).document(item.key), serialised_value)
+                    type_name = item.value["type"]
+                    if self.types_to_sync_up is None or type_name in self.types_to_sync_up:
+                        value = item.value
+                        if "update_nanos" in value:
+                            del value["update_nanos"]
+                        if "update_seconds" in value:
+                            del value["update_seconds"]
+                        value["_id"] = item.key
+                        serialised_value = self.data_adapter.serialise(value)
+                        batch.set(fs.collection(type_name).document(item.key), serialised_value)
                 batch.commit()
             else:
                 break
