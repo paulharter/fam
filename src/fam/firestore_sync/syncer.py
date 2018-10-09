@@ -11,6 +11,7 @@ class FirestoreSyncer(object):
         self.couchdb_wrapper = couchdb_wrapper
         self.firestore_wrapper = firestore_wrapper
         self.queries = []
+        self.doc_refs = []
         self.since = 0
         self.batch_size = batch_size
 
@@ -22,26 +23,38 @@ class FirestoreSyncer(object):
         self.queries.append(query)
 
 
+    def add_doc_ref(self, doc_ref):
+
+        self.doc_refs.append(doc_ref)
+
+    def add_snapshot(self, snapshot):
+
+        item = self.firestore_wrapper.data_adapter.deserialise(snapshot.to_dict())
+        update_time = snapshot.update_time
+        item["update_seconds"] = update_time.seconds
+        item["update_nanos"] = update_time.nanos
+        try:
+            self.couchdb_wrapper._set(item["_id"], item)
+        except FamResourceConflict as e:
+            existing = self.couchdb_wrapper._get(item["_id"])
+            if update_time.seconds > existing.value["update_seconds"] or \
+                    (update_time.seconds == existing.value["update_seconds"] and
+                     update_time.nanos > existing.value["update_nanos"]):
+                item["_rev"] = existing.rev
+                self.couchdb_wrapper._set(item["_id"], item)
+            else:
+                pass
+
+
     def sync_down(self):
 
         for query in self.queries:
-
             for snapshot in self.firestore_wrapper.query_snapshots(query, batch_size=self.batch_size):
-                item = self.firestore_wrapper.data_adapter.deserialise(snapshot.to_dict())
-                update_time = snapshot.update_time
-                item["update_seconds"] = update_time.seconds
-                item["update_nanos"] = update_time.nanos
-                try:
-                    self.couchdb_wrapper._set(item["_id"], item)
-                except FamResourceConflict as e:
-                    existing = self.couchdb_wrapper._get(item["_id"])
-                    if update_time.seconds > existing.value["update_seconds"] or \
-                            (update_time.seconds == existing.value["update_seconds"] and
-                                     update_time.nanos > existing.value["update_nanos"]):
-                        item["_rev"] = existing.rev
-                        self.couchdb_wrapper._set(item["_id"], item)
-                    else:
-                        pass
+                self.add_snapshot(snapshot)
+
+        for doc_ref in self.doc_refs:
+            snapshot = doc_ref.get()
+            self.add_snapshot(snapshot)
 
         self.since = self.couchdb_wrapper.info()["update_seq"]
 

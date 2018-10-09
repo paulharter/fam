@@ -113,6 +113,29 @@ class TestDB(unittest.TestCase):
         self.assertEqual(updated.name, "jelly")
 
 
+    def test_sync_down_single(self):
+
+        paul = Person.create(self.firestore, name="paul")
+        sol = Person.create(self.firestore, name="sol")
+        dog1 = Dog.create(self.firestore, name="woofer", owner=paul)
+
+        syncer = FirestoreSyncer(self.couchdb, self.firestore)
+
+        dog1_ref = self.firestore.db.collection("dog").document(dog1.key)
+
+        syncer.add_doc_ref(dog1_ref)
+
+        dogs = Dog.all(self.couchdb)
+        dogs_list = list(dogs)
+        self.assertEqual(len(dogs_list), 0)
+
+        syncer.sync_down()
+        dogs = Dog.all(self.couchdb)
+        dogs_list = list(dogs)
+        self.assertEqual(len(dogs_list), 1)
+
+
+
     def test_sync_up(self):
 
         paul = Person.create(self.firestore, name="paul")
@@ -143,13 +166,5 @@ class TestDB(unittest.TestCase):
         self.assertEqual(len(dogs), 5)
 
 
-    # def test_sync_geo_point(self):
-    #
-    #     paul = Person.create(self.firestore, name="paul")
-    #     sol = Person.create(self.firestore, name="sol")
-    #
-    #     loc = LatLong(latitude=51.2345, longitude=-1.4533)
-    #     house = House.create(self.db, name="my house", location=loc)
-    #
-    #
+
 
