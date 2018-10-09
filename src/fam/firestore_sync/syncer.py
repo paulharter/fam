@@ -35,6 +35,7 @@ class FirestoreSyncer(object):
         item["update_nanos"] = update_time.nanos
         try:
             self.couchdb_wrapper._set(item["_id"], item)
+            return item
         except FamResourceConflict as e:
             existing = self.couchdb_wrapper._get(item["_id"])
             if update_time.seconds > existing.value["update_seconds"] or \
@@ -42,21 +43,28 @@ class FirestoreSyncer(object):
                      update_time.nanos > existing.value["update_nanos"]):
                 item["_rev"] = existing.rev
                 self.couchdb_wrapper._set(item["_id"], item)
-            else:
-                pass
+                return item
 
+        return None
 
     def sync_down(self):
 
+        items = []
+
         for query in self.queries:
             for snapshot in self.firestore_wrapper.query_snapshots(query, batch_size=self.batch_size):
-                self.add_snapshot(snapshot)
+                item = self.add_snapshot(snapshot)
+                if item is not None:
+                    items.append(item)
 
         for doc_ref in self.doc_refs:
             snapshot = doc_ref.get()
-            self.add_snapshot(snapshot)
+            item = self.add_snapshot(snapshot)
+            if item is not None:
+                items.append(item)
 
         self.since = self.couchdb_wrapper.info()["update_seq"]
+        return items
 
 
     def sync_up(self):

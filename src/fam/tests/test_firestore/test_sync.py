@@ -101,7 +101,8 @@ class TestDB(unittest.TestCase):
         dogs_list = list(dogs)
         self.assertEqual(len(dogs_list), 0)
 
-        syncer.sync_down()
+        changed = syncer.sync_down()
+
         dogs = Dog.all(self.couchdb)
         dogs_list = list(dogs)
         self.assertEqual(len(dogs_list), 3)
@@ -111,6 +112,8 @@ class TestDB(unittest.TestCase):
         updated = self.couchdb.get(dog3.key)
 
         self.assertEqual(updated.name, "jelly")
+
+        self.assertEqual(len(changed), 3)
 
 
     def test_sync_down_single(self):
