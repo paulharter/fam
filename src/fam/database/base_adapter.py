@@ -70,7 +70,10 @@ class BaseDataAdapter(object):
             return self.serialise_number(node)
         if hasattr(node, "to_json"):
             return self.serialise_object(node)
-        raise Exception("FirestoreDataAdapter can't serialise this value: %s", node)
+        if node is None:
+            return None
+
+        raise Exception("FirestoreDataAdapter can't deserialise this value: %s" % node)
 
 
     def serialise_lat_long(self, lat_long):
