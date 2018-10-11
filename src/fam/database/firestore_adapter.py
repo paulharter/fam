@@ -56,5 +56,7 @@ class FirestoreDataAdapter(BaseDataAdapter):
             return node
         if self.is_a_number(node):
             return node
+        if node is None:
+            return None
 
-        raise Exception("FirestoreDataAdapter can't deserialise this value: %s", node)
+        raise Exception("FirestoreDataAdapter can't deserialise this value: %s" % node)
