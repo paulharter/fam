@@ -192,6 +192,8 @@ class FirestoreWrapper(BaseDatabase):
 
         type = value["type"]
 
+        value["_id"] = key
+
         sans_metadata = copy.deepcopy(value)
 
         del sans_metadata["type"]
@@ -199,7 +201,7 @@ class FirestoreWrapper(BaseDatabase):
 
         self.db.collection(type).document(key).set(sans_metadata)
 
-        value["_id"] = key
+
 
         return ResultWrapper.from_couchdb_json(value)
 
@@ -216,7 +218,7 @@ class FirestoreWrapper(BaseDatabase):
 
     def value_from_snapshot(self, snapshot):
         as_json = self.data_adapter.deserialise(snapshot.to_dict())
-        as_json["_id"] = snapshot.reference.id
+        # as_json["_id"] = snapshot.reference.id
         as_json["type"] = snapshot.reference.parent.id
         as_json["namespace"] = self.namespace
         return as_json

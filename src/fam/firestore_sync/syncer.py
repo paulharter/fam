@@ -26,8 +26,7 @@ class FirestoreSyncer(object):
         self.doc_refs.append(doc_ref)
 
     def add_snapshot(self, snapshot):
-
-        item = self.firestore_wrapper.data_adapter.deserialise(snapshot.to_dict())
+        item = self.firestore_wrapper.value_from_snapshot(snapshot)
         update_time = snapshot.update_time
         item["update_seconds"] = update_time.seconds
         item["update_nanos"] = update_time.nanos
@@ -84,6 +83,9 @@ class FirestoreSyncer(object):
                             del value["update_seconds"]
                         value["_id"] = item.key
                         serialised_value = self.data_adapter.serialise(value)
+                        # del serialised_value["_id"]
+                        del serialised_value["type"]
+                        del serialised_value["namespace"]
                         batch.set(fs.collection(type_name).document(item.key), serialised_value)
                 batch.commit()
             else:

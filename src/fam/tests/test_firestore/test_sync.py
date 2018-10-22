@@ -51,7 +51,7 @@ class TestDB(unittest.TestCase):
         dog3 = Dog.create(self.firestore, name="fly", owner=paul)
 
         dogs_ref = self.firestore.db.collection("dog")
-        q = dogs_ref.where("owner_id", "==", paul.key)
+        q = dogs_ref.where(u"owner_id", u"==", paul.key)
 
         dogs = self.firestore.query_items(q, batch_size=1)
         dogs_list = list(dogs)
