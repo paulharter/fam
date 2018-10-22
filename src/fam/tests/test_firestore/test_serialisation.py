@@ -15,6 +15,9 @@ from fam.database.firestore_adapter import FirestoreDataAdapter
 import fam
 from fam.exceptions import *
 from fam.tests.models.test04 import Fish
+from fam.tests.models.test04 import NAMESPACE as fish_namespace
+from fam.tests.models.test01 import Dog
+from fam.tests.models.test01 import  NAMESPACE as dog_namespace
 
 from fam.database import FirestoreWrapper
 from fam.mapper import ClassMapper
@@ -119,6 +122,47 @@ class TestSerialisation(unittest.TestCase):
 
 
 
+class TestOptimiseSerialisationDatabase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+
+        creds_path = os.path.join(SECRETS_DIR, "earth-rover-test-d241bce5266d.json")
+        mapper = ClassMapper([Dog])
+        cls.db = FirestoreWrapper(mapper, creds_path, namespace=dog_namespace)
+        cls.clear_db()
+
+
+    @classmethod
+    def clear_db(cls):
+        cls.db.delete_all("dog")
+
+
+    def test_data_base_id(self):
+
+        dog = Dog.create(self.db, name="woofer")
+
+        dog_id = dog.key
+
+        self.assertTrue(dog.key is not None)
+
+        doc_ref = self.db.db.collection("dog").document(dog_id)
+
+        doc = doc_ref.get()
+        as_dict = doc.to_dict()
+
+        self.assertTrue("_id" not in as_dict)
+        self.assertTrue("type" not in as_dict)
+        self.assertTrue("namespace" not in as_dict)
+
+        got_dog = Dog.get(self.db, dog_id)
+
+        self.assertTrue(got_dog.key == dog_id)
+        self.assertTrue(got_dog.namespace == dog.namespace)
+        self.assertTrue(got_dog.type == "dog")
+
+
+
 
 class TestDatabase(unittest.TestCase):
 
@@ -127,7 +171,7 @@ class TestDatabase(unittest.TestCase):
 
         creds_path = os.path.join(SECRETS_DIR, "earth-rover-test-d241bce5266d.json")
         mapper = ClassMapper([Fish])
-        cls.db = FirestoreWrapper(mapper, creds_path)
+        cls.db = FirestoreWrapper(mapper, creds_path, namespace=fish_namespace)
         cls.clear_db()
 
 

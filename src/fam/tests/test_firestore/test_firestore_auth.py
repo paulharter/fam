@@ -47,7 +47,9 @@ class TestDB(unittest.TestCase):
                                    None,
                                    project_id=PROJECT_NAME,
                                    custom_token=custom_token.decode("utf-8"),
-                                   api_key=API_KEY
+                                   api_key=API_KEY,
+                                   namespace=NAMESPACE
+
                                    )
 
 

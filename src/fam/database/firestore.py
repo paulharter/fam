@@ -1,6 +1,7 @@
 import json
 import time
 import sys
+import copy
 
 import requests
 from requests.exceptions import HTTPError
@@ -81,13 +82,15 @@ class FirestoreWrapper(BaseDatabase):
                  api_key=None,
                  validator=None,
                  read_only=False,
-                 name=None
+                 name=None,
+                 namespace=None
                  ):
 
         self.mapper = mapper
         self.validator = validator
         self.read_only = read_only
         self.api_key = api_key
+        self.namespace = namespace
 
         self.expires = None
 
@@ -187,9 +190,17 @@ class FirestoreWrapper(BaseDatabase):
             except jsonschema.ValidationError as e:
                 raise FamValidationError(e)
 
+        type = value["type"]
+
+        sans_metadata = copy.deepcopy(value)
+
+        del sans_metadata["type"]
+        del sans_metadata["namespace"]
+
+        self.db.collection(type).document(key).set(sans_metadata)
+
         value["_id"] = key
 
-        self.db.collection(value["type"]).document(key).set(value)
         return ResultWrapper.from_couchdb_json(value)
 
 
@@ -197,18 +208,25 @@ class FirestoreWrapper(BaseDatabase):
     def _get(self, key, class_name):
         doc_ref = self.db.collection(class_name).document(key)
         try:
-            doc = doc_ref.get()
-            deserialised = self.data_adapter.deserialise(doc.to_dict())
-            return ResultWrapper.from_couchdb_json(deserialised)
+            as_json = self.value_from_snapshot(doc_ref.get())
+            return ResultWrapper.from_couchdb_json(as_json)
         except NotFound:
             return None
+
+
+    def value_from_snapshot(self, snapshot):
+        as_json = self.data_adapter.deserialise(snapshot.to_dict())
+        as_json["_id"] = snapshot.reference.id
+        as_json["type"] = snapshot.reference.parent.id
+        as_json["namespace"] = self.namespace
+        return as_json
 
 
     def _get_refs_from(self, key, type_name, field_name):
         type_ref = self.db.collection(type_name)
         query_ref = type_ref.where(field_name, u'==', key)
-        docs = query_ref.get()
-        rows = [ResultWrapper.from_couchdb_json(doc.to_dict()) for doc in docs]
+        snapshots = query_ref.get()
+        rows = [ResultWrapper.from_couchdb_json(self.value_from_snapshot(snapshot)) for snapshot in snapshots]
         objs = [GenericObject._from_doc(self, row.key, row.rev, row.value) for row in rows]
         return objs
 
@@ -270,9 +288,9 @@ class FirestoreWrapper(BaseDatabase):
 
     def query_items_iterator(self, firebase_query, batch_size):
 
-        for snapshop in self.query_snapshots_iterator(firebase_query, batch_size=batch_size):
-            deserialised = self.data_adapter.deserialise(snapshop.to_dict())
-            wrapper = ResultWrapper.from_couchdb_json(deserialised)
+
+        for snapshot in self.query_snapshots_iterator(firebase_query, batch_size=batch_size):
+            wrapper = ResultWrapper.from_couchdb_json(self.value_from_snapshot(snapshot))
             obj = GenericObject.from_row(self, wrapper)
             yield obj
 
@@ -356,7 +374,10 @@ class FirestoreWrapper(BaseDatabase):
         doc_ref = self.db.collection(type_name).document(key)
         doc = doc_ref.get()
         as_dict = doc.to_dict()
-        cls = self.mapper.get_class(as_dict["type"], as_dict["namespace"])
+
+        type_name = doc.reference.parent.id
+
+        cls = self.mapper.get_class(type_name, self.namespace)
 
         for field_name, field_value in as_dict.items():
             if field_name in cls.fields:

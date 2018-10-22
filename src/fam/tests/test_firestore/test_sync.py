@@ -25,7 +25,7 @@ class TestDB(unittest.TestCase):
     def setUp(self):
         creds_path = os.path.join(ROOT_DIR, "secrets", "earth-rover-test-d241bce5266d.json")
         mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey])
-        self.firestore = FirestoreWrapper(mapper, creds_path)
+        self.firestore = FirestoreWrapper(mapper, creds_path, namespace=NAMESPACE)
         self.couchdb = CouchDBWrapper(mapper, "http://localhost:5984", db_name="test", reset=True)
         self.couchdb.update_designs()
         self.clear_db()

@@ -24,7 +24,7 @@ class TestDB(unittest.TestCase):
 
         creds_path = os.path.join(SECRETS_DIR, "earth-rover-test-d241bce5266d.json")
         mapper = ClassMapper([House, Fence])
-        cls.db = FirestoreWrapper(mapper, creds_path)
+        cls.db = FirestoreWrapper(mapper, creds_path, namespace=NAMESPACE)
         cls.clear_db()
 
 
