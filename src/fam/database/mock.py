@@ -5,6 +5,7 @@ from .null import NullDatabase
 
 class MockDatabase(BaseDatabase):
     database_type = "mock"
+    check_on_save = False
 
     def __init__(self, mapper):
         self.mapper = mapper
@@ -26,3 +27,6 @@ class MockDatabase(BaseDatabase):
 
     def query_view(self, view_name, **kwargs):
         return self.buffer.query_view(view_name, **kwargs)
+
+    def get_refs_from(self, namespace, type_name, name, key, field):
+        return self.buffer.get_refs_from(namespace, type_name, name, key, field)

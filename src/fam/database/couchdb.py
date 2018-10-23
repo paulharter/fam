@@ -116,6 +116,7 @@ class CouchDBWrapper(BaseDatabase):
 
     database_type = "couchdb"
     supports_skip = True
+    check_on_save = True
 
     def __init__(self, mapper,
                  db_url,

@@ -13,6 +13,7 @@ class BaseDatabase(object):
     }
 }'''
 
+    check_on_save = True
 
 ###################################
 

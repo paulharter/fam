@@ -73,6 +73,7 @@ class FirestoreWrapper(BaseDatabase):
         raise NotImplementedError
 
     database_type = "firestore"
+    check_on_save = False
 
     def __init__(self,
                  mapper,

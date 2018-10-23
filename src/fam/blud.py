@@ -167,10 +167,26 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
         return obj
 
 
-    def save(self, db):
+    def save_without_checks(self, db):
+        self._pre_save_new_cb(db)
+        created = db.set_object(self)
+        if self.use_rev and hasattr(created, "rev") and created.rev is not None:
+            self.rev = created.rev
+        self._post_save_new_cb(db)
         self._db = db
 
-        # result = db._get(self.key)
+
+    def save(self, db):
+
+        if db.check_on_save:
+            return self.save_with_checks(db)
+        else:
+            return self.save_without_checks(db)
+
+
+    def save_with_checks(self, db):
+
+        self._db = db
 
         existing = FamObject.get(db, self.key, class_name=self.type)
 
@@ -240,6 +256,7 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
             if isinstance(field, ReferenceFrom):
                 type_name = self.__class__._type_with_ref(field_name)
                 objs = self._db.get_refs_from(self.namespace, type_name, field_name, self.key, field)
+
                 if field.cascade_delete:
                     for obj in objs:
                         obj.delete(db)
