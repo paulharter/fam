@@ -224,6 +224,11 @@ class CouchDBWrapper(BaseDatabase):
         return self.query_view("raw/all", key=type_name)
 
 
+    def set_object(self, obj, rev=None):
+
+        return self._set(obj.key, obj._properties, rev=rev)
+
+
     @http_backoff
     def _set(self, key, input_value, rev=None, backoff=False):
 

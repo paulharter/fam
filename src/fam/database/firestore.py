@@ -170,6 +170,10 @@ class FirestoreWrapper(BaseDatabase):
         oauth_creds.token = request_object_json["id_token"]
 
 
+    def set_object(self, obj, rev=None):
+        return self._set(obj.key, obj._properties)
+
+
     @refresh_check
     def _set(self, key, input_value, rev=None):
 

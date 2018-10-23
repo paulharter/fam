@@ -55,6 +55,22 @@ class FamWriteBufferViews(object):
         return name.replace("/", "_").replace(".", "_").replace("-", "_").replace(":", "_")
 
 
+    def remove_from_indexes(self, obj_id):
+
+        for view_name in self.indexes.keys():
+            index = self.indexes.get(view_name)
+            reverse_index = self.reverse_indexes.get(view_name)
+
+            existing_key = reverse_index.get(obj_id)
+
+            ## remove the previous entry
+            if existing_key is not None:
+                old_indexed_values = index[existing_key]
+                del old_indexed_values[obj_id]
+                del reverse_index[obj_id]
+
+
+
     def _add_to_index(self, k):
 
         # print "********* adding: ", k

@@ -21,6 +21,7 @@ class FamWriteBuffer(object):
 
 
     def put(self, thing):
+
         thing._db = self
         self.views.index_obj(thing)
 
@@ -69,17 +70,20 @@ class FamWriteBuffer(object):
     def delete(self, thing):
         if thing.key in self.store:
             del self.store[thing.key]
+            self.views.remove_from_indexes(thing.key)
         return self.db.delete(thing)
 
 
-    def get(self, key):
+    def get(self, key, class_name=None):
         got = self.db.get(key)
-        return self._refresh_cache(key, got)
+        result = self._refresh_cache(key, got)
+        return result
 
 
     def delete_key(self, key):
         if key in self.store:
             del self.store[key]
+            self.views.remove_from_indexes(key)
         return self.db.delete_key(key)
 
 

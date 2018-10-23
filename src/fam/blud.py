@@ -155,12 +155,11 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
         return db.get_unique_instance(cls.namespace, type_name, field_name, value)
 
 
-
     @classmethod
     def create(cls, db, key=None, **kwargs):
         obj = cls(key=key, **kwargs)
         obj._pre_save_new_cb(db)
-        created = db._set(obj.key, obj._properties)
+        created = db.set_object(obj)
         if obj.use_rev and hasattr(created, "rev") and created.rev is not None:
             obj.rev = created.rev
         obj._post_save_new_cb(db)
@@ -188,21 +187,20 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
 
             self._pre_save_update_cb(db, existing._properties)
             # just force the rev if not using it
-            result = db._set(self.key, self._properties, rev=self.rev if self.use_rev else rev)
+            result = db.set_object(self, rev=self.rev if self.use_rev else rev)
 
-            if self.use_rev:
+            if self.use_rev and hasattr(result, "rev"):
                 self.rev = result.rev
 
             self._post_save_update_cb(db)
             updated = True
         else:
             self._pre_save_new_cb(db)
-            result = db._set(self.key, self._properties)
+            result = db.set_object(self)
             self._post_save_new_cb(db)
             updated = False
 
-
-        if self.use_rev:
+        if self.use_rev and hasattr(result, "rev"):
             self.rev = result.rev
 
         return updated
@@ -226,16 +224,15 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
         obj.delete(db)
 
 
+
     def delete_references(self, db):
-        # print("delete_references in ")
-        for field_name, field in self.__class__.fields.items():
+        fields_set = list(self.__class__.fields.items())
+        for field_name, field in fields_set:
             if isinstance(field, ReferenceTo):
                 if field.cascade_delete:
                     if field_name.endswith("_id"):
-
                         obj = getattr(self, field_name[:-3])
                         if obj is not None:
-
                             obj.delete(db)
                     else:
                         raise Exception("should have _id")
@@ -243,7 +240,6 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
             if isinstance(field, ReferenceFrom):
                 type_name = self.__class__._type_with_ref(field_name)
                 objs = self._db.get_refs_from(self.namespace, type_name, field_name, self.key, field)
-
                 if field.cascade_delete:
                     for obj in objs:
                         obj.delete(db)
@@ -383,7 +379,7 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
 
     @classmethod
     def view(cls, db, view_name, **kwargs):
-        if db.database_type == "sync_gateway":
+        if db.database_type in ["sync_gateway", "null"]:
             rows = db.view(view_name, **kwargs)
             return [GenericObject._from_doc(db, row.key, row.rev, row.value) for row in rows]
         else:
@@ -473,7 +469,7 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
                     traceback.print_stack()
                     raise Exception("no db")
                 # return GenericObject.get(self._db, self._properties[id_name])
-                return self._db.get(self._properties[id_name], ref.refcls)
+                return self._db.get(self._properties[id_name], class_name=ref.refcls)
 
         if name in self._properties.keys():
             # print("found in properties", name)
