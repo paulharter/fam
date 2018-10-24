@@ -107,19 +107,17 @@ class FirestoreWrapper(BaseDatabase):
             self.update_expires()
             self.creds = CustomToken(self.user["idToken"], project_id)
 
-            # ugly hack to account for different behaviour of google libs
-
+            app_name = name if name else firebase_admin._DEFAULT_APP_NAME
             try:
-                if name is not None:
-                    app = firebase_admin.initialize_app(self.creds, name=name)
-                else:
-                    app = firebase_admin.initialize_app(self.creds)
-            except Exception as e:
-                self.creds = self.creds.get_credential()
-                if name is not None:
-                    app = firebase_admin.initialize_app(self.creds, name=name)
-                else:
-                    app = firebase_admin.initialize_app(self.creds)
+                app = firebase_admin.get_app(name=app_name)
+            except ValueError as e:
+                # ugly hack to account for different behaviour of google libs
+                try:
+                    app = firebase_admin.initialize_app(self.creds, name=app_name)
+                except Exception as e:
+                    self.creds = self.creds.get_credential()
+                    app = firebase_admin.initialize_app(self.creds, name=app_name)
+
 
         elif creds_path is not None:
             # in dev with service creds
