@@ -102,18 +102,59 @@ class TestDB(unittest.TestCase):
         self.assertEqual(len(dogs_list), 0)
 
         changed = syncer.sync_down()
+        self.assertEqual(len(changed), 3)
 
         dogs = Dog.all(self.couchdb)
         dogs_list = list(dogs)
         self.assertEqual(len(dogs_list), 3)
 
         dog3.update({"name":"jelly"})
-        syncer.sync_down()
+
+        changed = syncer.sync_down()
+        print(changed)
+        self.assertEqual(len(changed), 1)
+
+
         updated = self.couchdb.get(dog3.key)
 
         self.assertEqual(updated.name, "jelly")
 
+
+    def test_sync_down_since_in_db(self):
+
+        paul = Person.create(self.firestore, name="paul")
+        sol = Person.create(self.firestore, name="sol")
+        dog1 = Dog.create(self.firestore, name="woofer", owner=paul)
+        dog2 = Dog.create(self.firestore, name="tiny", owner=paul)
+        dog3 = Dog.create(self.firestore, name="fly", owner=paul)
+
+        dogs_ref = self.firestore.db.collection("dog")
+
+        syncer = FirestoreSyncer(self.couchdb, self.firestore, since_in_db=True)
+        syncer.add_query(dogs_ref.where("owner_id", "==", paul.key))
+
+        dogs = Dog.all(self.couchdb)
+        dogs_list = list(dogs)
+        self.assertEqual(len(dogs_list), 0)
+
+        changed = syncer.sync_down()
         self.assertEqual(len(changed), 3)
+
+        dogs = Dog.all(self.couchdb)
+        dogs_list = list(dogs)
+        self.assertEqual(len(dogs_list), 3)
+
+        dog3.update({"name":"jelly"})
+
+        changed = syncer.sync_down()
+        print(changed)
+        self.assertEqual(len(changed), 1)
+
+
+        updated = self.couchdb.get(dog3.key)
+
+        self.assertEqual(updated.name, "jelly")
+
 
 
     def test_sync_down_single(self):

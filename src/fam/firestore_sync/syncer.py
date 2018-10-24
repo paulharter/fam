@@ -6,16 +6,19 @@ from fam.database.firestore_adapter import FirestoreDataAdapter
 
 class FirestoreSyncer(object):
 
-    def __init__(self, couchdb_wrapper, firestore_wrapper, batch_size=100):
+    def __init__(self, couchdb_wrapper, firestore_wrapper, batch_size=100, since_in_db=False):
 
         self.couchdb_wrapper = couchdb_wrapper
         self.firestore_wrapper = firestore_wrapper
         self.queries = []
         self.doc_refs = []
-        self.since = 0
         self.batch_size = batch_size
         self.data_adapter = FirestoreDataAdapter()
         self.types_to_sync_up = None
+        self._since = 0
+        self.since_rev = None
+        self.since_in_db = since_in_db
+
 
 
     def add_query(self, query):
@@ -92,4 +95,31 @@ class FirestoreSyncer(object):
                 break
 
 
+    def get_since(self):
 
+        if self.since_in_db:
+            since_result = self.couchdb_wrapper._get("sync_since")
+            if since_result is not None:
+                self.since_rev = since_result.rev
+                return since_result.value["since"]
+            else:
+                return 0
+        else:
+            return self._since
+
+
+    def set_since(self, since):
+
+        if self.since_in_db:
+            since_result = self.couchdb_wrapper._get("sync_since")
+            if since_result is not None:
+                self.since_rev = since_result.rev
+            value = {"since": since}
+            if self.since_rev is not None:
+                value["_rev"] = self.since_rev
+            self.couchdb_wrapper._set("sync_since", value)
+        else:
+            self._since = since
+
+
+    since = property(get_since, set_since)
