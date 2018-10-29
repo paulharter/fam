@@ -95,6 +95,7 @@ class FirestoreSyncer(object):
                 self.since = last_seq
                 print("synced up %s items" % count)
             else:
+                print("nothing to sync")
                 break
 
 
