@@ -73,7 +73,7 @@ class BaseDataAdapter(object):
         if node is None:
             return None
 
-        raise Exception("FirestoreDataAdapter can't deserialise this value: %s" % node)
+        raise Exception("BaseAdapter can't serialise this value: %s" % str(node))
 
 
     def serialise_lat_long(self, lat_long):

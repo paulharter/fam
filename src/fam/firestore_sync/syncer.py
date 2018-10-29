@@ -20,7 +20,6 @@ class FirestoreSyncer(object):
         self.since_in_db = since_in_db
 
 
-
     def add_query(self, query):
         self.queries.append(query)
 
@@ -63,7 +62,7 @@ class FirestoreSyncer(object):
             if item is not None:
                 items.append(item)
 
-        self.since = self.couchdb_wrapper.info()["update_seq"]
+        #self.since = self.couchdb_wrapper.info()["update_seq"]
         return items
 
 
@@ -74,7 +73,6 @@ class FirestoreSyncer(object):
             last_seq, changes = self.couchdb_wrapper._changes(since=self.since, limit=self.batch_size)
 
             if changes:
-                self.since = last_seq
                 batch = fs.batch()
                 for item in changes:
                     type_name = item.value["type"]
@@ -90,7 +88,9 @@ class FirestoreSyncer(object):
                         del serialised_value["type"]
                         del serialised_value["namespace"]
                         batch.set(fs.collection(type_name).document(item.key), serialised_value)
+
                 batch.commit()
+                self.since = last_seq
             else:
                 break
 
