@@ -73,6 +73,7 @@ class FirestoreSyncer(object):
             last_seq, changes = self.couchdb_wrapper._changes(since=self.since, limit=self.batch_size)
 
             if changes:
+                count = 0
                 batch = fs.batch()
                 for item in changes:
                     type_name = item.value["type"]
@@ -88,9 +89,11 @@ class FirestoreSyncer(object):
                         del serialised_value["type"]
                         del serialised_value["namespace"]
                         batch.set(fs.collection(type_name).document(item.key), serialised_value)
+                        count += 1
 
                 batch.commit()
                 self.since = last_seq
+                print("synced up %s items" % count)
             else:
                 break
 
