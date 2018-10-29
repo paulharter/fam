@@ -108,29 +108,30 @@ class FirestoreWrapper(BaseDatabase):
             self.creds = CustomToken(self.user["idToken"], project_id)
 
             app_name = name if name else firebase_admin._DEFAULT_APP_NAME
+            options = {"httpTimeout": 5}
             try:
                 app = firebase_admin.get_app(name=app_name)
             except ValueError as e:
                 # ugly hack to account for different behaviour of google libs
                 try:
-                    app = firebase_admin.initialize_app(self.creds, name=app_name)
+                    app = firebase_admin.initialize_app(self.creds, name=app_name, options=options)
                 except Exception as e:
                     self.creds = self.creds.get_credential()
-                    app = firebase_admin.initialize_app(self.creds, name=app_name)
+                    app = firebase_admin.initialize_app(self.creds, name=app_name, options=options)
 
 
         elif creds_path is not None:
             # in dev with service creds
             try:
                 self.creds = credentials.Certificate(creds_path)
-                app = firebase_admin.initialize_app(self.creds)
+                app = firebase_admin.initialize_app(self.creds, options=options)
             except ValueError as e:
                 print("already initaialised")
         else:
             # in app engine environment
             already_initialised = firebase_admin._DEFAULT_APP_NAME in firebase_admin._apps
             if not already_initialised:
-                app = firebase_admin.initialize_app()
+                app = firebase_admin.initialize_app(options=options)
 
         self.db = firestore.client(app=app)
 
