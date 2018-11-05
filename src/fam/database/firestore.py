@@ -99,6 +99,8 @@ class FirestoreWrapper(BaseDatabase):
 
         # Use a service account
 
+        options = {"httpTimeout": 5}
+
         app = None
 
         if custom_token is not None:
@@ -108,7 +110,7 @@ class FirestoreWrapper(BaseDatabase):
             self.creds = CustomToken(self.user["idToken"], project_id)
 
             app_name = name if name else firebase_admin._DEFAULT_APP_NAME
-            options = {"httpTimeout": 5}
+
             try:
                 app = firebase_admin.get_app(name=app_name)
             except ValueError as e:
