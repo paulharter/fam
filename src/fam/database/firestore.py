@@ -197,24 +197,34 @@ class FirestoreWrapper(BaseDatabase):
                 raise FamValidationError(e)
 
         type = value["type"]
-
         value["_id"] = key
-
         sans_metadata = copy.deepcopy(value)
 
         del sans_metadata["type"]
         del sans_metadata["namespace"]
 
         self.db.collection(type).document(key).set(sans_metadata)
-
-
-
         return ResultWrapper.from_couchdb_json(value)
+
+
+
+    def _work_out_class(self, key, class_name):
+
+        if isinstance(class_name, list):
+            for cn in class_name:
+                if key.startswith(cn):
+                    return cn
+            raise Exception("can't work out class name %s %s" % (key, class_name))
+        else:
+            return class_name
 
 
     @refresh_check
     def _get(self, key, class_name):
-        doc_ref = self.db.collection(class_name).document(key)
+
+        single_class_name = self._work_out_class(key, class_name)
+        doc_ref = self.db.collection(single_class_name).document(key)
+
         try:
             as_json = self.value_from_snapshot(doc_ref.get())
             return ResultWrapper.from_couchdb_json(as_json)
