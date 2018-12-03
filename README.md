@@ -247,10 +247,6 @@ Then you can then query these views like this `db.view(viewpath, **kwargs)` wher
 cats_with_three_legs = db.view("animal_views/cat_legs", key=3)
 ```
 
-## String Formats
-
-The StringField can easiliy be extended to define strings of data in certain formats. Currently there are two in fam.string_formats, EmailField and DateTimeField.
-
 ## Write Buffer
 
 This is a context managed in-memory object buffer. Reads pass through it so the same Python object always represents same db doc,
