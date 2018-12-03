@@ -2,7 +2,7 @@ machine:
   timezone:
     Europe/London
   python:
-    version: 3.4.4
+    version: 3.6.3
 
 test:
   override:
