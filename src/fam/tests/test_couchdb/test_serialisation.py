@@ -122,6 +122,41 @@ class TestSerialisation(unittest.TestCase):
         self.assertTrue(isinstance(serialised["birthday"], str))
 
 
+class TestDeSerialisation(unittest.TestCase):
+
+
+
+
+    def setUp(self):
+        self.adapter = CouchDBDataAdapter()
+
+
+    def test_deserialise_datetime(self):
+
+        birthday = datetime.datetime(1964, 12, 5, 12, tzinfo=pytz.UTC)
+
+        doc = { "name": "Paul",
+                "age": 53,
+                "height": 5.9,
+                "new_datetime": birthday,
+                "old_datetime": "1964-12-05T12:00:00Z"
+
+        }
+
+        serialised = self.adapter.serialise(doc)
+
+        # these should all pass through unchanged
+        self.assertEquals(serialised["new_datetime"], "::datetime::1964-12-05T12:00:00Z")
+        self.assertEquals(serialised["old_datetime"], "1964-12-05T12:00:00Z")
+
+        deserialised = self.adapter.deserialise(serialised)
+
+        self.assertEquals(deserialised["new_datetime"], birthday)
+        self.assertEquals(deserialised["old_datetime"], birthday)
+
+
+
+
 
 
 class TestDatabase(unittest.TestCase):

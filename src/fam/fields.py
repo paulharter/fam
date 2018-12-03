@@ -24,7 +24,8 @@ __all__ = [
     "DecimalField",
     "FractionField",
     "ReferenceTo",
-    "ReferenceFrom"
+    "ReferenceFrom",
+    "EmailField",
 ]
 
 from .constants import *
@@ -159,6 +160,12 @@ class FractionField(Field):
 
     def get_default(self):
         return self.default.copy()
+
+
+class EmailField(StringField):
+
+    pattern = r"""^([-!#$%&'*+/=?^_`{}|~0-9a-zA-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9a-zA-Z]+)*|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*")@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}\.?$"""
+
 
 
 class ReferenceTo(Field):

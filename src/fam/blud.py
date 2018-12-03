@@ -20,8 +20,14 @@ __all__ = [
     "ListField",
     "DictField",
     "ObjectField",
+    "LatLongField",
+    "DateTimeField",
+    "BytesField",
+    "DecimalField",
+    "FractionField",
     "ReferenceTo",
     "ReferenceFrom",
+    "EmailField",
     "GenericObject",
     "FamObject"
 ]

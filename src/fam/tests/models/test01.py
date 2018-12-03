@@ -62,7 +62,8 @@ class Cat(GenericObject):
         "colour": StringField(immutable=True),
         "tail": BoolField(immutable=True, default=True),
         "legs": NumberField(required=True),
-        "owner_id": ReferenceTo(NAMESPACE, "person", required=True)
+        "owner_id": ReferenceTo(NAMESPACE, "person", required=True),
+        "email": EmailField()
         }
 
 

@@ -1,6 +1,7 @@
 import sys
 import pytz
 import base64
+import re
 
 from copy import deepcopy
 import datetime
@@ -113,7 +114,18 @@ class BaseDataAdapter(object):
     def serialise_object(self, obj):
         return obj.to_json()
 
+    def is_legacy_datetime(self, node):
+
+        if not self.is_a_string(node):
+            return False
+
+        datepattern = r"""^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[0-1])T([0-1][0-9]|2[0-3]):[0-5]\d:[0-5]\d([.]\d{1,8})?Z$"""
+        pattern = re.compile(datepattern)
+        return pattern.match(node)
+
+
     def _deserialise_walk(self, node):
+
 
         if isinstance(node, dict):
             for k, v in node.items():
@@ -138,6 +150,14 @@ class BaseDataAdapter(object):
                 return base64.b64decode(stripped)
             if node.startswith("::datetime::"):
                 stripped = node[len("::datetime::"):]
+                if "." in stripped:
+                    dt = datetime.datetime.strptime(stripped, '%Y-%m-%dT%H:%M:%S.%fZ')
+                else:
+                    dt = datetime.datetime.strptime(stripped, '%Y-%m-%dT%H:%M:%SZ')
+                dt = dt.replace(tzinfo=pytz.utc)
+                return dt
+            if self.is_legacy_datetime(node):
+                stripped = node
                 if "." in stripped:
                     dt = datetime.datetime.strptime(stripped, '%Y-%m-%dT%H:%M:%S.%fZ')
                 else:
