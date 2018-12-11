@@ -297,27 +297,26 @@ class FirestoreWrapper(BaseDatabase):
         self._delete_collection(coll_ref, 10)
 
 
-    def query_items(self, firebase_query, batch_size):
-        return self.query_items_iterator(firebase_query, batch_size=batch_size)
+    def query_items(self, firebase_query, batch_size, order_by=u'_id'):
+        return self.query_items_iterator(firebase_query, batch_size=batch_size, order_by=order_by)
+
 
     def query_snapshots(self, firebase_query, batch_size=100):
         return self.query_snapshots_iterator(firebase_query, batch_size=batch_size)
 
 
-    def query_items_iterator(self, firebase_query, batch_size):
+    def query_items_iterator(self, firebase_query, batch_size, order_by=u'_id'):
 
-
-        for snapshot in self.query_snapshots_iterator(firebase_query, batch_size=batch_size):
+        for snapshot in self.query_snapshots_iterator(firebase_query, batch_size=batch_size, order_by=order_by):
             wrapper = ResultWrapper.from_couchdb_json(self.value_from_snapshot(snapshot))
             obj = GenericObject.from_row(self, wrapper)
             yield obj
 
 
-
-    def query_snapshots_iterator(self, firebase_query, batch_size):
+    def query_snapshots_iterator(self, firebase_query, batch_size, order_by=u'_id'):
 
         skip = 0
-        query = firebase_query.order_by(u'_id').limit(batch_size)
+        query = firebase_query.order_by(order_by).limit(batch_size)
 
         while True:
             docs = query.get()
@@ -327,9 +326,9 @@ class FirestoreWrapper(BaseDatabase):
             for doc_snapshot in docs_list:
                 yield doc_snapshot
             last_doc = docs_list[-1]
-            last_id = last_doc.to_dict()["_id"]
-            query = firebase_query.order_by(u'_id').start_after({
-                u'_id': last_id
+            last_value = last_doc.to_dict()[order_by]
+            query = firebase_query.order_by(order_by).start_after({
+                order_by: last_value
             }).limit(batch_size)
 
 
