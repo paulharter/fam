@@ -296,10 +296,21 @@ class FirestoreWrapper(BaseDatabase):
         coll_ref = self.db.collection(type_name)
         self._delete_collection(coll_ref, 10)
 
+    def _query_items_simple(self, firebase_query):
+        snapshots = firebase_query.get()
+        results = []
+        for snapshot in snapshots:
+            wrapper = ResultWrapper.from_couchdb_json(self.value_from_snapshot(snapshot))
+            results.append(GenericObject.from_row(self, wrapper))
+        return results
 
-    def query_items(self, firebase_query, batch_size, order_by=u'_id'):
-        return self.query_items_iterator(firebase_query, batch_size=batch_size, order_by=order_by)
 
+    def query_items(self, firebase_query, batch_size=None, order_by=u'_id'):
+        if batch_size is not None:
+            return self.query_items_iterator(firebase_query, batch_size=batch_size, order_by=order_by)
+        else:
+            return self._query_items_simple(firebase_query)
+    
 
     def query_snapshots(self, firebase_query, batch_size=100):
         return self.query_snapshots_iterator(firebase_query, batch_size=batch_size)
