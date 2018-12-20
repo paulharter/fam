@@ -310,7 +310,7 @@ class FirestoreWrapper(BaseDatabase):
             return self.query_items_iterator(firebase_query, batch_size=batch_size, order_by=order_by)
         else:
             return self._query_items_simple(firebase_query)
-    
+
 
     def query_snapshots(self, firebase_query, batch_size=100):
         return self.query_snapshots_iterator(firebase_query, batch_size=batch_size)
@@ -379,6 +379,8 @@ class FirestoreWrapper(BaseDatabase):
         unique_doc_ref = self.db.collection(unique_type_name).document(field_value)
         try:
             unique_doc = unique_doc_ref.get()
+            if unique_doc is None:
+                return unique_doc_ref, unique_type_name, field_name
             ## if it exists then check to see if its owned by another
             if unique_doc.to_dict()["owner"] != key:
                 raise FamUniqueError("The value %s for %s is already taken" % (field_value, field_name))
