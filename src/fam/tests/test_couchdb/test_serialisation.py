@@ -59,7 +59,7 @@ class TestSerialisation(unittest.TestCase):
         serialised = self.adapter.serialise(doc)
 
         # these should all pass through unchanged
-        self.assertEquals(doc, serialised)
+        self.assertEqual(doc, serialised)
 
 
     def test_serialise_numerics(self):
@@ -76,9 +76,9 @@ class TestSerialisation(unittest.TestCase):
         serialised = self.adapter.serialise(doc)
 
 
-        self.assertEquals(serialised["height"], "::decimal::5.9")
-        self.assertEquals(serialised["fraction"], "::fraction::1/2")
-        self.assertEquals(serialised["favorites"]["food"], "::decimal::4.2")
+        self.assertEqual(serialised["height"], "::decimal::5.9")
+        self.assertEqual(serialised["fraction"], "::fraction::1/2")
+        self.assertEqual(serialised["favorites"]["food"], "::decimal::4.2")
 
 
     def test_serialise_latlong_datetime(self):
@@ -100,8 +100,8 @@ class TestSerialisation(unittest.TestCase):
 
         self.assertTrue(isinstance(serialised["location"], str))
         self.assertTrue(isinstance(serialised["birthday"], str))
-        self.assertEquals(serialised["birthday"], "::datetime::1964-12-05T00:00:00Z")
-        self.assertEquals(serialised["location"], "::latlong::51.5102213,-0.1178892")
+        self.assertEqual(serialised["birthday"], "::datetime::1964-12-05T00:00:00Z")
+        self.assertEqual(serialised["location"], "::latlong::51.5102213,-0.1178892")
 
 
 
@@ -125,8 +125,6 @@ class TestSerialisation(unittest.TestCase):
 class TestDeSerialisation(unittest.TestCase):
 
 
-
-
     def setUp(self):
         self.adapter = CouchDBDataAdapter()
 
@@ -146,13 +144,13 @@ class TestDeSerialisation(unittest.TestCase):
         serialised = self.adapter.serialise(doc)
 
         # these should all pass through unchanged
-        self.assertEquals(serialised["new_datetime"], "::datetime::1964-12-05T12:00:00Z")
-        self.assertEquals(serialised["old_datetime"], "1964-12-05T12:00:00Z")
+        self.assertEqual(serialised["new_datetime"], "::datetime::1964-12-05T12:00:00Z")
+        self.assertEqual(serialised["old_datetime"], "1964-12-05T12:00:00Z")
 
         deserialised = self.adapter.deserialise(serialised)
 
-        self.assertEquals(deserialised["new_datetime"], birthday)
-        self.assertEquals(deserialised["old_datetime"], birthday)
+        self.assertEqual(deserialised["new_datetime"], birthday)
+        self.assertEqual(deserialised["old_datetime"], birthday)
 
 
 

@@ -7,4 +7,4 @@ install:
 services:
   - couchdb
 script:
-  -  cd src && python -m unittest discover fam/tests/test_couchdb
+  -  pytest src/fam/tests/test_couchdb
