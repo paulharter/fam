@@ -63,7 +63,7 @@ class BaseDataAdapter(object):
             return self.serialise_date_time(node)
         if self.is_a_string(node):
             return self.serialise_string(node)
-        if isinstance(node, bytes):
+        if isinstance(node, bytes) or isinstance(node, bytearray):
             return self.serialise_bytes(node)
         if isinstance(node, bool):
             return self.serialise_bool(node)

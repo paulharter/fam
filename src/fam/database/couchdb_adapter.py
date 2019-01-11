@@ -1,10 +1,5 @@
 import sys
-import datetime
-import pytz
-from fam.extra_types.lat_long import LatLong
-from fractions import Fraction
-from decimal import Decimal
-import base64
+
 
 from .base_adapter import BaseDataAdapter
 

@@ -1,4 +1,5 @@
 import unittest
+import sys
 from decimal import Decimal
 from fractions import Fraction
 from fam.extra_types.lat_long import LatLong
@@ -177,6 +178,9 @@ class TestDatabase(unittest.TestCase):
         image_path = os.path.join(DATA_DIR, "goldfish.jpg")
         with open(image_path, "rb") as f:
             image_data = f.read()
+
+        if sys.version_info < (3, 0):
+            image_data = bytearray(image_data)
 
         fish = Fish.create(self.db, name="Nemo",
                            location=loc,

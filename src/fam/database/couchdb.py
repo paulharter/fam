@@ -257,6 +257,9 @@ class CouchDBWrapper(BaseDatabase):
             value["_rev"] = rev
 
         url = "%s/%s/%s" % (self.db_url, self.db_name, key)
+
+        print(value)
+
         rsp = self.session.put(url, data=json.dumps(value,
                                                     indent=4,
                                                     sort_keys=True,
