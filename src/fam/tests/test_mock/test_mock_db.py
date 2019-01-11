@@ -12,7 +12,6 @@ from fam.database.mock import MockDatabase
 from fam.mapper import ClassMapper
 
 
-
 class TestDB(unittest.TestCase):
 
 
