@@ -4,7 +4,6 @@ import pytz
 from fam.extra_types.lat_long import LatLong
 from fractions import Fraction
 from decimal import Decimal
-from google.cloud.firestore_v1beta1 import GeoPoint
 import base64
 
 from .base_adapter import BaseDataAdapter

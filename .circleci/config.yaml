@@ -22,7 +22,8 @@ jobs:
       - run:
           command: |
             . venv/bin/activate
-            - nosetests src/fam/tests/test_couchdb
+            cd src
+            python -m unittest discover fam/tests/test_couchdb
       - store_artifacts:
           path: test-reports/
           destination: tr1
