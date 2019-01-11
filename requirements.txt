@@ -1,0 +1,11 @@
+js2py
+requests
+simplejson
+jsonschema
+mock
+pytz
+slimit
+ply==3.8
+firebase_admin
+six
+nose
