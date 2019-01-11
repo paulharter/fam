@@ -20,9 +20,9 @@ jobs:
           paths:
             - "venv"
       - run:
+          working_directory: ~/fam/src
           command: |
             . venv/bin/activate
-            cd src
             python -m unittest discover fam/tests/test_couchdb
       - store_artifacts:
           path: test-reports/
