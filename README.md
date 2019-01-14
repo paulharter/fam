@@ -47,11 +47,11 @@ db.put(dog)
 
 ```
 
-##Installation
+## Installation
 
 You can install fam from pypi with `pip install fam`
 
-##Databases
+## Databases
 
 fam has wrappers for connecting to different databases:
 
@@ -95,7 +95,7 @@ An instance of a database wrapper provides these methods for adding and removing
 - **db.delete_key(key)** - Removes the object with this key from the database
 
 
-##Classes
+## Classes
  
  Fam classes are defined as inheriting from fam.blud.FamObject like this:
 
@@ -140,7 +140,7 @@ There are several types of field defined in fam.blud that map to json types
 
 When defining a fam class you instantiate each of fields for the class and give it a name eg `"address": StringField()`
 
-###ObjectField Fields
+### ObjectField Fields
 
 An ObjectField is an instance of another python object. The class of the object must be provided when defining the field. The class has to provide an instance method `to_json` and a class method `from_json` so fam can serialise and deserialise it successfully.
 
@@ -174,7 +174,7 @@ class TimeDuration(object):
 
 ```
 
-###ReferenceTo Fields
+### ReferenceTo Fields
 
 ReferenceTo is really just a string field that is the key of another document. ReferenceTo fields are defined with the namespace and name of the type of the referenced document. 
 
@@ -186,7 +186,7 @@ ReferenceTo is really just a string field that is the key of another document. R
 
 The name should always end with `_id` , this indicates that it is a reference but it also support fam's lookup of related objects. This allows you to directly access related documents for example dog.owner_id will return the key of the owner document but dog.owner will return an instance of the Owner class for that document.
 
-###ReferenceFrom Fields
+### ReferenceFrom Fields
 
 ReferenceFrom fields are quite different and they have no representation within the json document. Instead they use the automatically created design documents to find a collection of documents with the associated ReferenceTo field. So ReferenceFrom fields only work with as existing ReferenceTo Field. They are defined with the namespace and the type that the reference is from and the name of the ReferenceTo field in that type.
 
@@ -197,7 +197,7 @@ ReferenceFrom fields are quite different and they have no representation within 
 ```
 This gives way to do one-to-one and one-to-many relationships. In practice I find I tend to model immutable one-to-many relationships internally as lists of keys within documents and mutable ones with fam view lookups. I also create mutable one-to-one and many-to-many relationships with small join documents with compound keys. I also have write extra views by hand for more complex indexing.
 
-##Field Options
+## Field Options
 
 There are five optional arguments when creating a field:
 
@@ -211,7 +211,7 @@ There are five optional arguments when creating a field:
 Cat.get_unique_instance(db, "email", "tiddles@glowinthedark.co.uk)
 ```
 
-##Validation
+## Validation
 
 Fam now uses JSON Schema http://json-schema.org to validate documents. Fam's mapper generates schemata dynamically from the class definitions and uses them to validate documents.
 
