@@ -1,5 +1,7 @@
 # fam
 
+[![Build Status](https://travis-ci.org/paulharter/fam.svg?branch=master)](https://travis-ci.org/paulharter/fam)
+
 A simple Python ORM for CouchDB and Couchbase Sync Gateway. 
 
 Fam is a work in progress growing as the needs of my current project dictate.  It is not a feature complete ORM, however it is useful if you, like me, have highly relational data in a couch type db. I use it to support a web app that sits side by side with a mobile application using sync gateway.
