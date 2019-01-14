@@ -1,35 +1,27 @@
 import unittest
-import json
-import time
-import os
-
 
 from fam.exceptions import *
 from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell, Monkey, Monarch, NAMESPACE
-from fam.tests.models.test04 import House
 
 from fam.database import FirestoreWrapper
 from fam.database import CouchDBWrapper
-from fam.extra_types.lat_long import LatLong
-
 from fam.mapper import ClassMapper
-
 from fam.firestore_sync.syncer import FirestoreSyncer
-
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))))
-
+from fam.tests.test_firestore.config import CREDS
 
 class TestDB(unittest.TestCase):
 
 
     def setUp(self):
-        creds_path = os.path.join(ROOT_DIR, "secrets", "earth-rover-test-d241bce5266d.json")
+
         mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey])
-        self.firestore = FirestoreWrapper(mapper, creds_path, namespace=NAMESPACE)
+        self.firestore = FirestoreWrapper(mapper, CREDS, namespace=NAMESPACE)
         self.couchdb = CouchDBWrapper(mapper, "http://localhost:5984", db_name="test", reset=True)
         self.couchdb.update_designs()
         self.clear_db()
 
+    def tearDown(self):
+        self.couchdb.session.close()
 
     def clear_db(self):
         self.firestore.delete_all("dog")
@@ -37,7 +29,6 @@ class TestDB(unittest.TestCase):
         self.firestore.delete_all("person")
         self.firestore.delete_all("jackrussell")
         self.firestore.delete_all("monkey")
-
 
     def test_app(self):
         self.assertNotEqual(self.firestore, None)
@@ -57,7 +48,7 @@ class TestDB(unittest.TestCase):
         dogs_list = list(dogs)
         self.assertTrue(isinstance(dogs_list[0], Dog))
 
-        self.assertEquals(len(dogs_list), 3)
+        self.assertEqual(len(dogs_list), 3)
 
 
     def test_sync_down(self):

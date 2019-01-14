@@ -34,6 +34,8 @@ class MapperValidationTests(unittest.TestCase):
 
         self.assertRaises(FamValidationError, cat.save, self.db)
 
+        self.db.session.close()
+
 
     def test_make_a_validator_from_modules(self):
 
@@ -64,6 +66,8 @@ class MapperValidationTests(unittest.TestCase):
         dog.tail = "long"
         self.db.put(dog)
 
+        self.db.session.close()
+
         # print dog.as_json()
 
 
@@ -86,6 +90,8 @@ class MapperValidationTests(unittest.TestCase):
 
         paul.save(self.db)
 
+        self.db.session.close()
+
 
 
     def test_string_format(self):
@@ -107,4 +113,6 @@ class MapperValidationTests(unittest.TestCase):
         cat.save(self.db)
         cat.email = "paulglowinthedark.co.uk"
         self.assertRaises(FamValidationError, self.db.put, cat)
+
+        self.db.session.close()
 

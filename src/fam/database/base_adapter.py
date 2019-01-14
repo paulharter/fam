@@ -26,7 +26,8 @@ class BaseDataAdapter(object):
 
     def deserialise(self, doc):
         dup = deepcopy(doc)
-        return self._deserialise_walk(dup)
+        result = self._deserialise_walk(dup)
+        return result
 
 
     def is_a_string(self, node):

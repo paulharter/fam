@@ -28,7 +28,7 @@ def iterCouchDBTests():
             super(self.__class__, self).setUp()
 
         def tearDown(self):
-            pass
+            self.db.session.close()
 
         methods = {
             "setUp": setUp,

@@ -1,11 +1,6 @@
 import unittest
-import json
-import time
-import os
+import firebase_admin
 
-from google.cloud.firestore_v1beta1 import GeoPoint
-
-import fam
 from fam.exceptions import *
 from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, NAMESPACE
 from fam.tests.models.test04 import House, Fence
@@ -13,25 +8,25 @@ from fam.extra_types.lat_long import LatLong
 
 from fam.database import FirestoreWrapper
 from fam.mapper import ClassMapper
+from fam.tests.test_firestore.config import API_KEY, CREDS
 
-SECRETS_DIR = os.path.join(os.path.dirname(fam.__file__), "tests", "secrets")
 
-
-class TestDB(unittest.TestCase):
+class TestFirestoreFields(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
 
-        creds_path = os.path.join(SECRETS_DIR, "earth-rover-test-d241bce5266d.json")
         mapper = ClassMapper([House, Fence])
-        cls.db = FirestoreWrapper(mapper, creds_path, namespace=NAMESPACE)
+        cls.db = FirestoreWrapper(mapper, CREDS, namespace=NAMESPACE)
         cls.clear_db()
 
+    @classmethod
+    def tearDownClass(cls):
+        firebase_admin.delete_app(cls.db.app)
 
     @classmethod
     def clear_db(cls):
         cls.db.delete_all("house")
-
 
 
     def test_geopoint(self):

@@ -21,7 +21,7 @@ class IndexTests(unittest.TestCase):
         self.db.update_designs()
 
     def tearDown(self):
-        pass
+        self.db.session.close()
 
     def test_create_index(self):
         filepath = os.path.join(THIS_DIR, "animal_views.js")

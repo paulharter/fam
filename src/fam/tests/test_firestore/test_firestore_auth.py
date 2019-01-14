@@ -13,23 +13,19 @@ from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell
 from fam.database import FirestoreWrapper
 from fam.mapper import ClassMapper
 
-from.config_local import *
+from fam.tests.test_firestore.config import API_KEY, CREDS
 
 
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))))
 
-
-class TestDB(unittest.TestCase):
+class TestFireStoreAuth(unittest.TestCase):
 
 
     def setUp(self):
 
-        creds_path = os.path.join(ROOT_DIR, "secrets", "earth-rover-test-d241bce5266d.json")
         mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch])
         # self.db = FirestoreWrapper(mapper, creds_path)
 
-
-        cred = credentials.Certificate(creds_path)
+        cred = credentials.Certificate(CREDS)
         app = firebase_admin.initialize_app(cred)
         uid = 'some-uid'
 
@@ -38,20 +34,19 @@ class TestDB(unittest.TestCase):
         }
 
         custom_token = auth.create_custom_token(uid, additional_claims)
-        print(custom_token)
-        print(PROJECT_NAME)
-        print(API_KEY)
         firebase_admin.delete_app(app)
 
         self.db = FirestoreWrapper(mapper,
                                    None,
-                                   project_id=PROJECT_NAME,
+                                   project_id=CREDS["project_id"],
                                    custom_token=custom_token.decode("utf-8"),
                                    api_key=API_KEY,
                                    namespace=NAMESPACE
 
                                    )
 
+    def tearDown(self):
+        firebase_admin.delete_app(self.db.app)
 
     def test_make_an_object_and_refresh(self):
         dog = Dog.create(self.db, name="woofer")

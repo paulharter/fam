@@ -215,7 +215,7 @@ class BasicBaseTestCases:
 
             paul.delete(self.db)
             revivedcat2 = self.db.get(key)
-            print("revivedcat2:" , revivedcat2)
+
             self.assertTrue(revivedcat2 is None, "revivedcat2: %s" % revivedcat2)
 
 

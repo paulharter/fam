@@ -97,15 +97,10 @@ class TestSerialisation(unittest.TestCase):
         }
 
         serialised = self.adapter.serialise(doc)
-
-
         self.assertTrue(isinstance(serialised["location"], str))
         self.assertTrue(isinstance(serialised["birthday"], str))
         self.assertEqual(serialised["birthday"], "::datetime::1964-12-05T00:00:00Z")
         self.assertEqual(serialised["location"], "::latlong::51.5102213,-0.1178892")
-
-
-
 
     def test_serialise_bytes(self):
 
@@ -119,7 +114,6 @@ class TestSerialisation(unittest.TestCase):
         }
 
         serialised = self.adapter.serialise(doc)
-
         self.assertTrue(isinstance(serialised["birthday"], str))
 
 

@@ -258,8 +258,6 @@ class CouchDBWrapper(BaseDatabase):
 
         url = "%s/%s/%s" % (self.db_url, self.db_name, key)
 
-        print(value)
-
         rsp = self.session.put(url, data=json.dumps(value,
                                                     indent=4,
                                                     sort_keys=True,
@@ -483,10 +481,11 @@ class CouchDBWrapper(BaseDatabase):
         existing_dev = self._get(dev_key)
 
         if existing == existing_dev:
-            print("************  designs up to date ************")
+            pass
+            # print("************  designs up to date ************")
         else:
-            print("************  updating designs ************")
-            print("new_design: ", doc)
+            # print("************  updating designs ************")
+            # print("new_design: ", doc)
             self._set(key, doc, rev=None if existing is None else existing.rev)
 
 

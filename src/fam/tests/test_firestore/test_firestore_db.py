@@ -1,32 +1,23 @@
 import unittest
-import json
-import time
-import os
 
 import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
-
-import fam
 from fam.exceptions import *
 from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell, Monkey, Monarch, NAMESPACE
-
 from fam.database import FirestoreWrapper
 from fam.mapper import ClassMapper
-
-SECRETS_DIR = os.path.join(os.path.dirname(fam.__file__), "tests", "secrets")
-
+from fam.tests.test_firestore.config import API_KEY, CREDS
 
 class TestDB(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-
-        creds_path = os.path.join(SECRETS_DIR, "earth-rover-test-d241bce5266d.json")
         mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch])
-        cls.db = FirestoreWrapper(mapper, creds_path, namespace=NAMESPACE)
+        cls.db = FirestoreWrapper(mapper, CREDS, namespace=NAMESPACE)
         cls.clear_db()
 
+    @classmethod
+    def tearDownClass(cls):
+        firebase_admin.delete_app(cls.db.app)
 
     @classmethod
     def clear_db(cls):
@@ -36,6 +27,7 @@ class TestDB(unittest.TestCase):
         cls.db.delete_all("jackrussell")
         cls.db.delete_all("monkey")
         cls.db.delete_all("dog__kennel_club_membership")
+
 
     def test_app(self):
         self.assertNotEqual(self.db, None)

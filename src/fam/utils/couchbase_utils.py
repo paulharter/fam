@@ -55,8 +55,6 @@ def number_of_buckets(couchbase_url, user_name, password):
         raise Exception("failed get bucket count %s : %s" % (rsp.status_code, rsp.text))
 
     buckets = rsp.json()
-
-    print(buckets)
     return len(buckets)
 
 

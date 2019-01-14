@@ -7,6 +7,7 @@ from google.cloud.firestore_v1beta1 import GeoPoint
 import os
 import datetime
 import pytz
+import firebase_admin
 
 from fam.database.firestore_adapter import FirestoreDataAdapter
 
@@ -21,8 +22,7 @@ from fam.tests.models.test01 import  NAMESPACE as dog_namespace
 
 from fam.database import FirestoreWrapper
 from fam.mapper import ClassMapper
-
-SECRETS_DIR = os.path.join(os.path.dirname(fam.__file__), "tests", "secrets")
+from fam.tests.test_firestore.config import CREDS
 DATA_DIR = os.path.join(os.path.dirname(fam.__file__), "tests", "data")
 
 
@@ -61,7 +61,7 @@ class TestSerialisation(unittest.TestCase):
         serialised = self.adapter.serialise(doc)
 
         # these should all pass through unchanged
-        self.assertEquals(doc, serialised)
+        self.assertEqual(doc, serialised)
 
 
     def test_serialise_numerics(self):
@@ -78,9 +78,9 @@ class TestSerialisation(unittest.TestCase):
         serialised = self.adapter.serialise(doc)
 
 
-        self.assertEquals(serialised["height"], "::decimal::5.9")
-        self.assertEquals(serialised["fraction"], "::fraction::1/2")
-        self.assertEquals(serialised["favorites"]["food"], "::decimal::4.2")
+        self.assertEqual(serialised["height"], "::decimal::5.9")
+        self.assertEqual(serialised["fraction"], "::fraction::1/2")
+        self.assertEqual(serialised["favorites"]["food"], "::decimal::4.2")
 
 
     def test_serialise_latlong_datetime(self):
@@ -99,10 +99,10 @@ class TestSerialisation(unittest.TestCase):
 
         serialised = self.adapter.serialise(doc)
 
-        self.assertEquals(serialised["birthday"], birthday)
+        self.assertEqual(serialised["birthday"], birthday)
         self.assertTrue(isinstance(serialised["location"], GeoPoint))
-        self.assertEquals(serialised["location"].longitude, -0.1178892)
-        self.assertEquals(serialised["location"].latitude, 51.5102213)
+        self.assertEqual(serialised["location"].longitude, -0.1178892)
+        self.assertEqual(serialised["location"].latitude, 51.5102213)
 
 
     def test_serialise_bytes(self):
@@ -127,11 +127,14 @@ class TestOptimiseSerialisationDatabase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
-        creds_path = os.path.join(SECRETS_DIR, "earth-rover-test-d241bce5266d.json")
         mapper = ClassMapper([Dog])
-        cls.db = FirestoreWrapper(mapper, creds_path, namespace=dog_namespace)
+        cls.db = FirestoreWrapper(mapper, CREDS, namespace=dog_namespace)
         cls.clear_db()
 
+    @classmethod
+    def tearDownClass(cls):
+        if cls.db.app is not None:
+            firebase_admin.delete_app(cls.db.app)
 
     @classmethod
     def clear_db(cls):
@@ -168,10 +171,8 @@ class TestDatabase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-
-        creds_path = os.path.join(SECRETS_DIR, "earth-rover-test-d241bce5266d.json")
         mapper = ClassMapper([Fish])
-        cls.db = FirestoreWrapper(mapper, creds_path, namespace=fish_namespace)
+        cls.db = FirestoreWrapper(mapper, CREDS, namespace=fish_namespace)
         cls.clear_db()
 
 

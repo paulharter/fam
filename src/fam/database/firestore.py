@@ -136,6 +136,7 @@ class FirestoreWrapper(BaseDatabase):
                 app = firebase_admin.initialize_app(options=options)
 
         self.db = firestore.client(app=app)
+        self.app = app
 
 
     def update_expires(self):
@@ -226,7 +227,10 @@ class FirestoreWrapper(BaseDatabase):
         doc_ref = self.db.collection(single_class_name).document(key)
 
         try:
-            as_json = self.value_from_snapshot(doc_ref.get())
+            snapshot = doc_ref.get()
+            if not snapshot.exists:
+                return None
+            as_json = self.value_from_snapshot(snapshot)
             return ResultWrapper.from_couchdb_json(as_json)
         except NotFound:
             return None
@@ -379,7 +383,7 @@ class FirestoreWrapper(BaseDatabase):
         unique_doc_ref = self.db.collection(unique_type_name).document(field_value)
         try:
             unique_doc = unique_doc_ref.get()
-            if unique_doc is None:
+            if unique_doc is None or not unique_doc.exists:
                 return unique_doc_ref, unique_type_name, field_name
             ## if it exists then check to see if its owned by another
             if unique_doc.to_dict()["owner"] != key:

@@ -19,7 +19,7 @@ class CacheTests(unittest.TestCase):
         self.db.update_designs()
 
     def tearDown(self):
-        pass
+        self.db.session.close()
 
 
     def test_make_views(self):

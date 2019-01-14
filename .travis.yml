@@ -1,10 +1,13 @@
 language: python
 python:
-  - "2.7"
-  - "3.6"
+- '2.7'
+- '3.6'
 install:
-  - pip install -r requirements.txt
+- pip install -r requirements.txt
 services:
-  - couchdb
+- couchdb
 script:
-  -  pytest src/fam/tests/test_couchdb
+- pytest src/fam/tests/test_couchdb src/fam/tests/test_mock src/fam/tests/test_firestore src/fam/tests/test_sync
+before_install:
+- openssl aes-256-cbc -K $encrypted_a3b886232b8c_key -iv $encrypted_a3b886232b8c_iv
+  -in config_local.py.enc -out src/fam/tests/test_firestore/config_local.py -d

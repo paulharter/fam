@@ -47,8 +47,6 @@ class SyncGatewayWrapper(CouchDBWrapper):
         self.session = requests.Session()
 
         url = "%s/%s" % (db_url, db_name)
-
-        print(url)
         rsp = self.session.get(url)
 
         self.cookies = {}
