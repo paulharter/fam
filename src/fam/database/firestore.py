@@ -356,10 +356,6 @@ class FirestoreWrapper(BaseDatabase):
         doc_ref = self.db.collection(type_name).document(key)
         if self.read_only:
             raise Exception("This db is read only")
-
-        for k, v in values.items():
-            if v is None:
-                values[k] = firestore.DELETE_FIELD
         doc_ref.update(values)
 
 

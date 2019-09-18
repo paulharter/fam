@@ -9,7 +9,7 @@ class BaseDatabase(object):
     FOREIGN_KEY_MAP_STRING = '''function(doc) {
     var resources = %s;
     if (resources.indexOf(doc.type) != -1 && doc.namespace == \"%s\"){
-        emit(doc.%s, doc);
+        emit(doc.%s, null);
     }
 }'''
 

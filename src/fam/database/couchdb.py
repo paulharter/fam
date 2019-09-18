@@ -55,8 +55,8 @@ class ResultWrapper(object):
     @classmethod
     def from_couchdb_view_json(cls, as_json):
         key = as_json["id"]
-        rev = as_json["value"]["_rev"]
-        value = deepcopy(as_json["value"])
+        rev = as_json["doc"]["_rev"]
+        value = deepcopy(as_json["doc"])
         del value["_id"]
         del value["_rev"]
         return cls(key, rev, value)
@@ -299,6 +299,8 @@ class CouchDBWrapper(BaseDatabase):
     def view(self, name, raw=False, **kwargs):
         design_doc_id, view_name = name.split("/")
 
+        kwargs["include_docs"] = "true"
+
         url = self.VIEW_URL % (self.db_url, self.db_name, design_doc_id, view_name)
         rsp = self.session.get(url, params=self._encode_for_view_query(kwargs))
 
@@ -495,12 +497,13 @@ class CouchDBWrapper(BaseDatabase):
         design_doc = {
             "views": {
                 "all": {
-                    "map": "function(doc) {emit(doc.type, doc);}"
+                    "map": "function(doc) {emit(doc.type, null);}"
                 }
             }
         }
 
         return design_doc
+
 
     def update_designs(self):
 

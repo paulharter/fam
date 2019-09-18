@@ -91,6 +91,21 @@ class TestDB(unittest.TestCase):
         self.assertRaises(FamValidationError, collar_monkey, monkey)
 
 
+    def test_null_values(self):
+        paul = Person(name="paul")
+        paul.save(self.db)
+        cat = Cat(name="whiskers", owner_id=paul.key, colour=None)
+        self.assertTrue(cat.colour is None)
+        self.assertTrue(cat._properties["colour"] is None)
+        cat.save(self.db)
+
+        another = Cat.get(self.db, cat.key)
+        self.assertEqual(cat, another)
+
+        # self.fail()
+
+
+
     def test_get_cat(self):
         paul = Person(name="paul")
         paul.save(self.db)

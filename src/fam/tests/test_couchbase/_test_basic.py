@@ -36,4 +36,4 @@ class CacheTests(unittest.TestCase):
     def test_n1ql(self):
         dog = Dog(name="fly")
         dog.save(self.db)
-        dogs = self.db.n1ql('SELECT META(test).cas, META(test).id, * FROM test WHERE type="dog" and name="fly"')
+        dogs = self.db.n1ql('SELECT META(test), * FROM test WHERE type="dog" and name="fly"')

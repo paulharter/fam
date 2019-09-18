@@ -32,7 +32,10 @@ __all__ = [
     "FamObject"
 ]
 
+class NotSet():
+    pass
 
+# NOT_SET = NotSet()
 
 def current_xml_time():
     now = datetime.datetime.utcnow()
@@ -525,11 +528,7 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
 
     def _update_property(self, key, value, field):
 
-        if value is None:
-            if key in self._properties:
-                del self._properties[key]
-        else:
-            self._properties[key] = value
+        self._properties[key] = value
 
 
     def __setattr__(self, name, value):

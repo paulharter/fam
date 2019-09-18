@@ -168,6 +168,8 @@ class BaseDataAdapter(object):
             return node
         if isinstance(node, bool):
             return node
+        if node is None:
+            return node
         if self.is_a_number(node):
             return node
 

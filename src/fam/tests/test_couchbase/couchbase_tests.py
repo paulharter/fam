@@ -7,7 +7,8 @@ from fam.mapper import ClassMapper
 COUCHBASE_HOST = "127.0.0.1"
 COUCHBASE_BUCKET = "test"
 
-class CouchbaseModelTests(object):
+# class CouchbaseModelTests(unittest.TestCase):
+class DatabaseTests(unittest.TestCase):
 
 
     def setUp(self):

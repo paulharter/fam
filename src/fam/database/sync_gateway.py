@@ -20,7 +20,7 @@ class SyncGatewayWrapper(CouchDBWrapper):
     var resources = %s;
     if (resources.indexOf(doc.type) != -1 && doc.namespace == \"%s\"){
         doc._rev = meta.rev;
-        emit(doc.%s, doc);
+        emit(doc.%s, null);
     }
 }'''
 
@@ -220,7 +220,7 @@ class SyncGatewayWrapper(CouchDBWrapper):
                 "all": {
                     "map": """function(doc, meta) {
                         doc._rev = meta.rev;
-                        emit(doc.type, doc);
+                        emit(doc.type, null);
                     }
                     """
                 }
