@@ -4,7 +4,8 @@ from .firestore import FirestoreWrapper
 try:
     from fam.database.couchbase_server import CouchbaseWrapper
 except Exception as e:
-    print("failed to import couchbase wrapper", e)
+    pass
+    # print("failed to import couchbase wrapper", e)
 
 from fam.utils.backoff import http_backoff
 

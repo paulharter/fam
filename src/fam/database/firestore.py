@@ -128,7 +128,8 @@ class FirestoreWrapper(BaseDatabase):
                 self.creds = credentials.Certificate(creds_path)
                 app = firebase_admin.initialize_app(self.creds, options=options)
             except ValueError as e:
-                print("already initaialised")
+                pass
+                # print("already initaialised")
         else:
             # in app engine environment
             already_initialised = firebase_admin._DEFAULT_APP_NAME in firebase_admin._apps
@@ -247,7 +248,7 @@ class FirestoreWrapper(BaseDatabase):
     def _get_refs_from(self, key, type_name, field_name):
         type_ref = self.db.collection(type_name)
         query_ref = type_ref.where(field_name, u'==', key)
-        snapshots = query_ref.get()
+        snapshots = query_ref.stream()
         rows = [ResultWrapper.from_couchdb_json(self.value_from_snapshot(snapshot)) for snapshot in snapshots]
         objs = [GenericObject._from_doc(self, row.key, row.rev, row.value) for row in rows]
         return objs
@@ -360,7 +361,7 @@ class FirestoreWrapper(BaseDatabase):
 
 
     def _delete_collection(self, coll_ref, batch_size):
-        docs = coll_ref.limit(10).get()
+        docs = coll_ref.limit(10).stream()
         deleted = 0
 
         for doc in docs:

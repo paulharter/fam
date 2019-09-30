@@ -3,7 +3,7 @@ import datetime
 from fam.extra_types.lat_long import LatLong
 from fractions import Fraction
 from decimal import Decimal
-from google.cloud.firestore_v1beta1 import GeoPoint
+from google.cloud.firestore_v1 import GeoPoint
 
 from .base_adapter import BaseDataAdapter
 
@@ -57,6 +57,6 @@ class FirestoreDataAdapter(BaseDataAdapter):
         if self.is_a_number(node):
             return node
         if node is None:
-            return None
+            return node
 
         raise Exception("FirestoreDataAdapter can't deserialise this value: %s" % node)
