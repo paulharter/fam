@@ -267,8 +267,8 @@ class FirestoreWrapper(BaseDatabase):
     @refresh_check
     def get_single_type(self, namespace, type_name):
         type_ref = self.db.collection(type_name)
-        docs = type_ref.get()
-        rows = [ResultWrapper.from_couchdb_json(doc.to_dict()) for doc in docs]
+        snapshots = type_ref.stream()
+        rows = [ResultWrapper.from_couchdb_json(self.value_from_snapshot(snapshot)) for snapshot in snapshots]
         objs = [GenericObject._from_doc(self, row.key, row.rev, row.value) for row in rows]
         return objs
 
