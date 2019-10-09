@@ -198,10 +198,10 @@ class FirestoreWrapper(BaseDatabase):
                 # print("schema_id", schema_id)
                 if schema_id is not None:
                     value["schema"] = schema_id
-            try:
-                self.validator.validate(value)
-            except jsonschema.ValidationError as e:
-                raise FamValidationError(e)
+            # try:
+            #     self.validator.validate(value)
+            # except jsonschema.ValidationError as e:
+            #     raise FamValidationError(e)
 
         type = value["type"]
         value["_id"] = key

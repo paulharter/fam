@@ -28,6 +28,9 @@ FIELD_TYPE_LOOKUP = {
     },
     "FractionField": {
         "type": "string"
+    },
+    "DecimalField": {
+        "type": "string"
     }
 }
 
