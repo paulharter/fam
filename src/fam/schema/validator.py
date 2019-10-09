@@ -13,18 +13,14 @@ from .writer import createJsonSchema
 
 class ModelValidator(object):
 
-    def __init__(self, classes=None, modules=None, schema_dir=None):
-
+    def __init__(self, mapper, schema_dir=None, classes=None, modules=None):
         self.reference_store = {}
         self.ref_schemas = {}
         self.schema_dir = schema_dir
-
+        if mapper is not None:
+            self._add_classes(mapper)
         if classes is not None:
             self._add_classes(classes)
-
-        if modules is not None:
-            self._add_modules(modules)
-
 
     def iter_schemas(self):
 
@@ -39,18 +35,6 @@ class ModelValidator(object):
             type_name = cls.__name__.lower()
             namespace = cls.namespace.lower()
             self.add_schema(namespace, type_name, cls)
-
-
-    def _add_modules(self, modules):
-        for module in modules:
-            classes = []
-            for k, obj in module.__dict__.items():
-                if inspect.isclass(obj):
-                    if issubclass(obj, GenericObject):
-                        if obj != GenericObject:
-                            if not k.startswith("_"):
-                                classes.append(obj)
-            self._add_classes(classes)
 
 
     def add_schema(self, namespace, type_name, cls):
@@ -177,6 +161,7 @@ class ModelValidator(object):
 
         most_recent_filename = sorted(filenames)[-1]
         return self.schema_at_schema_path(os.path.join(dir_path, most_recent_filename))
+
 
     def _check_for_changes(self, namespace, type_name, schema):
 

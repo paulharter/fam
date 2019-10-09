@@ -19,7 +19,7 @@ class MapperValidationTests(unittest.TestCase):
     def test_make_a_validator(self):
 
         mapper = ClassMapper([Dog, Cat, Person, JackRussell])
-        validator = ModelValidator(classes=[Dog, Cat, Person, JackRussell])
+        validator = ModelValidator(None, classes=[Dog, Cat, Person, JackRussell])
         self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True, validator=validator)
         self.db.update_designs()
 
@@ -40,7 +40,7 @@ class MapperValidationTests(unittest.TestCase):
     def test_make_a_validator_from_modules(self):
 
         mapper = ClassMapper([], modules=[test01])
-        validator = ModelValidator(classes=[Dog, Cat, Person, JackRussell])
+        validator = ModelValidator(mapper)
         self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True, validator=validator)
         self.db.update_designs()
 
@@ -73,7 +73,7 @@ class MapperValidationTests(unittest.TestCase):
 
     def test_included_refs_from_in_validator(self):
         mapper = ClassMapper([], modules=[test01])
-        validator = ModelValidator(modules=[test01])
+        validator = ModelValidator(mapper)
         self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True, validator=validator)
         self.db.update_designs()
 
@@ -97,7 +97,7 @@ class MapperValidationTests(unittest.TestCase):
     def test_string_format(self):
 
         mapper = ClassMapper([], modules=[test01])
-        validator = ModelValidator(modules=[test01])
+        validator = ModelValidator(mapper)
         self.db = CouchDBWrapper(mapper, COUCHDB_URL, COUCHDB_NAME, reset=True, validator=validator)
         self.db.update_designs()
 

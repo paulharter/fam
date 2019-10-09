@@ -308,13 +308,13 @@ class BasicBaseTestCases:
             # self.assertRaises(FamUniqueError, self.db.put, dog2)
             # # print "*********** end ***************"
 
-    class RefNameTests(unittest.TestCase):
-
-        # this test that refs whos name doesnt end with _id fail
-        def test_misnamed_ref_to_fails(self):
-
-            def duff_import():
-                from fam.tests.models import test02
-                print(test02)
-
-            self.assertRaises(FamError, duff_import)
+    # class RefNameTests(unittest.TestCase):
+    #
+    #     # this test that refs whos name doesnt end with _id fail
+    #     def test_misnamed_ref_to_fails(self):
+    #
+    #         def duff_import():
+    #             from fam.tests.models import test02
+    #             print(test02)
+    #
+    #         self.assertRaises(FamError, duff_import)

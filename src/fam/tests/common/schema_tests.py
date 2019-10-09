@@ -73,7 +73,7 @@ class SchemaBaseTests:
         def test_make_a_validator(self):
 
 
-            validator = ModelValidator()
+            validator = ModelValidator(None)
 
             validator.add_schema(test01.NAMESPACE, "cat", Cat)
             validator.add_schema(test01.NAMESPACE, "person", Person)
@@ -95,7 +95,7 @@ class SchemaBaseTests:
 
         def test_make_a_validator_from_classes(self):
 
-            validator = ModelValidator(classes=[Cat, Person])
+            validator = ModelValidator(None, classes=[Cat, Person])
 
             #add validator to db
             self.db.validator = validator
@@ -112,18 +112,4 @@ class SchemaBaseTests:
             self.assertRaises(FamValidationError, cat.save, self.db)
 
 
-        def test_make_a_validator_from_modules(self):
 
-            validator = ModelValidator(modules=[test01])
-
-            #add validator to db
-            self.db.validator = validator
-            paul = Person(name="paul")
-            paul.save(self.db)
-            cat = Cat(name="whiskers", owner_id=paul.key, legs=4)
-            cat.save(self.db)
-            self.assertEqual(cat.owner, paul)
-            self.assertEqual(cat.owner.name, "paul")
-            cat = Cat(name="puss", owner_id=paul.key)
-
-            self.assertRaises(FamValidationError, cat.save, self.db)

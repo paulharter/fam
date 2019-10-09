@@ -6,7 +6,7 @@ from .schema_tests import SchemaBaseTests
 from .index_tests import IndexBaseTests
 
 common_test_classes = [BasicBaseTestCases.BasicTests,
-                        BasicBaseTestCases.RefNameTests,
+                        # BasicBaseTestCases.RefNameTests,
                         AnythingBaseTests.AnythingTests,
                         CallbackBaseTests.CallbackTests,
                         FieldAttributeBaseTests.FieldAttributeTests,

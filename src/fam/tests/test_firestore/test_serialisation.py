@@ -2,7 +2,7 @@ import unittest
 from decimal import Decimal
 from fractions import Fraction
 from fam.extra_types.lat_long import LatLong
-from google.cloud.firestore_v1beta1 import GeoPoint
+from google.cloud.firestore_v1 import GeoPoint
 
 import os
 import datetime

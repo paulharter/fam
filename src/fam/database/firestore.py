@@ -89,6 +89,11 @@ class FirestoreWrapper(BaseDatabase):
 
         self.mapper = mapper
         self.validator = validator
+
+        ##give it a reverse ref
+        if validator is not None:
+            self.validator.db = self
+
         self.read_only = read_only
         self.api_key = api_key
         self.namespace = namespace

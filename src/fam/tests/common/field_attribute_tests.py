@@ -57,11 +57,11 @@ class FieldAttributeBaseTests:
             monkey = Monkey(key="red_monkey", colour="blue")
             self.assertRaises(FamImmutableError, self.db.put, monkey)
 
-
-        def test_using_default_and_required_fails(self):
-
-            def duff_import():
-                from fam.tests.models import test03
-                print(test03)
-
-            self.assertRaises(FamError, duff_import)
+        #
+        # def test_using_default_and_required_fails(self):
+        #
+        #     def duff_import():
+        #         from fam.tests.models import test03
+        #         print(test03)
+        #
+        #     self.assertRaises(FamError, duff_import)

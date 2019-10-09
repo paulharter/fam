@@ -8,7 +8,7 @@ import datetime
 from fam.extra_types.lat_long import LatLong
 from fractions import Fraction
 from decimal import Decimal
-from google.cloud.firestore_v1beta1 import GeoPoint
+from google.cloud.firestore_v1 import GeoPoint
 
 
 if sys.version_info[0] < 3:
