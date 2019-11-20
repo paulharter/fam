@@ -11,8 +11,6 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 import jsonschema
 
-from google.cloud.exceptions import NotFound
-
 from fam.exceptions import *
 from fam.constants import *
 from fam.database.base import BaseDatabase
@@ -232,14 +230,12 @@ class FirestoreWrapper(BaseDatabase):
         single_class_name = self._work_out_class(key, class_name)
         doc_ref = self.db.collection(single_class_name).document(key)
 
-        try:
-            snapshot = doc_ref.get()
-            if not snapshot.exists:
-                return None
-            as_json = self.value_from_snapshot(snapshot)
-            return ResultWrapper.from_couchdb_json(as_json)
-        except NotFound:
+        snapshot = doc_ref.get()
+        if not snapshot.exists:
             return None
+        as_json = self.value_from_snapshot(snapshot)
+        return ResultWrapper.from_couchdb_json(as_json)
+
 
 
     def value_from_snapshot(self, snapshot):
@@ -383,17 +379,17 @@ class FirestoreWrapper(BaseDatabase):
     def _get_unique_ref(self, type_name, key, field_name, field_value):
         unique_type_name = "%s__%s" % (type_name, field_name)
         unique_doc_ref = self.db.collection(unique_type_name).document(field_value)
-        try:
-            unique_doc = unique_doc_ref.get()
-            if unique_doc is None or not unique_doc.exists:
-                return unique_doc_ref, unique_type_name, field_name
+
+        unique_doc = unique_doc_ref.get()
+
+        if unique_doc.exists:
             ## if it exists then check to see if its owned by another
             if unique_doc.to_dict()["owner"] != key:
                 raise FamUniqueError("The value %s for %s is already taken" % (field_value, field_name))
             else:
                 # no op in the case where the value is already set
                 return None
-        except NotFound:
+        else:
             ## go ahead and set the new one
             return unique_doc_ref, unique_type_name, field_name
 
@@ -441,11 +437,11 @@ class FirestoreWrapper(BaseDatabase):
 
         if len(to_set) > 0:
 
-            try:
-                doc_ref = self.db.collection(type_name).document(key)
-                doc = doc_ref.get()
+            doc_ref = self.db.collection(type_name).document(key)
+            doc = doc_ref.get()
+            if doc.exists:
                 as_dict = doc.to_dict()
-            except NotFound:
+            else:
                 as_dict = None
 
             for unique_doc_ref, unique_type_name, field_name in to_set:
@@ -459,45 +455,41 @@ class FirestoreWrapper(BaseDatabase):
                         existing_unique_doc_ref.delete()
 
 
-
-
     def set_unique_doc(self, type_name, key, field_name, value):
         doc_ref = self.db.collection(type_name).document(key)
         unique_type_name = "%s__%s" % (type_name, field_name)
         if value is not None:
             unique_doc_ref = self.db.collection(unique_type_name).document(value)
-            try:
-                unique_doc = unique_doc_ref.get()
+            unique_doc = unique_doc_ref.get()
+
+            if unique_doc.exists:
+
                 ## if it exists then check to see if its owned by another
                 if unique_doc.to_dict()["owner"] != key:
                     raise FamUniqueError("The value %s for %s is already taken" % (value, field_name))
                 else:
                     # no op in the case where the value is already set
                     return
-            except NotFound:
+            else:
                 unique_doc_ref.set({"owner": key, "type_name": type_name})
 
-        # delete any existing
-        try:
-            doc = doc_ref.get()
+        doc = doc_ref.get()
+        if doc.exists:
             as_dict = doc.to_dict()
             existing_key = as_dict.get(field_name)
             if existing_key is not None:
                 existing_unique_doc_ref = self.db.collection(unique_type_name).document(existing_key)
                 existing_unique_doc_ref.delete()
-        except NotFound:
-            # this is fine it just means there is no suxh doc yet
-            pass
 
 
     def get_unique_instance(self, namespace, type_name, field_name, value):
         unique_type_name = "%s__%s" % (type_name, field_name)
         unique_doc_ref = self.db.collection(unique_type_name).document(value)
-        try:
-            doc = unique_doc_ref.get()
+
+        doc = unique_doc_ref.get()
+        if doc.exists:
             as_dict = doc.to_dict()
             wrapper = self._get(as_dict["owner"], as_dict["type_name"])
             return GenericObject._from_doc(self, wrapper.key, wrapper.rev, wrapper.value)
-
-        except NotFound:
+        else:
             return None
