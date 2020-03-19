@@ -303,7 +303,7 @@ class FirestoreWrapper(BaseDatabase):
         self._delete_collection(coll_ref, 10)
 
     def _query_items_simple(self, firebase_query):
-        snapshots = firebase_query.get()
+        snapshots = firebase_query.stream()
         results = []
         for snapshot in snapshots:
             wrapper = ResultWrapper.from_couchdb_json(self.value_from_snapshot(snapshot))
@@ -336,7 +336,7 @@ class FirestoreWrapper(BaseDatabase):
         query = firebase_query.order_by(order_by).limit(batch_size)
 
         while True:
-            docs = query.get()
+            docs = query.stream()
             docs_list = list(docs)
             if len(docs_list) == 0:
                 break

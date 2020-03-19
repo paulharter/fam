@@ -27,6 +27,8 @@ class MapperValidationTests(unittest.TestCase):
         paul.save(self.db)
         cat = Cat(name="whiskers", owner_id=paul.key, legs=4)
         cat.save(self.db)
+
+
         self.assertEqual(cat.owner, paul)
         self.assertEqual(cat.owner.name, "paul")
 
