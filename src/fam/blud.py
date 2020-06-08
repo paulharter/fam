@@ -518,12 +518,15 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
 
 
     def update(self, values):
-        if "_db" in self.__dict__:
-            if hasattr(self._db, "update"):
-                self._db.update(self.namespace, self.type, self.key, values)
 
         for k, v in values.items():
             setattr(self, k, v)
+
+        if "_db" in self.__dict__:
+            if hasattr(self._db, "update"):
+                self._db.update(self.namespace, self.type, self.key, values)
+            else:
+                self.save(self._db)
 
 
     def _update_property(self, key, value, field):

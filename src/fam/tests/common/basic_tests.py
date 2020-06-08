@@ -298,15 +298,15 @@ class BasicBaseTestCases:
             dog1 = Dog(name="rufus", owner_id=paul.key, kennel_club_membership="123456")
 
             dog1.save(self.db)
-            # time.sleep(1)
+            time.sleep(1)
 
 
-            # print dog1.as_json()
-            # dog2 = Dog(name="fly", owner_id=paul.key, kennel_club_membership="123456")
-            # print dog2.as_json()
-            # # self.db.put(dog2)
-            # self.assertRaises(FamUniqueError, self.db.put, dog2)
-            # # print "*********** end ***************"
+            print(dog1.as_json())
+            dog2 = Dog(name="fly", owner_id=paul.key, kennel_club_membership="123456")
+            print(dog2.as_json())
+            # self.db.put(dog2)
+            self.assertRaises(FamUniqueError, self.db.put, dog2)
+            # print "*********** end ***************"
 
     # class RefNameTests(unittest.TestCase):
     #
