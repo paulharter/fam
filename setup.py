@@ -2,7 +2,7 @@
 from setuptools import setup, find_packages
 
 setup(name='fam',
-    version='2.2.2',
+    version='2.2.3',
     description="Simple Python ORM for CouchDB, Firebase and Sync Gateway",
     url="https://github.com/paulharter/fam",
     classifiers=[
