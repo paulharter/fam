@@ -21,3 +21,6 @@ class FamWriteError(Exception):
 
 class FamError(Exception):
     pass
+
+class FamPermissionError(Exception):
+    pass

@@ -8,9 +8,8 @@ import requests
 from requests.exceptions import HTTPError
 
 import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
-import jsonschema
+from firebase_admin import credentials, firestore, auth
+from google.api_core.exceptions import PermissionDenied
 
 from fam.exceptions import *
 from fam.constants import *
@@ -83,7 +82,8 @@ class FirestoreWrapper(BaseDatabase):
                  validator=None,
                  read_only=False,
                  name=None,
-                 namespace=None
+                 namespace=None,
+                 default_options = {}
                  ):
 
         self.mapper = mapper
@@ -102,8 +102,8 @@ class FirestoreWrapper(BaseDatabase):
         self.data_adapter = FirestoreDataAdapter()
 
         # Use a service account
-
-        options = {"httpTimeout": 5}
+        options = copy.deepcopy(default_options)
+        options["httpTimeout"] = 5
 
         app = None
 
@@ -122,6 +122,7 @@ class FirestoreWrapper(BaseDatabase):
                 try:
                     app = firebase_admin.initialize_app(self.creds, name=app_name, options=options)
                 except Exception as e:
+                    print("here 4")
                     self.creds = self.creds.get_credential()
                     app = firebase_admin.initialize_app(self.creds, name=app_name, options=options)
 
@@ -139,7 +140,6 @@ class FirestoreWrapper(BaseDatabase):
             already_initialised = firebase_admin._DEFAULT_APP_NAME in firebase_admin._apps
             if not already_initialised:
                 app = firebase_admin.initialize_app(options=options)
-                print("initialize_app")
 
         self.db = firestore.client(app=app)
         self.app = app
@@ -210,7 +210,12 @@ class FirestoreWrapper(BaseDatabase):
         del sans_metadata["type"]
         del sans_metadata["namespace"]
 
-        self.db.collection(type).document(key).set(sans_metadata)
+        doc_ref = self.db.collection(type).document(key)
+
+        try:
+            doc_ref.set(sans_metadata)
+        except PermissionDenied as e:
+            raise FamPermissionError("You don't have permission to write %s" % doc_ref)
 
         return ResultWrapper.from_couchdb_json(value)
 
@@ -233,12 +238,15 @@ class FirestoreWrapper(BaseDatabase):
         single_class_name = self._work_out_class(key, class_name)
         doc_ref = self.db.collection(single_class_name).document(key)
 
-        snapshot = doc_ref.get()
+        try:
+            snapshot = doc_ref.get()
+        except PermissionDenied as e:
+            raise FamPermissionError("You don't have permission to read %s" % doc_ref)
+
         if not snapshot.exists:
             return None
         as_json = self.value_from_snapshot(snapshot)
         return ResultWrapper.from_couchdb_json(as_json)
-
 
 
     def value_from_snapshot(self, snapshot):
@@ -361,7 +369,11 @@ class FirestoreWrapper(BaseDatabase):
         doc_ref = self.db.collection(type_name).document(key)
         if self.read_only:
             raise Exception("This db is read only")
-        doc_ref.update(values)
+
+        try:
+            doc_ref.update(values)
+        except PermissionDenied as e:
+            raise FamPermissionError("You don't have permission to write %s" % doc_ref)
 
 
     def _delete_collection(self, coll_ref, batch_size):
@@ -383,7 +395,10 @@ class FirestoreWrapper(BaseDatabase):
         unique_type_name = "%s__%s" % (type_name, field_name)
         unique_doc_ref = self.db.collection(unique_type_name).document(field_value)
 
-        unique_doc = unique_doc_ref.get()
+        try:
+            unique_doc = unique_doc_ref.get()
+        except PermissionDenied as e:
+            raise FamPermissionError("You don't have permission to read %s" % unique_doc_ref)
 
         if unique_doc.exists:
             ## if it exists then check to see if its owned by another
@@ -407,7 +422,12 @@ class FirestoreWrapper(BaseDatabase):
     def _clear_uniqueness_typed(self, key, type_name):
 
         doc_ref = self.db.collection(type_name).document(key)
-        doc = doc_ref.get()
+
+        try:
+            doc = doc_ref.get()
+        except PermissionDenied as e:
+            raise FamPermissionError("You don't have permission to read %s" % doc_ref)
+
         as_dict = doc.to_dict()
 
         type_name = doc.reference.parent.id
@@ -441,15 +461,22 @@ class FirestoreWrapper(BaseDatabase):
         if len(to_set) > 0:
 
             doc_ref = self.db.collection(type_name).document(key)
-            doc = doc_ref.get()
+
+            try:
+                doc = doc_ref.get()
+            except PermissionDenied as e:
+                raise FamPermissionError("You don't have permission to read %s" % doc_ref)
+
             if doc.exists:
                 as_dict = doc.to_dict()
             else:
                 as_dict = None
 
             for unique_doc_ref, unique_type_name, field_name in to_set:
-
-                unique_doc_ref.set({"owner": key, "type_name": type_name})
+                try:
+                    unique_doc_ref.set({"owner": key, "type_name": type_name})
+                except PermissionDenied as e:
+                    raise FamPermissionError("You don't have permission to write %s" % unique_doc_ref)
 
                 if as_dict is not None:
                     existing_key = as_dict.get(field_name)
@@ -463,7 +490,11 @@ class FirestoreWrapper(BaseDatabase):
         unique_type_name = "%s__%s" % (type_name, field_name)
         if value is not None:
             unique_doc_ref = self.db.collection(unique_type_name).document(value)
-            unique_doc = unique_doc_ref.get()
+
+            try:
+                unique_doc = unique_doc_ref.get()
+            except PermissionDenied as e:
+                raise FamPermissionError("You don't have permission to read %s" % unique_doc_ref)
 
             if unique_doc.exists:
 
@@ -474,9 +505,20 @@ class FirestoreWrapper(BaseDatabase):
                     # no op in the case where the value is already set
                     return
             else:
-                unique_doc_ref.set({"owner": key, "type_name": type_name})
 
-        doc = doc_ref.get()
+                try:
+                    unique_doc_ref.set({"owner": key, "type_name": type_name})
+                except PermissionDenied as e:
+                    raise FamPermissionError("You don't have permission to write %s" % unique_doc_ref)
+
+
+
+
+        try:
+            doc = doc_ref.get()
+        except PermissionDenied as e:
+            raise FamPermissionError("You don't have permission to read %s" % doc_ref)
+
         if doc.exists:
             as_dict = doc.to_dict()
             existing_key = as_dict.get(field_name)
@@ -489,7 +531,11 @@ class FirestoreWrapper(BaseDatabase):
         unique_type_name = "%s__%s" % (type_name, field_name)
         unique_doc_ref = self.db.collection(unique_type_name).document(value)
 
-        doc = unique_doc_ref.get()
+        try:
+            doc = unique_doc_ref.get()
+        except PermissionDenied as e:
+            raise FamPermissionError("You don't have permission to read %s" % unique_doc_ref)
+
         if doc.exists:
             as_dict = doc.to_dict()
             wrapper = self._get(as_dict["owner"], as_dict["type_name"])
