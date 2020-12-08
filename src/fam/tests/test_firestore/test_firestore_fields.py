@@ -1,5 +1,9 @@
 import unittest
 import firebase_admin
+import os
+
+os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
+os.environ["GCLOUD_PROJECT"] = "localtest"
 
 from fam.exceptions import *
 from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, NAMESPACE
@@ -8,7 +12,8 @@ from fam.extra_types.lat_long import LatLong
 
 from fam.database import FirestoreWrapper
 from fam.mapper import ClassMapper
-from fam.tests.test_firestore.config import API_KEY, CREDS
+
+from fam.tests.test_firestore.fixtures import clear_db
 
 
 class TestFirestoreFields(unittest.TestCase):
@@ -17,17 +22,16 @@ class TestFirestoreFields(unittest.TestCase):
     def setUpClass(cls):
 
         mapper = ClassMapper([House, Fence])
-        cls.db = FirestoreWrapper(mapper, CREDS, namespace=NAMESPACE)
-        cls.clear_db()
+        cls.db = FirestoreWrapper(mapper, None, namespace=NAMESPACE)
+        if cls.db.db.project != "localtest":
+            raise Exception("wrong db: %s" % cls.db.db.project)
 
     @classmethod
     def tearDownClass(cls):
         firebase_admin.delete_app(cls.db.app)
 
-    @classmethod
-    def clear_db(cls):
-        cls.db.delete_all("house")
-
+    def setUp(self) -> None:
+        clear_db()
 
     def test_geopoint(self):
 

@@ -516,18 +516,17 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
             # print("self: ", self, name)
             raise AttributeError("Not found %s" % name)
 
-
     def update(self, values):
-
-        for k, v in values.items():
-            setattr(self, k, v)
 
         if "_db" in self.__dict__:
             if hasattr(self._db, "update"):
                 self._db.update(self.namespace, self.type, self.key, values)
+                for k, v in values.items():
+                    setattr(self, k, v)
             else:
                 self.save(self._db)
-
+                for k, v in values.items():
+                    setattr(self, k, v)
 
     def _update_property(self, key, value, field):
 

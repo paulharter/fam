@@ -2,6 +2,7 @@ import json
 import time
 import sys
 import copy
+import os
 
 import requests
 from requests.exceptions import HTTPError
@@ -138,6 +139,7 @@ class FirestoreWrapper(BaseDatabase):
             already_initialised = firebase_admin._DEFAULT_APP_NAME in firebase_admin._apps
             if not already_initialised:
                 app = firebase_admin.initialize_app(options=options)
+                print("initialize_app")
 
         self.db = firestore.client(app=app)
         self.app = app
@@ -209,6 +211,7 @@ class FirestoreWrapper(BaseDatabase):
         del sans_metadata["namespace"]
 
         self.db.collection(type).document(key).set(sans_metadata)
+
         return ResultWrapper.from_couchdb_json(value)
 
 

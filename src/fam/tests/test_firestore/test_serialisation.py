@@ -1,17 +1,19 @@
 import unittest
-from decimal import Decimal
-from fractions import Fraction
-from fam.extra_types.lat_long import LatLong
-from google.cloud.firestore_v1 import GeoPoint
-
 import os
 import datetime
 import pytz
 import firebase_admin
 
+os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
+os.environ["GCLOUD_PROJECT"] = "localtest"
+
+from decimal import Decimal
+from fractions import Fraction
+from fam.extra_types.lat_long import LatLong
+from google.cloud.firestore_v1 import GeoPoint
+
+
 from fam.database.firestore_adapter import FirestoreDataAdapter
-
-
 
 import fam
 from fam.exceptions import *
@@ -22,7 +24,9 @@ from fam.tests.models.test01 import  NAMESPACE as dog_namespace
 
 from fam.database import FirestoreWrapper
 from fam.mapper import ClassMapper
-from fam.tests.test_firestore.config import CREDS
+
+from fam.tests.test_firestore.fixtures import clear_db
+
 DATA_DIR = os.path.join(os.path.dirname(fam.__file__), "tests", "data")
 
 
@@ -128,18 +132,17 @@ class TestOptimiseSerialisationDatabase(unittest.TestCase):
     def setUpClass(cls):
 
         mapper = ClassMapper([Dog])
-        cls.db = FirestoreWrapper(mapper, CREDS, namespace=dog_namespace)
-        cls.clear_db()
+        cls.db = FirestoreWrapper(mapper, None, namespace=dog_namespace)
+        if cls.db.db.project != "localtest":
+            raise Exception("wrong db: %s" % cls.db.db.project)
 
     @classmethod
     def tearDownClass(cls):
         if cls.db.app is not None:
             firebase_admin.delete_app(cls.db.app)
 
-    @classmethod
-    def clear_db(cls):
-        cls.db.delete_all("dog")
-
+    def setUp(self) -> None:
+        clear_db()
 
     def test_data_base_id(self):
 
@@ -172,15 +175,17 @@ class TestDatabase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         mapper = ClassMapper([Fish])
-        cls.db = FirestoreWrapper(mapper, CREDS, namespace=fish_namespace)
-        cls.clear_db()
+        cls.db = FirestoreWrapper(mapper, None, namespace=fish_namespace)
+        if cls.db.db.project != "localtest":
+            raise Exception("wrong db: %s" % cls.db.db.project)
 
 
     @classmethod
     def clear_db(cls):
         cls.db.delete_all("fish")
 
-
+    def setUp(self) -> None:
+        clear_db()
 
     def test_fish(self):
 

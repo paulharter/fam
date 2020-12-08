@@ -1,33 +1,32 @@
 import unittest
+import os
+
+os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
+os.environ["GCLOUD_PROJECT"] = "localtest"
 
 import firebase_admin
 from fam.exceptions import *
 from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell, Monkey, Monarch, NAMESPACE
 from fam.database import FirestoreWrapper
 from fam.mapper import ClassMapper
-from fam.tests.test_firestore.config import API_KEY, CREDS
+
+from fam.tests.test_firestore.fixtures import clear_db
 
 class TestDB(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         mapper = ClassMapper([Dog, Cat, Person, JackRussell, Monkey, Monarch])
-        cls.db = FirestoreWrapper(mapper, CREDS, namespace=NAMESPACE)
-        cls.clear_db()
+        cls.db = FirestoreWrapper(mapper, None, namespace=NAMESPACE)
+        if cls.db.db.project != "localtest":
+            raise Exception("wrong db: %s" % cls.db.db.project)
 
     @classmethod
     def tearDownClass(cls):
         firebase_admin.delete_app(cls.db.app)
 
-    @classmethod
-    def clear_db(cls):
-        cls.db.delete_all("dog")
-        cls.db.delete_all("cat")
-        cls.db.delete_all("person")
-        cls.db.delete_all("jackrussell")
-        cls.db.delete_all("monkey")
-        cls.db.delete_all("dog__kennel_club_membership")
-
+    def setUp(self) -> None:
+        clear_db()
 
     def test_app(self):
         self.assertNotEqual(self.db, None)
@@ -309,7 +308,7 @@ class TestDB(unittest.TestCase):
 
 
     def test_updates_from_dict(self):
-        self.clear_db()
+
         paul = Person.create(self.db, name="paul")
         dog1 = Dog.create(self.db, name="rufus", owner_id=paul.key, kennel_club_membership="123456")
 
@@ -325,7 +324,7 @@ class TestDB(unittest.TestCase):
 
 
     def test_uniqueness(self):
-        self.clear_db()
+
         paul = Person(name="paul")
         self.db.put(paul)
         dog1 = Dog.create(self.db, name="rufus", owner_id=paul.key, kennel_club_membership="123456")
@@ -339,7 +338,7 @@ class TestDB(unittest.TestCase):
         self.assertRaises(FamUniqueError, Dog.create, self.db, name="steve", owner_id=paul.key, kennel_club_membership="123456")
 
     def test_uniqueness_delete(self):
-        self.clear_db()
+
         paul = Person(name="paul")
         self.db.put(paul)
         dog1 = Dog.create(self.db, name="rufus", owner_id=paul.key, kennel_club_membership="123456")
@@ -349,7 +348,7 @@ class TestDB(unittest.TestCase):
 
 
     def test_get_unique(self):
-        self.clear_db()
+
         paul = Person(name="paul")
         self.db.put(paul)
         dog1 = Dog.create(self.db, name="rufus", owner_id=paul.key, kennel_club_membership="123456")
