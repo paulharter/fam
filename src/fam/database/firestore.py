@@ -9,6 +9,7 @@ from requests.exceptions import HTTPError
 
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
+from google.cloud.firestore import transactional
 from google.api_core.exceptions import PermissionDenied
 
 from fam.exceptions import *
@@ -38,6 +39,15 @@ delete(item)
 
 """
 
+def catch_permission(func):
+    def func_wrapper(instance, *args, **kwargs):
+        try:
+            return func(instance, *args, **kwargs)
+        except PermissionDenied as e:
+            raise FamPermissionError("You don't have permission access this resource: %s origional error: %s" % (args, e))
+    return func_wrapper
+
+
 def refresh_check(func):
     def func_wrapper(instance, *args, **kwargs):
         now = time.time()
@@ -59,7 +69,6 @@ def raise_detailed_error(request_object):
         # raise detailed error message
         # TODO: Check if we get a { "error" : "Permission denied." } and handle automatically
         raise HTTPError(e, request_object.text)
-
 
 
 class FirestoreWrapper(BaseDatabase):
@@ -96,9 +105,7 @@ class FirestoreWrapper(BaseDatabase):
         self.read_only = read_only
         self.api_key = api_key
         self.namespace = namespace
-
         self.expires = None
-
         self.data_adapter = FirestoreDataAdapter()
 
         # Use a service account
@@ -106,6 +113,9 @@ class FirestoreWrapper(BaseDatabase):
         options["httpTimeout"] = 5
 
         app = None
+        self.user = None
+        self.expires = None
+        self.creds = None
 
         if custom_token is not None:
             # from device client
@@ -122,7 +132,6 @@ class FirestoreWrapper(BaseDatabase):
                 try:
                     app = firebase_admin.initialize_app(self.creds, name=app_name, options=options)
                 except Exception as e:
-                    print("here 4")
                     self.creds = self.creds.get_credential()
                     app = firebase_admin.initialize_app(self.creds, name=app_name, options=options)
 
@@ -186,15 +195,17 @@ class FirestoreWrapper(BaseDatabase):
     @refresh_check
     def _set(self, key, input_value, rev=None):
 
-        value = self.data_adapter.serialise(input_value)
-        self._check_uniqueness(key, value)
-
         if self.read_only:
             raise Exception("This db is read only")
 
+        value = self.data_adapter.serialise(input_value)
+
+        type_name = value["type"]
+        namespace = value["namespace"]
+
         if self.validator is not None:
             if "namespace" in value and not "schema" in value:
-                schema_id = self.validator.schema_id_for(value["namespace"], value["type"])
+                schema_id = self.validator.schema_id_for(namespace, type_name)
                 # print("schema_id", schema_id)
                 if schema_id is not None:
                     value["schema"] = schema_id
@@ -203,23 +214,56 @@ class FirestoreWrapper(BaseDatabase):
             # except jsonschema.ValidationError as e:
             #     raise FamValidationError(e)
 
-        type = value["type"]
         value["_id"] = key
         sans_metadata = copy.deepcopy(value)
-
         del sans_metadata["type"]
         del sans_metadata["namespace"]
 
-        doc_ref = self.db.collection(type).document(key)
+        unique_field_names = self._check_for_unique_fields(namespace, type_name, value)
 
-        try:
-            doc_ref.set(sans_metadata)
-        except PermissionDenied as e:
-            raise FamPermissionError("You don't have permission to write %s" % doc_ref)
+        if unique_field_names:
+            transaction = self.db.transaction()
+            set_with_unique_fields(transaction, self.db, type_name, key, sans_metadata, unique_field_names)
+        else:
+            doc_ref = self.db.collection(type_name).document(key)
+            self._set_ref(doc_ref, sans_metadata)
 
         return ResultWrapper.from_couchdb_json(value)
 
 
+    #############################################
+    # these are here to isolate certain calls to firestore library so that contexts can override them easily
+    ############################################
+
+    @catch_permission
+    def _stream_ref(self, doc_ref):
+        return self._stream_doc_ref(doc_ref)
+
+    def _stream_doc_ref(self, doc_ref):
+        return doc_ref.stream()
+
+    @catch_permission
+    def _get_ref(self, doc_ref):
+        return self._get_doc_ref(doc_ref)
+
+    def _get_doc_ref(self, doc_ref):
+        return doc_ref.get()
+
+    @catch_permission
+    def _set_ref(self, doc_ref, value):
+        self._set_doc_ref(doc_ref, value)
+
+    def _set_doc_ref(self, doc_ref, value):
+        doc_ref.set(value)
+
+    @catch_permission
+    def _update_ref(self, doc_ref, value):
+        doc_ref.update(value)
+
+    def _update_doc_ref(self, doc_ref, value):
+        doc_ref.update(value)
+
+    ############################################
 
     def _work_out_class(self, key, class_name):
 
@@ -237,12 +281,7 @@ class FirestoreWrapper(BaseDatabase):
 
         single_class_name = self._work_out_class(key, class_name)
         doc_ref = self.db.collection(single_class_name).document(key)
-
-        try:
-            snapshot = doc_ref.get()
-        except PermissionDenied as e:
-            raise FamPermissionError("You don't have permission to read %s" % doc_ref)
-
+        snapshot = self._get_ref(doc_ref)
         if not snapshot.exists:
             return None
         as_json = self.value_from_snapshot(snapshot)
@@ -260,7 +299,7 @@ class FirestoreWrapper(BaseDatabase):
     def _get_refs_from(self, key, type_name, field_name):
         type_ref = self.db.collection(type_name)
         query_ref = type_ref.where(field_name, u'==', key)
-        snapshots = query_ref.stream()
+        snapshots = self._stream_ref(query_ref)
         rows = [ResultWrapper.from_couchdb_json(self.value_from_snapshot(snapshot)) for snapshot in snapshots]
         objs = [GenericObject._from_doc(self, row.key, row.rev, row.value) for row in rows]
         return objs
@@ -279,7 +318,7 @@ class FirestoreWrapper(BaseDatabase):
     @refresh_check
     def get_single_type(self, namespace, type_name):
         type_ref = self.db.collection(type_name)
-        snapshots = type_ref.stream()
+        snapshots = self._stream_ref(type_ref)
         rows = [ResultWrapper.from_couchdb_json(self.value_from_snapshot(snapshot)) for snapshot in snapshots]
         objs = [GenericObject._from_doc(self, row.key, row.rev, row.value) for row in rows]
         return objs
@@ -304,8 +343,24 @@ class FirestoreWrapper(BaseDatabase):
 
         if self.read_only:
             raise Exception("This db is read only")
-        self._clear_uniqueness_typed(key, type_name)
-        self.db.collection(type_name).document(key).delete()
+
+        doc_ref = self.db.collection(type_name).document(key)
+
+        try:
+            doc = doc_ref.get()
+        except PermissionDenied as e:
+            raise FamPermissionError("You don't have permission access this resource: %s" % doc_ref)
+
+        as_dict = doc.to_dict()
+
+        unique_field_names = self._check_for_unique_fields(self.namespace, type_name, as_dict)
+
+        if unique_field_names:
+            unique_values = {k : as_dict[k] for k in unique_field_names}
+            transaction = self.db.transaction()
+            delete_with_unique_values(transaction, self.db, type_name, key, unique_values)
+        else:
+            doc_ref.delete()
 
 
     @refresh_check
@@ -314,7 +369,7 @@ class FirestoreWrapper(BaseDatabase):
         self._delete_collection(coll_ref, 10)
 
     def _query_items_simple(self, firebase_query):
-        snapshots = firebase_query.stream()
+        snapshots = self._stream_ref(firebase_query)
         results = []
         for snapshot in snapshots:
             wrapper = ResultWrapper.from_couchdb_json(self.value_from_snapshot(snapshot))
@@ -347,7 +402,7 @@ class FirestoreWrapper(BaseDatabase):
         query = firebase_query.order_by(order_by).limit(batch_size)
 
         while True:
-            docs = query.stream()
+            docs = self._stream_ref(query)
             docs_list = list(docs)
             if len(docs_list) == 0:
                 break
@@ -363,21 +418,22 @@ class FirestoreWrapper(BaseDatabase):
     @refresh_check
     def update(self, namespace, type_name, key, input_value):
 
-        values = self.data_adapter.serialise(input_value)
-
-        self._check_uniqueness_typed(namespace, type_name, key, values)
-        doc_ref = self.db.collection(type_name).document(key)
         if self.read_only:
             raise Exception("This db is read only")
 
-        try:
-            doc_ref.update(values)
-        except PermissionDenied as e:
-            raise FamPermissionError("You don't have permission to write %s" % doc_ref)
+        values = self.data_adapter.serialise(input_value)
+        unique_field_names = self._check_for_unique_fields(namespace, type_name, values)
+
+        if unique_field_names:
+            transaction = self.db.transaction()
+            update_with_unique_fields(transaction, self.db, type_name, key, values, unique_field_names)
+        else:
+            doc_ref = self.db.collection(type_name).document(key)
+            self._update_ref(doc_ref, values)
 
 
     def _delete_collection(self, coll_ref, batch_size):
-        docs = coll_ref.limit(10).stream()
+        docs = self._stream_ref(coll_ref.limit(10))
         deleted = 0
 
         for doc in docs:
@@ -390,151 +446,54 @@ class FirestoreWrapper(BaseDatabase):
 
     ##############   unique stuff ##########################
 
-
-    def _get_unique_ref(self, type_name, key, field_name, field_value):
-        unique_type_name = "%s__%s" % (type_name, field_name)
-        unique_doc_ref = self.db.collection(unique_type_name).document(field_value)
-
-        try:
-            unique_doc = unique_doc_ref.get()
-        except PermissionDenied as e:
-            raise FamPermissionError("You don't have permission to read %s" % unique_doc_ref)
-
-        if unique_doc.exists:
-            ## if it exists then check to see if its owned by another
-            if unique_doc.to_dict()["owner"] != key:
-                raise FamUniqueError("The value %s for %s is already taken" % (field_value, field_name))
-            else:
-                # no op in the case where the value is already set
-                return None
-        else:
-            ## go ahead and set the new one
-            return unique_doc_ref, unique_type_name, field_name
-
-
-    def _check_uniqueness(self, key, value):
-
-        type_name = value["type"]
-        namespace = value["namespace"]
-        self._check_uniqueness_typed(namespace, type_name, key, value)
-
-
-    def _clear_uniqueness_typed(self, key, type_name):
-
-        doc_ref = self.db.collection(type_name).document(key)
-
-        try:
-            doc = doc_ref.get()
-        except PermissionDenied as e:
-            raise FamPermissionError("You don't have permission to read %s" % doc_ref)
-
-        as_dict = doc.to_dict()
-
-        type_name = doc.reference.parent.id
-
-        cls = self.mapper.get_class(type_name, self.namespace)
-
-        for field_name, field_value in as_dict.items():
-            if field_name in cls.fields:
-                field = cls.fields[field_name]
-                if field.unique:
-                    unique_type_name = "%s__%s" % (type_name, field_name)
-                    unique_doc_ref = self.db.collection(unique_type_name).document(field_value)
-                    unique_doc_ref.delete()
-
-
-    def _check_uniqueness_typed(self, namespace, type_name, key, value):
+    def _check_for_unique_fields(self, namespace, type_name, value):
 
         cls = self.mapper.get_class(type_name, namespace)
+        unique_field_names = []
 
-        to_set = []
-
-        # check all the unique objects and fail if any are bad before setting anything
         for field_name, field_value in value.items():
             if field_name in cls.fields:
                 field = cls.fields[field_name]
                 if field.unique:
-                    ref_name_fieldname = self._get_unique_ref(type_name, key, field_name, field_value)
-                    if ref_name_fieldname is not None:
-                        to_set.append(ref_name_fieldname)
+                    unique_field_names.append(field_name)
 
-        if len(to_set) > 0:
-
-            doc_ref = self.db.collection(type_name).document(key)
-
-            try:
-                doc = doc_ref.get()
-            except PermissionDenied as e:
-                raise FamPermissionError("You don't have permission to read %s" % doc_ref)
-
-            if doc.exists:
-                as_dict = doc.to_dict()
-            else:
-                as_dict = None
-
-            for unique_doc_ref, unique_type_name, field_name in to_set:
-                try:
-                    unique_doc_ref.set({"owner": key, "type_name": type_name})
-                except PermissionDenied as e:
-                    raise FamPermissionError("You don't have permission to write %s" % unique_doc_ref)
-
-                if as_dict is not None:
-                    existing_key = as_dict.get(field_name)
-                    if existing_key is not None:
-                        existing_unique_doc_ref = self.db.collection(unique_type_name).document(existing_key)
-                        existing_unique_doc_ref.delete()
+        return unique_field_names
 
 
-    def set_unique_doc(self, type_name, key, field_name, value):
-        doc_ref = self.db.collection(type_name).document(key)
-        unique_type_name = "%s__%s" % (type_name, field_name)
-        if value is not None:
-            unique_doc_ref = self.db.collection(unique_type_name).document(value)
-
-            try:
-                unique_doc = unique_doc_ref.get()
-            except PermissionDenied as e:
-                raise FamPermissionError("You don't have permission to read %s" % unique_doc_ref)
-
-            if unique_doc.exists:
-
-                ## if it exists then check to see if its owned by another
-                if unique_doc.to_dict()["owner"] != key:
-                    raise FamUniqueError("The value %s for %s is already taken" % (value, field_name))
-                else:
-                    # no op in the case where the value is already set
-                    return
-            else:
-
-                try:
-                    unique_doc_ref.set({"owner": key, "type_name": type_name})
-                except PermissionDenied as e:
-                    raise FamPermissionError("You don't have permission to write %s" % unique_doc_ref)
-
-
-
-
-        try:
-            doc = doc_ref.get()
-        except PermissionDenied as e:
-            raise FamPermissionError("You don't have permission to read %s" % doc_ref)
-
-        if doc.exists:
-            as_dict = doc.to_dict()
-            existing_key = as_dict.get(field_name)
-            if existing_key is not None:
-                existing_unique_doc_ref = self.db.collection(unique_type_name).document(existing_key)
-                existing_unique_doc_ref.delete()
+    # def set_unique_doc(self, type_name, key, field_name, value):
+    #     doc_ref = self.db.collection(type_name).document(key)
+    #     unique_type_name = "%s__%s" % (type_name, field_name)
+    #
+    #     if value is not None:
+    #         unique_doc_ref = self.db.collection(unique_type_name).document(value)
+    #         unique_doc = self._get_ref(unique_doc_ref)
+    #
+    #         if unique_doc.exists:
+    #
+    #             ## if it exists then check to see if its owned by another
+    #             if unique_doc.to_dict()["owner"] != key:
+    #                 raise FamUniqueError("The value %s for %s is already taken" % (value, field_name))
+    #             else:
+    #                 # no op in the case where the value is already set
+    #                 return
+    #         else:
+    #             self._set_ref(unique_doc_ref, {"owner": key, "type_name": type_name})
+    #
+    #     doc = self._get_ref(doc_ref)
+    #
+    #     if doc.exists:
+    #         as_dict = doc.to_dict()
+    #         existing_key = as_dict.get(field_name)
+    #         if existing_key is not None:
+    #             existing_unique_doc_ref = self.db.collection(unique_type_name).document(existing_key)
+    #             existing_unique_doc_ref.delete()
 
 
     def get_unique_instance(self, namespace, type_name, field_name, value):
         unique_type_name = "%s__%s" % (type_name, field_name)
         unique_doc_ref = self.db.collection(unique_type_name).document(value)
 
-        try:
-            doc = unique_doc_ref.get()
-        except PermissionDenied as e:
-            raise FamPermissionError("You don't have permission to read %s" % unique_doc_ref)
+        doc = self._get_ref(unique_doc_ref)
 
         if doc.exists:
             as_dict = doc.to_dict()
@@ -542,3 +501,99 @@ class FirestoreWrapper(BaseDatabase):
             return GenericObject._from_doc(self, wrapper.key, wrapper.rev, wrapper.value)
         else:
             return None
+
+
+##########  transactional unique functions
+
+
+@transactional
+def set_with_unique_fields(transaction, client, type_name, key, values, unique_field_names):
+    _create_unique_field_docs(client, type_name, key, values, unique_field_names, transaction)
+    doc_ref = client.collection(type_name).document(key)
+    try:
+        transaction.set(doc_ref, values)
+    except PermissionDenied as e:
+        raise FamPermissionError("You don't have permission access this resource: %s" % key)
+
+
+@transactional
+def update_with_unique_fields(transaction, client, type_name, key, values, unique_field_names):
+    _create_unique_field_docs(client, type_name, key, values, unique_field_names, transaction)
+    doc_ref = client.collection(type_name).document(key)
+    try:
+        transaction.update(doc_ref, values)
+    except PermissionDenied as e:
+        raise FamPermissionError("You don't have permission access this resource: %s" % key)
+
+
+@transactional
+def delete_with_unique_values(transaction, client, type_name, key, unique_values):
+    _clear_unique_docs(client, type_name, unique_values, transaction)
+    doc_ref = client.collection(type_name).document(key)
+    transaction.delete(doc_ref)
+
+
+def _create_unique_field_docs(client, type_name, key, value, unique_field_names, transaction):
+
+    to_set = []
+
+    # check all the unique objects and fail if any are bad before setting anything
+    for field_name in unique_field_names:
+        field_value = value[field_name]
+        ref_name_fieldname = _get_unique_ref(client, type_name, key, field_name, field_value, transaction)
+        if ref_name_fieldname is not None:
+            to_set.append(ref_name_fieldname)
+
+    if len(to_set) > 0:
+        doc_ref = client.collection(type_name).document(key)
+        try:
+            doc = doc_ref.get(transaction=transaction)
+        except PermissionDenied as e:
+            raise FamPermissionError("You don't have permission access this resource: %s" % key)
+
+        as_dict = doc.to_dict() if doc.exists else None
+        for unique_doc_ref, unique_type_name, field_name in to_set:
+            try:
+                transaction.set(unique_doc_ref, {"owner": key, "type_name": type_name})
+            except PermissionDenied as e:
+                raise FamPermissionError("You don't have permission access this resource: %s" % unique_doc_ref)
+            if as_dict is not None:
+                existing_key = as_dict.get(field_name)
+                if existing_key is not None:
+                    existing_unique_doc_ref = client.collection(unique_type_name).document(
+                        existing_key)
+                    try:
+                        transaction.delete(existing_unique_doc_ref)
+                    except PermissionDenied as e:
+                        raise FamPermissionError("You don't have permission access this resource: %s" % existing_unique_doc_ref)
+
+
+def _get_unique_ref(client, type_name, key, field_name, field_value, transaction):
+    unique_type_name = "%s__%s" % (type_name, field_name)
+    unique_doc_ref = client.collection(unique_type_name).document(field_value)
+    try:
+        unique_doc = unique_doc_ref.get(transaction=transaction)
+    except PermissionDenied as e:
+        raise FamPermissionError("You don't have permission access this resource: %s" % unique_doc_ref)
+    if unique_doc.exists:
+        ## if it exists then check to see if its owned by another
+        if unique_doc.to_dict()["owner"] != key:
+            raise FamUniqueError("The value %s for %s is already taken" % (field_value, field_name))
+        else:
+            # no op in the case where the value is already set
+            return None
+    else:
+        ## go ahead and set the new one
+        return unique_doc_ref, unique_type_name, field_name
+
+
+def _clear_unique_docs(client, type_name, unique_values, transaction):
+
+    for field_name, field_value in unique_values.items():
+        unique_type_name = "%s__%s" % (type_name, field_name)
+        unique_doc_ref = client.collection(unique_type_name).document(field_value)
+        try:
+            transaction.delete(unique_doc_ref)
+        except PermissionDenied as e:
+            raise FamPermissionError("You don't have permission access this resource: %s" % unique_doc_ref)
+

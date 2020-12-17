@@ -24,3 +24,6 @@ class FamError(Exception):
 
 class FamPermissionError(Exception):
     pass
+
+class FamTransactionError(Exception):
+    pass
