@@ -460,35 +460,6 @@ class FirestoreWrapper(BaseDatabase):
         return unique_field_names
 
 
-    # def set_unique_doc(self, type_name, key, field_name, value):
-    #     doc_ref = self.db.collection(type_name).document(key)
-    #     unique_type_name = "%s__%s" % (type_name, field_name)
-    #
-    #     if value is not None:
-    #         unique_doc_ref = self.db.collection(unique_type_name).document(value)
-    #         unique_doc = self._get_ref(unique_doc_ref)
-    #
-    #         if unique_doc.exists:
-    #
-    #             ## if it exists then check to see if its owned by another
-    #             if unique_doc.to_dict()["owner"] != key:
-    #                 raise FamUniqueError("The value %s for %s is already taken" % (value, field_name))
-    #             else:
-    #                 # no op in the case where the value is already set
-    #                 return
-    #         else:
-    #             self._set_ref(unique_doc_ref, {"owner": key, "type_name": type_name})
-    #
-    #     doc = self._get_ref(doc_ref)
-    #
-    #     if doc.exists:
-    #         as_dict = doc.to_dict()
-    #         existing_key = as_dict.get(field_name)
-    #         if existing_key is not None:
-    #             existing_unique_doc_ref = self.db.collection(unique_type_name).document(existing_key)
-    #             existing_unique_doc_ref.delete()
-
-
     def get_unique_instance(self, namespace, type_name, field_name, value):
         unique_type_name = "%s__%s" % (type_name, field_name)
         unique_doc_ref = self.db.collection(unique_type_name).document(value)
@@ -524,7 +495,6 @@ def update_with_unique_fields(transaction, client, type_name, key, values, uniqu
         transaction.update(doc_ref, values)
     except PermissionDenied as e:
         raise FamPermissionError("You don't have permission access this resource: %s" % key)
-
 
 @transactional
 def delete_with_unique_values(transaction, client, type_name, key, unique_values):
