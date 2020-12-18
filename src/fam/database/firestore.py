@@ -266,14 +266,13 @@ class FirestoreWrapper(BaseDatabase):
     ############################################
 
     def _work_out_class(self, key, class_name):
-
-        if isinstance(class_name, list):
-            for cn in class_name:
-                if key.startswith(cn):
-                    return cn
-            raise Exception("can't work out class name %s %s" % (key, class_name))
-        else:
+        if key.startswith(class_name):
             return class_name
+        subclasses = self.mapper.get_all_subclass_names(self.namespace, class_name)
+        for cn in subclasses:
+            if key.startswith(cn):
+                return cn
+        raise Exception("can't work out class name %s %s" % (key, class_name))
 
 
     @refresh_check
