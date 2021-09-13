@@ -258,7 +258,7 @@ class FirestoreWrapper(BaseDatabase):
 
     @catch_permission
     def _update_ref(self, doc_ref, value):
-        doc_ref.update(value)
+        self._update_doc_ref(doc_ref, value)
 
     def _update_doc_ref(self, doc_ref, value):
         doc_ref.update(value)
@@ -266,6 +266,11 @@ class FirestoreWrapper(BaseDatabase):
     ############################################
 
     def _work_out_class(self, key, class_name):
+
+        if class_name == "famobject":
+            return key.split("_")[0]
+
+        # print(key, class_name)
         if key.startswith(class_name):
             return class_name
         subclasses = self.mapper.get_all_subclass_names(self.namespace, class_name)

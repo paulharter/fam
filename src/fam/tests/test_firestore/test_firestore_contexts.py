@@ -57,3 +57,15 @@ class TestContexts(unittest.TestCase):
 
         got = Cat.get(self.db, cat.key)
         self.assertIsNone(got)
+
+    def test_batch_update(self):
+
+        with FirestoreBatchContext(self.db) as bdb:
+            dog = Dog(name="woofer")
+            bdb.put(dog)
+            dog.update({"name": "steve"})
+
+        got = Dog.get(self.db, dog.key)
+        self.assertIsNotNone(got)
+        self.assertEqual(got.name, "steve")
+        self.assertEqual(len(bdb.results), 2)
