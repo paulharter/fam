@@ -346,7 +346,7 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
 
         correctCls = db.class_for_type_name(doc.get(TYPE_STR), doc.get(NAMESPACE_STR))
         if correctCls is None:
-            raise Exception("couldn't find class {} for doc {}".format(doc.get(TYPE_STR), json.dumps(doc, indent=4)))
+            raise Exception("couldn't find class {} for key {}".format(doc.get(TYPE_STR), key))
 
         obj = correctCls(key=key, rev=rev, **doc)
         obj._db = db
