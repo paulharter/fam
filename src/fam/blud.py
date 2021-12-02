@@ -240,6 +240,7 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
         db._delete(self.key, self.rev, self.type)
         self._post_delete_cb(db)
         self.delete_references(db)
+        self._post_delete_references_cb(db)
         # db.sync_up()
 
 
@@ -391,6 +392,11 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
     def _post_delete_cb(self, db):
         if hasattr(self, "post_delete_cb"):
             self.post_delete_cb(db)
+
+    def _post_delete_references_cb(self, db):
+        if hasattr(self, "post_delete_references_cb"):
+            self.post_delete_references_cb(db)
+
 
 
     @classmethod
