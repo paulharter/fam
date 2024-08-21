@@ -526,10 +526,10 @@ class CouchDBWrapper(BaseDatabase):
             doc["_id"] = key
             self.ensure_design_doc(key, doc)
 
-        ## extra indexes
-        for doc in self.mapper.extra_design_docs():
-            key = doc["_id"]
-            self.ensure_design_doc(key, doc)
+        # ## extra indexes
+        # for doc in self.mapper.extra_design_docs():
+        #     key = doc["_id"]
+        #     self.ensure_design_doc(key, doc)
 
 
     def get_unique_instance(self, namespace, type_name, field_name, value):

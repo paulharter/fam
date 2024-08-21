@@ -5,6 +5,7 @@ os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["GCLOUD_PROJECT"] = "localtest"
 
 import firebase_admin
+from google.cloud.firestore_v1.base_query import FieldFilter
 from fam.exceptions import *
 from fam.tests.models.test01 import GenericObject, Dog, Cat, Person, JackRussell, Monkey, Monarch, NAMESPACE
 from fam.database import FirestoreWrapper
@@ -356,3 +357,34 @@ class TestDB(unittest.TestCase):
         dog2 = Dog.get_unique_instance(self.db, "kennel_club_membership", "123456")
         self.assertIsNotNone(dog2)
         self.assertTrue(dog2.kennel_club_membership == "123456")
+
+    def test_count(self):
+
+        paul = Person(name="paul")
+        self.db.put(paul)
+        dog1 = Dog.create(self.db, name="rufus", owner_id=paul.key)
+        dog2 = Dog.create(self.db, name="fly", owner_id=paul.key)
+
+        collection_ref = self.db.db.collection("dog")
+        query = collection_ref.where(filter=FieldFilter("name", "!=", "bobby"))
+        count = self.db.query_count(query)
+        self.assertEqual(count, 2)
+
+    def test_page(self):
+
+        paul = Person(name="paul")
+        self.db.put(paul)
+        dog1 = Dog.create(self.db, name="able", owner_id=paul.key)
+        dog2 = Dog.create(self.db, name="baker", owner_id=paul.key)
+        dog3 = Dog.create(self.db, name="charlie", owner_id=paul.key)
+        dog4 = Dog.create(self.db, name="dog", owner_id=paul.key)
+        dog5 = Dog.create(self.db, name="easy", owner_id=paul.key)
+        dog6 = Dog.create(self.db, name="fox", owner_id=paul.key)
+        dog7 = Dog.create(self.db, name="george", owner_id=paul.key)
+
+        collection_ref = self.db.db.collection("dog")
+        dogs = self.db.get_page_items(collection_ref, 3, 2, order_by="name")
+
+        self.assertEqual(2, len(dogs))
+        self.assertEqual("dog", dogs[0].name)
+        self.assertEqual("easy", dogs[1].name)

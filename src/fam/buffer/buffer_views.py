@@ -156,9 +156,9 @@ class FamWriteBufferViews(object):
             self._add_design(self.js_context, key, doc)
 
         # ## extra indexes
-        for doc in self.mapper.extra_design_docs():
-            key = doc["_id"]
-            self._add_design(self.js_context, key, doc)
+        # for doc in self.mapper.extra_design_docs():
+        #     key = doc["_id"]
+        #     self._add_design(self.js_context, key, doc)
 
 
     def _add_design(self, js_context, key, doc):

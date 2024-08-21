@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  postgres:
+    container_name: couchdb
+    image: couchdb:latest
+    restart: always
+    ports:
+      - "5984:5984"
+    volumes:
+      - /Users/paul/Dropbox/glowinthedark/fam/data:/opt/couchdb/data
+    environment:
+      - COUCHDB_USER=paul
+      - COUCHDB_PASSWORD=password

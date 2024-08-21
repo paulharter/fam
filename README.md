@@ -1,5 +1,9 @@
 # fam
 
+NB version 3.0.0 has been released in a rush due to slimit no longer supporting python 3. 
+I'm afraid I have removed support in CouchDB for additional views defined in js. 
+I hope to bring this back once I find a good replacemnt for slimit.
+
 [![Build Status](https://travis-ci.org/paulharter/fam.svg?branch=master)](https://travis-ci.org/paulharter/fam)
 
 A simple Python ORM for CouchDB and Couchbase Sync Gateway. 

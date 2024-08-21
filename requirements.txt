@@ -4,7 +4,6 @@ simplejson
 jsonschema
 mock
 pytz
-slimit
 ply==3.4
 firebase_admin
 six

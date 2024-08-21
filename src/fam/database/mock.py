@@ -12,7 +12,6 @@ class MockDatabase(BaseDatabase):
         null_db = NullDatabase(mapper)
         self.buffer = FamWriteBuffer(null_db)
 
-
     def set_object(self, obj, rev=None):
         return self.buffer.put(obj)
 

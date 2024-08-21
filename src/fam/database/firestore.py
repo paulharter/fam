@@ -8,8 +8,9 @@ import requests
 from requests.exceptions import HTTPError
 
 import firebase_admin
-from firebase_admin import credentials, firestore, auth
+from firebase_admin import credentials, auth, firestore
 from google.cloud.firestore import transactional
+from google.cloud.firestore_v1 import aggregation
 from google.api_core.exceptions import PermissionDenied
 
 from fam.exceptions import *
@@ -17,6 +18,7 @@ from fam.constants import *
 from fam.database.base import BaseDatabase
 from fam.database.couchdb import ResultWrapper
 from fam.database.firestore_adapter import FirestoreDataAdapter
+
 
 from grpc._channel import _Rendezvous
 
@@ -387,6 +389,19 @@ class FirestoreWrapper(BaseDatabase):
         else:
             return self._query_items_simple(firebase_query)
 
+    def query_count(self, firebase_query):
+        aggregate_query = aggregation.AggregationQuery(firebase_query)
+
+        # `alias` to provides a key for accessing the aggregate query results
+        aggregate_query.count(alias="all")
+
+        results = aggregate_query.get()
+        for result in results:
+            return result[0].value
+
+    def get_page_items(self, firebase_query, offset, limit, order_by=u'_id'):
+        query = firebase_query.order_by(order_by).offset(offset).limit(limit)
+        return self._query_items_simple(query)
 
     def query_snapshots(self, firebase_query, batch_size=100):
         return self.query_snapshots_iterator(firebase_query, batch_size=batch_size)

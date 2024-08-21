@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "example_package_YOUR_USERNAME_HERE"
+version = "3.0.0"
+authors = [
+  { name="Paul Harter", email="paul@glowinthedark.co.uk" },
+]
+description = "Simple Python ORM for CouchDB, Firebase and Sync Gateway"
+readme = "README.md"
+requires-python = ">=3.7"
+    classifiers=[
+      'Development Status :: 4 - Beta',
+      'Natural Language :: English',
+      'Operating System :: OS Independent',
+      'Programming Language :: Python :: 3.7',
+      'License :: OSI Approved :: MIT License'
+    ]
+
+dependencies = ['js2py', 'requests', 'simplejson', 'jsonschema', 'mock', 'pytz', 'ply==3.4', 'firebase_admin', 'six', 'grpcio']
+zip_safe = false
+package_dir = {''='src'}
+include_package_data = true
+zip_safe = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["fam*"]
+exclude = ["fam.tests*"]
+namespaces = false
+
+[project.urls]
+"Homepage" = "https://github.com/paulharter/fam"
+"Bug Tracker" = "https://github.com/paulharter/fam/issues"
