@@ -399,8 +399,9 @@ class FirestoreWrapper(BaseDatabase):
         for result in results:
             return result[0].value
 
-    def get_page_items(self, firebase_query, offset, limit, order_by=u'_id'):
-        query = firebase_query.order_by(order_by).offset(offset).limit(limit)
+    def get_page_items(self, firebase_query, offset, limit, order_by=u'_id', descending=False):
+        direction = firestore.Query.DESCENDING if descending else firestore.Query.ASCENDING
+        query = firebase_query.order_by(order_by, direction=direction).offset(offset).limit(limit)
         return self._query_items_simple(query)
 
     def query_snapshots(self, firebase_query, batch_size=100):
