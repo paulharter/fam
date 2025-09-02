@@ -5,7 +5,7 @@ import os
 
 from fam.blud import GenericObject, ReferenceFrom
 from fam.schema.validator import ModelValidator
-from fam.buffer.buffer_views import FamWriteBufferViews
+# from fam.buffer.buffer_views import FamWriteBufferViews
 
 VIEW_FUNCTION_NAMES = ["map", "reduce"]
 
@@ -38,11 +38,11 @@ class ClassMapper(object):
     #     return docs
 
 
-    @property
-    def buffer_views(self):
-        if self._buffer_views is None:
-            self._buffer_views = FamWriteBufferViews(self)
-        return self._buffer_views
+    # @property
+    # def buffer_views(self):
+    #     if self._buffer_views is None:
+    #         self._buffer_views = FamWriteBufferViews(self)
+    #     return self._buffer_views
 
 
     def _add_immutable_field(self, type_name, field_name):

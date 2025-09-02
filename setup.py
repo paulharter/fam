@@ -2,21 +2,21 @@
 from setuptools import setup, find_packages
 
 setup(name='fam',
-    version='3.0.2',
+    version='4.0.0',
     description="Simple Python ORM for CouchDB, Firebase and Sync Gateway",
     url="https://github.com/paulharter/fam",
     classifiers=[
       'Development Status :: 4 - Beta',
       'Natural Language :: English',
       'Operating System :: OS Independent',
-      'Programming Language :: Python :: 3.7',
+      'Programming Language :: Python :: 3.13',
       'License :: OSI Approved :: MIT License'
     ],
     author='Paul Harter',
     author_email='paul@glowinthedark.co.uk',
     license="LICENSE",
-    install_requires=['js2py', 'requests', 'simplejson', 'jsonschema', 'mock', 'pytz', 'ply==3.4',
-                    'firebase_admin', 'six', 'grpcio'],
+    install_requires=['requests', 'simplejson', 'jsonschema', 'mock', 'pytz',
+                    'firebase_admin', 'grpcio'],
     packages=find_packages('src'),
     package_dir={'': 'src'},
     include_package_data=True,
