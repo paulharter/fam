@@ -500,8 +500,10 @@ class FamObject(six.with_metaclass(GenericMetaclass)):
                 if self._db is None:
                     traceback.print_stack()
                     raise Exception("no db")
-                # return GenericObject.get(self._db, self._properties[id_name])
-                return self._db.get(self._properties[id_name], class_name=ref.refcls)
+                key = self._properties[id_name]
+                if key is None:
+                    return None
+                return self._db.get(key, class_name=ref.refcls)
 
         if name in self._properties.keys():
             # print("found in properties", name)
